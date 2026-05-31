@@ -1,0 +1,134 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth ─────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  loans             Loan[]
+  portfolioAssets   PortfolioAsset[]
+  portfolioSettings PortfolioSettings?
+
+  @@map("users")
+}
+
+// ── Loan ─────────────────────────────────────────────────────────
+
+model Loan {
+  id          String @id @default(uuid())
+  userId      String @map("user_id")
+  capital     Float
+  prazoMeses  Int    @map("prazo_meses")
+  tanFixa     Float  @map("tan_fixa")
+  mesesFixos  Int    @map("meses_fixos")
+  spread      Float
+  euribor     Float
+  dataInicio  String @map("data_inicio") // "AAAA-MM"
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments      LoanPayment[]
+  amortizations LoanAmortization[]
+  euriborHistory EuriborHistory[]
+
+  @@map("loans")
+}
+
+model LoanPayment {
+  id     String  @id @default(uuid())
+  loanId String  @map("loan_id")
+  ym     String  // "AAAA-MM"
+  paid   Boolean @default(false)
+  real   Float?  // actual amount paid (may differ from scheduled)
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, ym])
+  @@map("loan_payments")
+}
+
+model LoanAmortization {
+  id     String              @id @default(uuid())
+  loanId String              @map("loan_id")
+  ym     String              // "AAAA-MM"
+  valor  Float
+  modo   LoanAmortizationMode
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@map("loan_amortizations")
+}
+
+enum LoanAmortizationMode {
+  prazo
+  prestacao
+
+  @@map("loan_amortization_mode")
+}
+
+model EuriborHistory {
+  id     String @id @default(uuid())
+  loanId String @map("loan_id")
+  ym     String // "AAAA-MM"
+  valor  Float
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, ym])
+  @@map("euribor_history")
+}
+
+// ── Portfolio ─────────────────────────────────────────────────────
+
+model PortfolioAsset {
+  id             String @id @default(uuid())
+  userId         String @map("user_id")
+  name           String
+  ticker         String
+  qty            Float
+  invested       Float
+  value          Float
+  monthly        Float  @default(0) // monthly contribution (field `m`)
+  expectedReturn Float  @default(0.07) @map("expected_return") // annual return % as fraction
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flows PortfolioFlow[]
+
+  @@map("portfolio_assets")
+}
+
+model PortfolioFlow {
+  id      String @id @default(uuid())
+  assetId String @map("asset_id")
+  ym      String // "AAAA-MM"
+  amount  Float
+
+  asset PortfolioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_flows")
+}
+
+model PortfolioSettings {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+  gInc   Int    @default(3)  // annual contribution increase %
+  gFY    Int    @default(2)  // years without increase
+  gH     Int    @default(20) // projection horizon in years
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_settings")
+}

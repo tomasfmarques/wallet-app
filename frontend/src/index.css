@@ -1,0 +1,63 @@
+/* ── Design tokens (from design_app/styles.css) ──────────────── */
+:root {
+  /* Backgrounds */
+  --bg: #F0F4F9;
+  --surface: #FFFFFF;
+  --surface-2: #F8FAFC;
+
+  /* Text */
+  --text: #0F172A;
+  --muted: #64748B;
+  --muted-l: #94A3B8;
+
+  /* Accent (blue — can be swapped via settings) */
+  --accent: #2563EB;
+  --accent-d: #1D4ED8;
+  --accent-l: #EFF6FF;
+  --accent-m: #DBEAFE;
+  --accent-b: #BFDBFE;
+
+  /* Semantic colours */
+  --green: #059669;
+  --green-d: #047857;
+  --red: #DC2626;
+  --amber: #D97706;
+
+  /* Borders */
+  --border: #E2E8F0;
+  --border-s: #F1F5F9;
+
+  /* Shadows */
+  --sh: 0 1px 3px rgba(15,23,42,.07), 0 1px 2px rgba(15,23,42,.04);
+  --sh-m: 0 4px 16px rgba(15,23,42,.08);
+  --sh-l: 0 8px 32px rgba(15,23,42,.12);
+
+  /* Radii */
+  --r-sm: 7px;
+  --r: 9px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Typography */
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}
