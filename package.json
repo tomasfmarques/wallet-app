@@ -14,7 +14,7 @@
     "db:migrate": "npm run db:migrate --workspace=backend",
     "db:studio": "npm run db:studio --workspace=backend",
     "deploy:prep": "npm run deploy:prep --workspace=backend",
-    "prod:build": "npm install && npm run deploy:prep && npm run build",
+    "prod:build": "npm install --include=dev && npm run deploy:prep && npm run build",
     "prod:start": "npm run start --workspace=backend"
   },
   "devDependencies": {
