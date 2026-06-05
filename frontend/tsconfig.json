@@ -19,9 +19,9 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    // Silence "baseUrl is deprecated" hard error in TS 6+ (Render pulls the
-    // latest TypeScript via npm). We still need baseUrl for the @/ aliases.
-    "ignoreDeprecations": "6.0",
+    // Silence "baseUrl is deprecated" hard error. "5.0" is the only valid
+    // value in TS 5.x — Render uses this version range.
+    "ignoreDeprecations": "5.0",
 
     /* Linting */
     "strict": true,
