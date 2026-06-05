@@ -1,15 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 
-// Pages (to be implemented)
-// import SignIn from '@/pages/SignIn'
-// import SignUp from '@/pages/SignUp'
-// import Overview from '@/pages/Overview'
-// import Loan from '@/pages/Loan'
-// import Portfolio from '@/pages/Portfolio'
-// import Settings from '@/pages/Settings'
-// import Layout from '@/components/layout/Layout'
-// import AuthGuard from '@/components/auth/AuthGuard'
+import { AuthProvider } from '@/hooks/useAuth'
+import AuthGuard from '@/components/auth/AuthGuard'
+import Layout from '@/components/layout/Layout'
+
+import SignIn from '@/pages/SignIn'
+import SignUp from '@/pages/SignUp'
+import Overview from '@/pages/Overview'
+import Loan from '@/pages/Loan'
+import Portfolio from '@/pages/Portfolio'
+import Budget from '@/pages/Budget'
+import Settings from '@/pages/Settings'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,22 +26,32 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          {/* Auth routes */}
-          {/* <Route path="/signin" element={<SignIn />} /> */}
-          {/* <Route path="/signup" element={<SignUp />} /> */}
+        <AuthProvider>
+          <Routes>
+            {/* Public auth routes */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
 
-          {/* Protected routes — wrapped in AuthGuard + Layout */}
-          {/* <Route element={<AuthGuard><Layout /></AuthGuard>}> */}
-          {/*   <Route path="/overview" element={<Overview />} /> */}
-          {/*   <Route path="/loan" element={<Loan />} /> */}
-          {/*   <Route path="/investments" element={<Portfolio />} /> */}
-          {/*   <Route path="/settings" element={<Settings />} /> */}
-          {/* </Route> */}
+            {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
+            <Route
+              element={
+                <AuthGuard>
+                  <Layout />
+                </AuthGuard>
+              }
+            >
+              <Route path="/overview" element={<Overview />} />
+              <Route path="/loan" element={<Loan />} />
+              <Route path="/investments" element={<Portfolio />} />
+              <Route path="/budget" element={<Budget />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/signin" replace />} />
-        </Routes>
+            {/* Defaults */}
+            <Route path="/" element={<Navigate to="/overview" replace />} />
+            <Route path="*" element={<Navigate to="/overview" replace />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

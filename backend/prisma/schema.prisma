@@ -6,7 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // SQLite for dev — zero-setup file-based DB. Swap to "postgresql" for prod
+  // (the schema below is portable, but you'll need to re-run migrations).
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,15 +17,62 @@ datasource db {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  // Optional because Google-only users have no local password
+  passwordHash String?  @map("password_hash")
+  // Google "sub" claim (stable per-user identifier). Unique, optional.
+  googleId     String?  @unique @map("google_id")
   name         String
   createdAt    DateTime @default(now()) @map("created_at")
 
   loans             Loan[]
   portfolioAssets   PortfolioAsset[]
   portfolioSettings PortfolioSettings?
+  incomes           Income[]
+  expenses          Expense[]
 
   @@map("users")
+}
+
+// ── Budget ───────────────────────────────────────────────────────
+model Income {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String                          // e.g. "Salário", "Freelance"
+  amount    Float                           // EUR per month
+  category  String?                         // free-text bucket
+  active    Boolean  @default(true)
+  startYm   String?  @map("start_ym")       // "AAAA-MM" — when it started
+  endYm     String?  @map("end_ym")         // "AAAA-MM" — null = ongoing
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("incomes")
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String                        // e.g. "Renda", "Netflix", "Comida"
+  amount      Float                         // EUR per month (planned/typical)
+  // 'fixed'    → predictable recurring (rent, subscriptions)
+  // 'variable' → fluctuates monthly (food, entertainment)
+  type        String                        // 'fixed' | 'variable'
+  category    String?
+  dayOfMonth  Int?     @map("day_of_month") // 1-31, optional
+  active      Boolean  @default(true)
+  startYm     String?  @map("start_ym")
+  endYm       String?  @map("end_ym")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, type])
+  @@map("expenses")
 }
 
 // ── Loan ─────────────────────────────────────────────────────────
@@ -61,22 +110,17 @@ model LoanPayment {
 }
 
 model LoanAmortization {
-  id     String              @id @default(uuid())
-  loanId String              @map("loan_id")
-  ym     String              // "AAAA-MM"
+  id     String @id @default(uuid())
+  loanId String @map("loan_id")
+  ym     String // "AAAA-MM"
   valor  Float
-  modo   LoanAmortizationMode
+  // Allowed: 'prazo' | 'prestacao'. Stored as text because SQLite has no
+  // native enum support — validated at the application layer.
+  modo   String
 
   loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
 
   @@map("loan_amortizations")
-}
-
-enum LoanAmortizationMode {
-  prazo
-  prestacao
-
-  @@map("loan_amortization_mode")
 }
 
 model EuriborHistory {
@@ -127,6 +171,9 @@ model PortfolioSettings {
   gInc   Int    @default(3)  // annual contribution increase %
   gFY    Int    @default(2)  // years without increase
   gH     Int    @default(20) // projection horizon in years
+  // Comma-separated list of watchlist tickers, e.g. "NVDA,AAPL,MSFT".
+  // Null/empty = use the app default. Length is enforced by the route.
+  watchlistSymbols String? @map("watchlist_symbols")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

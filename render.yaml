@@ -1,0 +1,40 @@
+# Render Blueprint — one-click deploy for WALLET
+# Docs: https://render.com/docs/blueprint-spec
+#
+# What this provisions:
+#   • One Web Service running both the API and the built SPA
+#   • Node 22 runtime
+#   • Auto-deploys on every push to the connected branch
+#
+# What you still set in the dashboard (Render → Service → Environment):
+#   • DATABASE_URL              — Neon Postgres connection string
+#   • SESSION_SECRET            — `openssl rand -hex 32`
+#   • FINNHUB_API_KEY           — your Finnhub key (already in your .env)
+#   • GOOGLE_CLIENT_ID          — when you finish the Google setup (optional)
+#   • ALLOWED_ORIGINS           — leave EMPTY for same-origin (recommended)
+
+services:
+  - type: web
+    name: wallet-app
+    runtime: node
+    plan: free
+    region: frankfurt   # change to oregon / ohio / singapore as you prefer
+    branch: main
+    buildCommand: npm run prod:build
+    startCommand: npm run prod:start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false        # set in dashboard, don't commit
+      - key: SESSION_SECRET
+        generateValue: true  # Render generates a strong random value
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

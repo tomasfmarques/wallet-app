@@ -1,0 +1,229 @@
+import { useState } from 'react'
+import { useBudget, useDeleteIncome, useDeleteExpense } from '@/hooks/useBudget'
+import { BudgetKpis } from '@/components/budget/BudgetKpis'
+import { IncomeModal } from '@/components/budget/IncomeModal'
+import { ExpenseModal } from '@/components/budget/ExpenseModal'
+import { CategoryDonut } from '@/components/budget/CategoryDonut'
+import { BudgetTimeline } from '@/components/budget/BudgetTimeline'
+import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
+import { eur } from '@/lib/format'
+import type { Income, Expense, ExpenseType } from '@/types'
+
+type Tab = 'tables' | 'analysis'
+
+export function Budget() {
+  const { data, isLoading, error } = useBudget()
+  const delIncome = useDeleteIncome()
+  const delExpense = useDeleteExpense()
+
+  const [tab, setTab] = useState<Tab>('tables')
+  const [incomeModal, setIncomeModal] = useState<{ open: boolean; income?: Income }>({ open: false })
+  const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense }>({ open: false, type: 'fixed' })
+
+  if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
+  if (error) return (
+    <div className="page-stub">
+      <h1>Orçamento</h1>
+      <div className="form-error">Erro: {error.message}</div>
+    </div>
+  )
+  if (!data) return null
+
+  const { incomes, expenses, kpis } = data
+  const fixedExpenses = expenses.filter((e) => e.type === 'fixed')
+  const variableExpenses = expenses.filter((e) => e.type === 'variable')
+
+  return (
+    <div className="budget-page">
+      <header className="page-header">
+        <div>
+          <h1>Orçamento</h1>
+          <p className="muted">As tuas receitas e despesas planeadas, mês a mês.</p>
+        </div>
+      </header>
+
+      <UncategorizedBanner incomes={incomes} expenses={expenses} />
+
+      <BudgetKpis kpis={kpis} />
+
+      <div className="subtabs" role="tablist">
+        <button
+          type="button" role="tab" aria-selected={tab === 'tables'}
+          className={`subtab ${tab === 'tables' ? 'is-active' : ''}`}
+          onClick={() => setTab('tables')}
+        >Tabelas</button>
+        <button
+          type="button" role="tab" aria-selected={tab === 'analysis'}
+          className={`subtab ${tab === 'analysis' ? 'is-active' : ''}`}
+          onClick={() => setTab('analysis')}
+        >Análise</button>
+      </div>
+
+      {tab === 'tables' && (
+        <>
+          <section>
+            <div className="budget-section-head">
+              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS</h2>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true })}>
+                + Adicionar receita
+              </button>
+            </div>
+            <BudgetList
+              rows={incomes.map((i) => ({
+                id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
+                meta: i.startYm ? `desde ${i.startYm}` : undefined,
+                onEdit: () => setIncomeModal({ open: true, income: i }),
+                onDelete: () => { if (confirm(`Remover "${i.name}"?`)) delIncome.mutate(i.id) },
+              }))}
+              totalLabel="Total mensal"
+              total={incomes.filter((i) => i.active).reduce((s, i) => s + i.amount, 0)}
+              emptyText="Sem receitas registadas. Adiciona o salário, freelance ou outras entradas."
+            />
+          </section>
+
+          <section>
+            <div className="budget-section-head">
+              <h2 className="section-label" style={{ margin: 0 }}>DESPESAS FIXAS</h2>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpenseModal({ open: true, type: 'fixed' })}>
+                + Adicionar fixa
+              </button>
+            </div>
+            <BudgetList
+              rows={fixedExpenses.map((e) => ({
+                id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
+                meta: e.dayOfMonth ? `dia ${e.dayOfMonth}` : undefined,
+                onEdit: () => setExpenseModal({ open: true, type: 'fixed', expense: e }),
+                onDelete: () => { if (confirm(`Remover "${e.name}"?`)) delExpense.mutate(e.id) },
+              }))}
+              totalLabel="Total fixas"
+              total={kpis.fixedTotal}
+              emptyText="Sem despesas fixas. Adiciona renda, subscrições, seguros, etc."
+            />
+          </section>
+
+          <section>
+            <div className="budget-section-head">
+              <h2 className="section-label" style={{ margin: 0 }}>DESPESAS VARIÁVEIS</h2>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpenseModal({ open: true, type: 'variable' })}>
+                + Adicionar variável
+              </button>
+            </div>
+            <BudgetList
+              rows={variableExpenses.map((e) => ({
+                id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
+                meta: undefined,
+                onEdit: () => setExpenseModal({ open: true, type: 'variable', expense: e }),
+                onDelete: () => { if (confirm(`Remover "${e.name}"?`)) delExpense.mutate(e.id) },
+              }))}
+              totalLabel="Total variáveis (planeadas)"
+              total={kpis.variableTotal}
+              emptyText="Sem despesas variáveis. Adiciona o orçamento típico para alimentação, lazer, transportes, etc."
+            />
+          </section>
+        </>
+      )}
+
+      {tab === 'analysis' && (
+        <>
+          <section>
+            <h2 className="section-label">HISTÓRICO</h2>
+            <BudgetTimeline incomes={incomes} expenses={expenses} months={12} />
+          </section>
+
+          <section>
+            <h2 className="section-label">DISTRIBUIÇÃO POR CATEGORIA</h2>
+            <div className="donut-grid">
+              <CategoryDonut
+                items={fixedExpenses}
+                title="Despesas fixas"
+                emptyText="Adiciona despesas fixas para ver a distribuição."
+              />
+              <CategoryDonut
+                items={variableExpenses}
+                title="Despesas variáveis"
+                emptyText="Adiciona despesas variáveis para ver a distribuição."
+              />
+              <CategoryDonut
+                items={incomes}
+                title="Receitas"
+                emptyText="Adiciona receitas para ver a distribuição."
+              />
+            </div>
+          </section>
+        </>
+      )}
+
+      <IncomeModal
+        open={incomeModal.open}
+        onClose={() => setIncomeModal({ open: false })}
+        income={incomeModal.income}
+      />
+      <ExpenseModal
+        open={expenseModal.open}
+        onClose={() => setExpenseModal({ open: false, type: 'fixed' })}
+        type={expenseModal.type}
+        expense={expenseModal.expense}
+      />
+    </div>
+  )
+}
+
+// ── Reusable row list ──────────────────────────────────────────
+interface RowItem {
+  id: string
+  name: string
+  amount: number
+  category: string | null
+  active: boolean
+  meta?: string
+  onEdit: () => void
+  onDelete: () => void
+}
+
+function BudgetList({
+  rows, totalLabel, total, emptyText,
+}: {
+  rows: RowItem[]
+  totalLabel: string
+  total: number
+  emptyText: string
+}) {
+  if (rows.length === 0) {
+    return <div className="card card-pad-lg muted">{emptyText}</div>
+  }
+  return (
+    <div className="card budget-list">
+      <ul>
+        {rows.map((r) => (
+          <li key={r.id} className={`budget-row ${r.active ? '' : 'is-inactive'}`}>
+            <div className="budget-row-main">
+              <div className="budget-row-name">
+                {r.name}
+                {!r.active && <span className="budget-pill-paused">pausada</span>}
+              </div>
+              {(r.category || r.meta) && (
+                <div className="budget-row-sub">
+                  {r.category
+                    ? <span className="budget-row-category">{r.category}</span>
+                    : <span className="budget-pill-uncat">por classificar</span>}
+                  {r.meta && <span className="muted">{r.meta}</span>}
+                </div>
+              )}
+            </div>
+            <div className="budget-row-amount">{eur(r.amount)}<span className="muted"> /mês</span></div>
+            <div className="budget-row-actions">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onEdit}>Editar</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onDelete}>Remover</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="budget-row-total">
+        <span>{totalLabel}</span>
+        <strong>{eur(total)}</strong>
+      </div>
+    </div>
+  )
+}
+
+export default Budget

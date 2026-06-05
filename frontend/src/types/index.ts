@@ -65,4 +65,35 @@ export interface PortfolioSettings {
   gInc: number  // annual increase % for contributions
   gFY: number   // years without increase
   gH: number    // horizon in years
+  watchlistSymbols: string | null  // comma-separated tickers; null = use default
+}
+
+export interface Income {
+  id: string
+  userId: string
+  name: string
+  amount: number
+  category: string | null
+  active: boolean
+  startYm: string | null
+  endYm: string | null
+  notes: string | null
+  createdAt: string
+}
+
+export type ExpenseType = 'fixed' | 'variable'
+
+export interface Expense {
+  id: string
+  userId: string
+  name: string
+  amount: number
+  type: ExpenseType
+  category: string | null
+  dayOfMonth: number | null
+  active: boolean
+  startYm: string | null
+  endYm: string | null
+  notes: string | null
+  createdAt: string
 }

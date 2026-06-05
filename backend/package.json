@@ -9,7 +9,10 @@
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:generate:prod": "prisma generate --schema=prisma/schema.prod.prisma",
+    "db:push:prod": "prisma db push --schema=prisma/schema.prod.prisma --accept-data-loss",
+    "deploy:prep": "npm run db:generate:prod && npm run db:push:prod"
   },
   "dependencies": {
     "@prisma/client": "^5.16.1",
@@ -18,8 +21,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.0",
-    "node-fetch": "^2.7.0"
+    "google-auth-library": "^10.6.2",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

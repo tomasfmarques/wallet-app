@@ -1,15 +1,10 @@
-import { Request, Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 
-// Extend express-session with our custom fields
-declare module 'express-session' {
-  interface SessionData {
-    userId?: string
-  }
-}
-
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
-    res.status(401).json({ error: 'Unauthorized — please sign in' })
+// Gate route handlers behind a valid session.
+// The SessionData augmentation lives in ../types/session.d.ts.
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  if (!req.session?.userId) {
+    res.status(401).json({ error: 'Não autenticado' })
     return
   }
   next()

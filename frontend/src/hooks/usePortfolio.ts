@@ -1,0 +1,173 @@
+import { useMutation, useQuery, useQueryClient } from 'react-query'
+import { api, ApiError } from '@/lib/api'
+import type { PortfolioAsset, PortfolioFlow, PortfolioSettings } from '@/types'
+
+// ── Server response shapes ───────────────────────────────────────
+export interface AssetWithFlows extends PortfolioAsset {
+  flows: PortfolioFlow[]
+}
+
+export interface PortfolioProjectionData {
+  perAsset: Array<{
+    id: string
+    name: string
+    ticker: string
+    rows: number[]
+    finalValue: number
+    totalContributed: number
+  }>
+  totalRows: number[]
+  initialTotal: number
+  finalTotal: number
+  totalContributed: number
+  totalReturn: number
+}
+
+export interface PortfolioKpisData {
+  valorAtual: number
+  jaInvestido: number
+  ganhoPerda: number
+  ganhoPerdaPct: number
+  reforcoMensalTotal: number
+  numAtivos: number
+  projecaoFinal: number
+}
+
+export interface PortfolioResponse {
+  assets: AssetWithFlows[]
+  settings: PortfolioSettings & { id: string; userId: string }
+  projection: PortfolioProjectionData
+  kpis: PortfolioKpisData
+}
+
+export interface AssetInputBody {
+  name: string
+  ticker: string
+  qty: number
+  invested: number
+  value: number
+  monthly: number
+  expectedReturn: number
+}
+
+export interface ReforcarInputBody {
+  amount: number
+  ym?: string
+  /** EUR price per share. Omit + set useMarketPrice for auto-fetch. */
+  price?: number
+  /** Auto-fetch current market price from Yahoo+FX (backend does the math). */
+  useMarketPrice?: boolean
+}
+
+// ── Query key ────────────────────────────────────────────────────
+export const PORTFOLIO_KEY = ['portfolio'] as const
+
+// ── Query ────────────────────────────────────────────────────────
+export function usePortfolio() {
+  return useQuery<PortfolioResponse, ApiError>(
+    PORTFOLIO_KEY,
+    () => api.get<PortfolioResponse>('/api/portfolio'),
+    { staleTime: 1000 * 60 },
+  )
+}
+
+// ── Mutations ────────────────────────────────────────────────────
+export function useAddAsset() {
+  const qc = useQueryClient()
+  return useMutation<{ asset: PortfolioAsset }, ApiError, AssetInputBody>(
+    (input) => api.post<{ asset: PortfolioAsset }>('/api/portfolio/assets', input),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+export function useUpdateAsset() {
+  const qc = useQueryClient()
+  return useMutation<
+    { asset: PortfolioAsset },
+    ApiError,
+    { id: string; patch: Partial<AssetInputBody> }
+  >(
+    ({ id, patch }) => api.put<{ asset: PortfolioAsset }>(`/api/portfolio/assets/${id}`, patch),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+export function useDeleteAsset() {
+  const qc = useQueryClient()
+  return useMutation<{ ok: true }, ApiError, string>(
+    (id) => api.delete<{ ok: true }>(`/api/portfolio/assets/${id}`),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+export function useReforcar() {
+  const qc = useQueryClient()
+  return useMutation<
+    { asset: PortfolioAsset; flow: PortfolioFlow },
+    ApiError,
+    { id: string; body: ReforcarInputBody }
+  >(
+    ({ id, body }) =>
+      api.post<{ asset: PortfolioAsset; flow: PortfolioFlow }>(
+        `/api/portfolio/assets/${id}/reforcar`,
+        body,
+      ),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+// ── Refresh from market ──────────────────────────────────────────
+export interface RefreshOneResult {
+  asset: PortfolioAsset
+  price: number          // native-currency price per share
+  priceInEur: number     // EUR per share after FX
+  fxRate: number
+  currency: string
+  resolvedSymbol: string
+}
+
+export function useRefreshAssetValue() {
+  const qc = useQueryClient()
+  return useMutation<RefreshOneResult, ApiError, string>(
+    (id) => api.post<RefreshOneResult>(`/api/portfolio/assets/${id}/refresh-value`),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+export interface RefreshAllRow {
+  id: string
+  ticker: string
+  ok: boolean
+  price?: number
+  priceInEur?: number
+  fxRate?: number
+  currency?: string
+  resolvedSymbol?: string
+  previousValue?: number
+  newValue?: number
+  error?: string
+}
+export interface RefreshAllResult {
+  results: RefreshAllRow[]
+  summary: { updated: number; failed: number }
+}
+
+export function useRefreshAllValues() {
+  const qc = useQueryClient()
+  return useMutation<RefreshAllResult, ApiError, void>(
+    () => api.post<RefreshAllResult>('/api/portfolio/refresh-values'),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
+export function useUpdateSettings() {
+  const qc = useQueryClient()
+  return useMutation<
+    { settings: PortfolioSettings },
+    ApiError,
+    Partial<PortfolioSettings>
+  >(
+    (patch) => api.put<{ settings: PortfolioSettings }>('/api/portfolio/settings', patch),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}

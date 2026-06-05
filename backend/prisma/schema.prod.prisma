@@ -1,0 +1,177 @@
+// PRODUCTION schema — Postgres (Neon/Supabase/Render PG)
+//
+// IMPORTANT: keep this file in sync with schema.prisma manually. The only
+// intended difference is the datasource provider. Everything else (models,
+// fields, indexes, relations) must be identical to the dev schema.
+//
+// Used by:   npm run deploy:prep
+// Generated client goes to ../node_modules/.prisma/client just like dev.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth ─────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?  @map("password_hash")
+  googleId     String?  @unique @map("google_id")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  loans             Loan[]
+  portfolioAssets   PortfolioAsset[]
+  portfolioSettings PortfolioSettings?
+  incomes           Income[]
+  expenses          Expense[]
+
+  @@map("users")
+}
+
+// ── Budget ───────────────────────────────────────────────────────
+model Income {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  amount    Float
+  category  String?
+  active    Boolean  @default(true)
+  startYm   String?  @map("start_ym")
+  endYm     String?  @map("end_ym")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("incomes")
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  amount      Float
+  type        String
+  category    String?
+  dayOfMonth  Int?     @map("day_of_month")
+  active      Boolean  @default(true)
+  startYm     String?  @map("start_ym")
+  endYm       String?  @map("end_ym")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, type])
+  @@map("expenses")
+}
+
+// ── Loan ─────────────────────────────────────────────────────────
+
+model Loan {
+  id          String @id @default(uuid())
+  userId      String @map("user_id")
+  capital     Float
+  prazoMeses  Int    @map("prazo_meses")
+  tanFixa     Float  @map("tan_fixa")
+  mesesFixos  Int    @map("meses_fixos")
+  spread      Float
+  euribor     Float
+  dataInicio  String @map("data_inicio")
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments      LoanPayment[]
+  amortizations LoanAmortization[]
+  euriborHistory EuriborHistory[]
+
+  @@map("loans")
+}
+
+model LoanPayment {
+  id     String  @id @default(uuid())
+  loanId String  @map("loan_id")
+  ym     String
+  paid   Boolean @default(false)
+  real   Float?
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, ym])
+  @@map("loan_payments")
+}
+
+model LoanAmortization {
+  id     String @id @default(uuid())
+  loanId String @map("loan_id")
+  ym     String
+  valor  Float
+  modo   String
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@map("loan_amortizations")
+}
+
+model EuriborHistory {
+  id     String @id @default(uuid())
+  loanId String @map("loan_id")
+  ym     String
+  valor  Float
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, ym])
+  @@map("euribor_history")
+}
+
+// ── Portfolio ─────────────────────────────────────────────────────
+
+model PortfolioAsset {
+  id             String @id @default(uuid())
+  userId         String @map("user_id")
+  name           String
+  ticker         String
+  qty            Float
+  invested       Float
+  value          Float
+  monthly        Float  @default(0)
+  expectedReturn Float  @default(0.07) @map("expected_return")
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flows PortfolioFlow[]
+
+  @@map("portfolio_assets")
+}
+
+model PortfolioFlow {
+  id      String @id @default(uuid())
+  assetId String @map("asset_id")
+  ym      String
+  amount  Float
+
+  asset PortfolioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_flows")
+}
+
+model PortfolioSettings {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+  gInc   Int    @default(3)
+  gFY    Int    @default(2)
+  gH     Int    @default(20)
+  watchlistSymbols String? @map("watchlist_symbols")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_settings")
+}
