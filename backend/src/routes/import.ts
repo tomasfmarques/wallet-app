@@ -135,6 +135,8 @@ router.post('/', async (req, res) => {
       await tx.loan.deleteMany({ where: { userId } })
       await tx.portfolioAsset.deleteMany({ where: { userId } })
       await tx.portfolioSettings.deleteMany({ where: { userId } })
+      await tx.income.deleteMany({ where: { userId } })
+      await tx.expense.deleteMany({ where: { userId } })
 
       // ── Loan ───────────────────────────────────────────────────
       if (isObj(payload.loan)) {
@@ -242,13 +244,56 @@ router.post('/', async (req, res) => {
           })
         }
       }
+
+      // ── Budget (incomes + expenses) ───────────────────────────
+      if (isObj(payload.budget)) {
+        const budget = payload.budget as Record<string, unknown>
+
+        if (isArr(budget.incomes)) {
+          const incomes = (budget.incomes as unknown[])
+            .filter(isObj)
+            .filter((i) => isStr(i.name) && isNum(i.amount))
+            .map((i) => ({
+              userId,
+              name: i.name as string,
+              amount: i.amount as number,
+              category: isStr(i.category) ? i.category : null,
+              active: isBool(i.active) ? i.active : true,
+              startYm: isStr(i.startYm) ? i.startYm : null,
+              endYm:   isStr(i.endYm)   ? i.endYm   : null,
+              notes:   isStr(i.notes)   ? i.notes   : null,
+            }))
+          if (incomes.length > 0) await tx.income.createMany({ data: incomes })
+        }
+
+        if (isArr(budget.expenses)) {
+          const expenses = (budget.expenses as unknown[])
+            .filter(isObj)
+            .filter((e) => isStr(e.name) && isNum(e.amount))
+            .map((e) => ({
+              userId,
+              name: e.name as string,
+              amount: e.amount as number,
+              type: e.type === 'variable' ? 'variable' : 'fixed',
+              category: isStr(e.category) ? e.category : null,
+              dayOfMonth: isNum(e.dayOfMonth) ? Math.round(e.dayOfMonth as number) : null,
+              active: isBool(e.active) ? e.active : true,
+              startYm: isStr(e.startYm) ? e.startYm : null,
+              endYm:   isStr(e.endYm)   ? e.endYm   : null,
+              notes:   isStr(e.notes)   ? e.notes   : null,
+            }))
+          if (expenses.length > 0) await tx.expense.createMany({ data: expenses })
+        }
+      }
     })
 
     // Summary
-    const [loanCount, assetCount, settings] = await Promise.all([
+    const [loanCount, assetCount, settings, incomeCount, expenseCount] = await Promise.all([
       prisma.loan.count({ where: { userId } }),
       prisma.portfolioAsset.count({ where: { userId } }),
       prisma.portfolioSettings.findUnique({ where: { userId } }),
+      prisma.income.count({ where: { userId } }),
+      prisma.expense.count({ where: { userId } }),
     ])
 
     res.json({
@@ -256,6 +301,8 @@ router.post('/', async (req, res) => {
       summary: {
         loan: loanCount > 0,
         assets: assetCount,
+        incomes: incomeCount,
+        expenses: expenseCount,
         settingsRestored: !!settings,
         importedFrom: wasPrototype ? 'prototype' : 'v1',
       },

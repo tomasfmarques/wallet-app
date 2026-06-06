@@ -7,6 +7,8 @@ interface ImportResult {
   summary: {
     loan: boolean
     assets: number
+    incomes: number
+    expenses: number
     settingsRestored: boolean
     importedFrom?: 'v1' | 'prototype'
   }
@@ -36,6 +38,8 @@ interface Preview {
     assets: number
     payments: number
     amortizations: number
+    incomes: number
+    expenses: number
   }
 }
 
@@ -63,14 +67,17 @@ function summarize(json: Record<string, unknown>, format: Format): Preview['summ
   if (format === 'v1') {
     const loan = json.loan as { payments?: unknown[]; amortizations?: unknown[] } | null
     const portfolio = json.portfolio as { assets?: unknown[] } | undefined
+    const budget = json.budget as { incomes?: unknown[]; expenses?: unknown[] } | undefined
     return {
       hasLoan: !!loan,
       assets: portfolio?.assets?.length ?? 0,
       payments: loan?.payments?.length ?? 0,
       amortizations: loan?.amortizations?.length ?? 0,
+      incomes: budget?.incomes?.length ?? 0,
+      expenses: budget?.expenses?.length ?? 0,
     }
   }
-  // prototype
+  // prototype — has no budget
   const loanObj = json.loan as Record<string, unknown> | null | undefined
   const paymentsMap = (json.payments ?? {}) as Record<string, unknown>
   const amortizacoes = (json.amortizacoes ?? []) as unknown[]
@@ -80,6 +87,8 @@ function summarize(json: Record<string, unknown>, format: Format): Preview['summ
     assets: portfolio?.assets?.length ?? 0,
     payments: Object.keys(paymentsMap).length,
     amortizations: amortizacoes.length,
+    incomes: 0,
+    expenses: 0,
   }
 }
 
@@ -146,6 +155,7 @@ export function ImportSection() {
         <div className="form-success">
           ✓ Importado com sucesso ({done.importedFrom === 'prototype' ? 'protótipo' : 'WALLET v1'}):
           empréstimo {done.loan ? 'sim' : 'não'}, {done.assets} ativo(s),
+          {' '}{done.incomes} receita(s), {done.expenses} despesa(s),
           configurações {done.settingsRestored ? 'restauradas' : '—'}.
         </div>
       )}
@@ -168,6 +178,8 @@ export function ImportSection() {
             <li>Pagamentos: {preview.summary.payments}</li>
             <li>Amortizações: {preview.summary.amortizations}</li>
             <li>Ativos: {preview.summary.assets}</li>
+            <li>Receitas: {preview.summary.incomes}</li>
+            <li>Despesas: {preview.summary.expenses}</li>
           </ul>
           <label className="checkbox" style={{ marginTop: 12 }}>
             <input
