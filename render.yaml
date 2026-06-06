@@ -10,7 +10,8 @@
 #   • DATABASE_URL              — Neon Postgres connection string
 #   • SESSION_SECRET            — `openssl rand -hex 32`
 #   • FINNHUB_API_KEY           — your Finnhub key (already in your .env)
-#   • GOOGLE_CLIENT_ID          — when you finish the Google setup (optional)
+#   • GOOGLE_CLIENT_ID          — when you finish the Google setup (optional, backend)
+#   • VITE_GOOGLE_CLIENT_ID     — same value as above (Vite bakes it into the frontend bundle at build time)
 #   • ALLOWED_ORIGINS           — leave EMPTY for same-origin (recommended)
 
 services:
@@ -36,5 +37,7 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false        # must match GOOGLE_CLIENT_ID — baked into the Vite bundle at build time
       - key: ALLOWED_ORIGINS
         sync: false
