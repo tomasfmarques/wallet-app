@@ -49,7 +49,7 @@ export function SignUp() {
       <div className="auth-card">
         <div className="brand brand-lg">
           <span className="brand-emoji" aria-hidden>💸</span>
-          <span className="brand-text">WALLET</span>
+          <span className="brand-text">Wallet<span className="brand-360">360</span></span>
         </div>
 
         <h1 className="auth-title">Criar conta</h1>

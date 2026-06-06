@@ -1,8 +1,8 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth, useLogout } from '@/hooks/useAuth'
+import { BottomNav } from './BottomNav'
 
-// Map route → label shown as section subtitle in the dark navbar (matches the
-// design's split brand: section title left, nav links right)
+// Map route → label shown as section subtitle in the navbar
 const SECTION_LABELS: Record<string, string> = {
   '/overview': 'Visão geral',
   '/loan': 'Empréstimo',
@@ -32,9 +32,11 @@ export function Layout() {
       <header className="navbar">
         <div className="navbar-inner">
           <div className="navbar-left">
-            <NavLink to="/overview" className="brand brand-light" aria-label="WALLET — início">
+            <NavLink to="/overview" className="brand brand-light" aria-label="Wallet360 — início">
               <span className="brand-emoji" aria-hidden>💸</span>
-              <span className="brand-text">WALLET</span>
+              <span className="brand-text">
+                Wallet<span className="brand-360">360</span>
+              </span>
             </NavLink>
             {section && (
               <div className="navbar-section">
@@ -44,8 +46,9 @@ export function Layout() {
             )}
           </div>
 
-          <nav className="nav-links" aria-label="Navegação principal">
-            <NavLink to="/overview" className="nav-link">Visão geral</NavLink>
+          {/* Desktop nav links — hidden on mobile (BottomNav takes over) */}
+          <nav className="nav-links nav-links-desktop" aria-label="Navegação principal">
+            <NavLink to="/overview" className="nav-link" end>Visão geral</NavLink>
             <NavLink to="/loan" className="nav-link">Empréstimo</NavLink>
             <NavLink to="/investments" className="nav-link">Investimentos</NavLink>
             <NavLink to="/budget" className="nav-link">Orçamento</NavLink>
@@ -59,8 +62,9 @@ export function Layout() {
               className="btn btn-navbar"
               onClick={handleSignOut}
               disabled={logout.isLoading}
+              aria-label="Terminar sessão"
             >
-              {logout.isLoading ? 'A terminar…' : 'Sair'}
+              {logout.isLoading ? '…' : 'Sair'}
             </button>
           </div>
         </div>
@@ -69,6 +73,8 @@ export function Layout() {
       <main className="page">
         <Outlet />
       </main>
+
+      <BottomNav />
     </div>
   )
 }

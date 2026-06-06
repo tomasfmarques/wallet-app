@@ -1983,3 +1983,178 @@ body {
   .kpi-value { font-size: 19px; }
   .page-header h1 { font-size: 18px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Wallet360 — brand wordmark + mobile-first refinements
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Brand "360" superscript-ish in accent colour */
+.brand-360 {
+  color: #60A5FA;          /* lighter blue against dark navbar */
+  font-weight: 700;
+  margin-left: 1px;
+  letter-spacing: 0.01em;
+}
+.brand-lg .brand-360 {
+  color: var(--accent);    /* on light auth screen */
+}
+.brand-light .brand-text { letter-spacing: 0.005em; }
+
+/* ── Bottom navigation (mobile only) ──────────────────────── */
+/* Hidden by default; revealed by media query below */
+.bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    z-index: 50;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px 4px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 0.15s, background 0.15s;
+    min-height: 48px;
+  }
+  .bottom-nav-item:active { background: var(--surface-2); }
+  .bottom-nav-item.is-active { color: var(--accent); }
+  .bottom-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bottom-nav-label {
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  /* Hide desktop nav links on phone — bottom nav takes over */
+  .nav-links-desktop { display: none !important; }
+
+  /* Make room for the bottom nav above the home-bar */
+  main.page {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Compact navbar layout on phone */
+  .navbar-inner {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .navbar-left { gap: 8px; flex: 1; min-width: 0; }
+  .brand-text { display: inline; font-size: 14px; }
+  .brand-emoji { font-size: 18px; }
+  .nav-user-name { display: none; }
+  .btn-navbar {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ── Modal becomes bottom sheet on mobile ─────────────────── */
+@media (max-width: 600px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    max-width: 100% !important;
+    width: 100%;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    max-height: 92vh;
+    animation: sheet-in 0.25s ease-out;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-s);
+    z-index: 2;
+  }
+}
+
+/* ── Tap-friendly buttons on touch devices ────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  .btn { min-height: 40px; }
+  .btn-primary, .btn-ghost, .btn-danger { min-height: 44px; padding: 11px 18px; }
+  .btn-sm { min-height: 34px; }
+  .nav-link, .subtab { min-height: 38px; }
+  /* Smoother momentum scroll in iOS */
+  body { -webkit-overflow-scrolling: touch; }
+}
+
+/* ── Hero/KPI typography polish ──────────────────────────── */
+.hero-card {
+  border-radius: 18px;
+}
+.hero-value {
+  font-feature-settings: "tnum", "ss01";
+  letter-spacing: -0.02em;
+}
+.hero-card-primary {
+  /* Slightly richer gradient for the primary hero */
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 60%, #1E3A8A 100%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.22);
+}
+.hero-card-primary:hover {
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.28);
+}
+
+/* ── Module cards refinement ──────────────────────────────── */
+.module-card {
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.module-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.module-card:hover::before { opacity: 1; }
+
+/* ── Cashflow card refinement ─────────────────────────────── */
+.cashflow-card { border-radius: 18px; }
+
+/* ── Refined card defaults ────────────────────────────────── */
+.kpi { border-radius: 14px; }
+
+/* ── Subtle improvements to overview header ──────────────── */
+.overview-header h1 {
+  background: linear-gradient(135deg, var(--text) 0%, #475569 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── App shell positioning so bottom nav doesn't cover content */
+.app-shell { position: relative; min-height: 100vh; }

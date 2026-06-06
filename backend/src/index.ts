@@ -119,7 +119,7 @@ if (IS_PROD) {
 
 // ── Start ──────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`💸 WALLET backend running on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'})`)
+  console.log(`💸 Wallet360 backend running on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'})`)
 })
 
 export default app
