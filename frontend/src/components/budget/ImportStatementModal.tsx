@@ -1,7 +1,7 @@
 import { ChangeEvent, useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { useBudget, useImportBudget, type ImportItem } from '@/hooks/useBudget'
-import { parseStatement, dupSignature } from '@/lib/statementParser'
+import { parseStatement, dupSignature, type ParsedTransaction } from '@/lib/statementParser'
 import {
   inferCategory, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
@@ -24,11 +24,11 @@ interface ReviewRow {
   duplicate: boolean  // already exists in the budget (same month + day + amount + name)
 }
 
-// Build review rows from raw file text. `existing` is the set of signatures
+// Map parsed transactions → review rows. `existing` is the set of signatures
 // the user already has (from a prior import) — matching rows are flagged as
 // duplicates and unticked by default so a re-import is a safe no-op.
-function buildRows(text: string, filename: string, existing: Set<string>): ReviewRow[] {
-  return parseStatement(text, filename).map((t, i) => {
+function rowsFromTxns(txns: ParsedTransaction[], existing: Set<string>): ReviewRow[] {
+  return txns.map((t, i) => {
     const kind = t.amount >= 0 ? 'income' : 'expense'
     const name = t.description.slice(0, 80)
     const amount = Math.abs(t.amount)
@@ -52,6 +52,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
   const { data: budget } = useBudget()
   const [rows, setRows] = useState<ReviewRow[]>([])
   const [filename, setFilename] = useState('')
+  const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
   const [done, setDone] = useState<{ incomes: number; expenses: number; skipped: number; duplicates: number } | null>(null)
 
@@ -78,29 +79,47 @@ export function ImportStatementModal({ open, onClose }: Props) {
 
   const close = () => { reset(); onClose() }
 
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
+  const finish = (txns: ParsedTransaction[], name: string) => {
+    if (txns.length === 0) {
+      setParseError('Não foi possível ler transações deste ficheiro. Aceita extratos PDF, CSV ou OFX.')
+      setRows([])
+    } else {
+      setRows(rowsFromTxns(txns, existingSigs))
+      setFilename(name)
+    }
+  }
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file later
     if (!file) return
     setParseError(null); setDone(null)
+
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf'
+    if (isPdf) {
+      // pdf.js is heavy — load it only when a PDF is actually chosen.
+      setParsing(true)
+      try {
+        const { parsePdfStatement } = await import('@/lib/pdfStatementParser')
+        finish(await parsePdfStatement(file), file.name)
+      } catch {
+        setParseError('Erro ao ler o PDF. Tenta exportar o extrato em CSV/OFX, se possível.')
+      } finally {
+        setParsing(false)
+      }
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const parsed = buildRows(String(reader.result ?? ''), file.name, existingSigs)
-        if (parsed.length === 0) {
-          setParseError('Não foi possível ler transações deste ficheiro. Verifica que é um extrato CSV ou OFX.')
-          setRows([])
-        } else {
-          setRows(parsed)
-          setFilename(file.name)
-        }
+        finish(parseStatement(String(reader.result ?? ''), file.name), file.name)
       } catch {
         setParseError('Erro ao processar o ficheiro.')
       }
     }
     reader.onerror = () => setParseError('Não foi possível ler o ficheiro.')
     reader.readAsText(file, 'utf-8')
-    // allow re-selecting the same file later
-    e.target.value = ''
   }
 
   const patch = (id: number, p: Partial<ReviewRow>) =>
@@ -162,15 +181,19 @@ export function ImportStatementModal({ open, onClose }: Props) {
       ) : rows.length === 0 ? (
         <div className="import-intro">
           <p className="muted" style={{ marginTop: 0 }}>
-            Exporta o extrato do teu banco em <strong>CSV</strong> ou <strong>OFX</strong> e
-            seleciona-o aqui. Cada linha é lida e classificada como receita (entrada) ou
-            despesa (saída) — podes rever e corrigir tudo antes de importar.
+            Seleciona o extrato do teu banco em <strong>PDF</strong>, <strong>CSV</strong> ou
+            <strong> OFX</strong>. Cada linha é lida e classificada como receita (entrada) ou
+            despesa (saída) — usamos o valor da <strong>transação</strong> (não o saldo) e
+            podes rever tudo antes de importar.
           </p>
-          <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-block' }}>
-            Escolher ficheiro…
+          <label
+            className="btn btn-primary"
+            style={{ cursor: parsing ? 'default' : 'pointer', display: 'inline-block', opacity: parsing ? 0.6 : 1 }}
+          >
+            {parsing ? 'A ler…' : 'Escolher ficheiro…'}
             <input
-              type="file" accept=".csv,.ofx,.txt,text/csv"
-              onChange={onFile} style={{ display: 'none' }}
+              type="file" accept=".pdf,.csv,.ofx,.txt,application/pdf,text/csv"
+              onChange={onFile} disabled={parsing} style={{ display: 'none' }}
             />
           </label>
           {parseError && <div className="form-error" style={{ marginTop: 12 }}>{parseError}</div>}

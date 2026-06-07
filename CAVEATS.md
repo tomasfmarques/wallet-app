@@ -996,6 +996,59 @@ variáveis** and **Despesas fixas / variáveis** — plus an e-Fatura-style
 
 ---
 
+## Phase 7E — PDF statement import (positional column parsing)
+
+Added PDF support to the statement importer. The hard part is distinguishing
+the **transaction amount** (Montante / Débito-Crédito) from the **running
+balance** (Saldo) — they're identical as numbers. Solved positionally.
+
+### Decisions
+
+- **`pdfjs-dist` for text-with-coordinates.** `frontend/src/lib/
+  pdfStatementParser.ts` reads every text fragment's `(x, y)`, clusters them
+  into rows by `y` (4px tolerance, which also re-joins a description and its
+  amounts when the bank splits them across a pixel), then detects the column
+  headers and reads the amount from the column under **Montante** (or
+  **Débito**/**Crédito**), **explicitly skipping the Saldo column** by x-distance.
+
+- **Two layouts handled from the header:** CTT-style single signed *Montante*
+  column, and BCP/Millennium-style *Débito*/*Crédito* pair (amount = crédito −
+  débito). Verified against two real statements (CTT: 88 txns, BCP: 4 txns) —
+  all picked the transaction amount, never the balance.
+
+- **Row gating kills page-furniture false positives.** Only rows *below* the
+  column header and *above* a `SALDO FINAL/DISPONÍVEL/CONTABILÍSTICO` footer
+  count, plus an amount sanity cap (|amount| ≤ 1,000,000) rejects stray figures
+  like the account number in a page header.
+
+- **Lazy-loaded + code-split.** pdf.js (~1.4 MB worker + ~110 KB gzip) is
+  reached only via `await import('@/lib/pdfStatementParser')` when the user
+  actually picks a `.pdf`. The main bundle is unchanged; CSV/OFX users never
+  download it. Parsing stays **client-side** — the PDF never leaves the browser.
+
+- **Date resolution.** Full `DD-MM-YYYY` dates (CTT) parse directly. Short
+  `M.DD`/`DD.MM` tokens (BCP) lack a year and are month/day-ambiguous, so they
+  resolve against the statement's year+month pulled from its period header.
+
+### Behavioural caveats
+
+- **Heuristic, not exact.** Column detection relies on header keywords
+  (`Montante`, `Débito`, `Crédito`, `Saldo`) and x-proximity. A bank whose PDF
+  uses different labels or a wildly different layout may parse partially — the
+  user reviews every row in the import table before confirming, and can fix
+  amounts/descriptions there.
+
+- **Wrapped multi-amount rows** (e.g. a foreign-currency line that splits the
+  charge across two physical lines) can occasionally mis-attribute one of the
+  amounts. Rare; visible and editable in review.
+
+- **Scanned/image PDFs won't work** — there's no OCR. Only PDFs with a real
+  text layer (all bank-generated statements) are supported.
+
+- **No new DB fields**, so export/import backup is unaffected by this phase.
+
+---
+
 ## Phase 8 — Production deployment readiness
 
 ### What's done in code (no more pending items from the original checklist)
