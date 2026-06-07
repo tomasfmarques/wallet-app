@@ -5,7 +5,7 @@ import { parseStatement, dupSignature, type ParsedTransaction } from '@/lib/stat
 import {
   inferCategory, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
-import { eur } from '@/lib/format'
+import { eur2 } from '@/lib/format'
 
 interface Props {
   open: boolean
@@ -267,7 +267,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
                         </select>
                       </td>
                       <td style={{ textAlign: 'right' }} className={r.kind === 'income' ? 'gain-positive' : 'gain-negative'}>
-                        {r.kind === 'income' ? '+' : '−'}{eur(r.amount)}
+                        {r.kind === 'income' ? '+' : '−'}{eur2(r.amount)}
                       </td>
                     </tr>
                   )

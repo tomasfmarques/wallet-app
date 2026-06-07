@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useQuotes, type Quote } from '@/hooks/useQuotes'
 import { eur2, pctSigned } from '@/lib/format'
+import { StockChartModal } from './StockChartModal'
 
 interface Props {
   /** Resolved watchlist (symbols + names). The Portfolio page resolves the
@@ -13,6 +15,7 @@ interface Props {
 export function Watchlist({ items, onAdd }: Props) {
   const symbols = items.map((w) => w.symbol)
   const { data, isLoading, error } = useQuotes(symbols)
+  const [charting, setCharting] = useState<{ symbol: string; name: string } | null>(null)
 
   if (items.length === 0) {
     return (
@@ -45,20 +48,29 @@ export function Watchlist({ items, onAdd }: Props) {
   for (const q of data?.quotes ?? []) quotesBySymbol.set(q.symbol, q)
 
   return (
-    <div className="trend-grid">
-      {items.map((w) => {
-        const q = quotesBySymbol.get(w.symbol)
-        return (
-          <TrendCard
-            key={w.symbol}
-            symbol={w.symbol}
-            name={w.name}
-            quote={q}
-            onAdd={() => q && onAdd({ ticker: w.symbol, name: w.name, currentPrice: q.current })}
-          />
-        )
-      })}
-    </div>
+    <>
+      <div className="trend-grid">
+        {items.map((w) => {
+          const q = quotesBySymbol.get(w.symbol)
+          return (
+            <TrendCard
+              key={w.symbol}
+              symbol={w.symbol}
+              name={w.name}
+              quote={q}
+              onOpenChart={() => setCharting({ symbol: w.symbol, name: w.name })}
+              onAdd={() => q && onAdd({ ticker: w.symbol, name: w.name, currentPrice: q.current })}
+            />
+          )
+        })}
+      </div>
+      <StockChartModal
+        open={!!charting}
+        onClose={() => setCharting(null)}
+        symbol={charting?.symbol ?? ''}
+        name={charting?.name ?? ''}
+      />
+    </>
   )
 }
 
@@ -66,15 +78,23 @@ interface CardProps {
   symbol: string
   name: string
   quote?: Quote
+  onOpenChart: () => void
   onAdd: () => void
 }
 
-function TrendCard({ symbol, name, quote, onAdd }: CardProps) {
+function TrendCard({ symbol, name, quote, onOpenChart, onAdd }: CardProps) {
   const positive = (quote?.percentChange ?? 0) >= 0
   // Coerce to boolean — quote.error is a string when present
   const unavailable = !quote || !!quote.error || !quote.current
   return (
-    <div className="trend-card">
+    <div
+      className="trend-card is-clickable"
+      onClick={onOpenChart}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChart() } }}
+      title="Ver evolução do preço"
+    >
       <div className="trend-header">
         <div>
           <div className="trend-symbol">{symbol}</div>
@@ -93,7 +113,7 @@ function TrendCard({ symbol, name, quote, onAdd }: CardProps) {
       <button
         type="button"
         className="btn btn-ghost btn-sm trend-add"
-        onClick={onAdd}
+        onClick={(e) => { e.stopPropagation(); onAdd() }}
         disabled={unavailable}
         aria-label={`Adicionar ${symbol} à carteira`}
       >
