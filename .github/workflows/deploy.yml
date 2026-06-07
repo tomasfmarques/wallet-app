@@ -1,0 +1,33 @@
+name: Deploy to Render
+
+# Render's native "Auto-Deploy: On Commit" only fires when the repo is linked
+# via Render's GitHub App (a push webhook). This service is linked by Git URL +
+# credentials instead, so there's no webhook. This workflow bridges that gap:
+# on every push to main it calls the Render Deploy Hook, which triggers a build.
+#
+# One-time setup (done by the repo owner):
+#   1. Render dashboard → service → Settings → Deploy → "Deploy Hook" → copy URL
+#   2. GitHub repo → Settings → Secrets and variables → Actions → New repository
+#      secret → name: RENDER_DEPLOY_HOOK, value: <the hook URL>
+# After that, every push to main auto-deploys. Until the secret is set, this
+# workflow simply skips (no failure).
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  trigger-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy via Deploy Hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK secret not set — skipping. See the setup note in this file."
+            exit 0
+          fi
+          echo "Triggering Render deploy…"
+          curl -fsS -X POST "$DEPLOY_HOOK"
+          echo "Deploy triggered."
