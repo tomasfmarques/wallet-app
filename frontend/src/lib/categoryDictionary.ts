@@ -13,6 +13,7 @@ export const INCOME_CATEGORIES = [
   'Investimentos',
   'Aluguer',
   'Subsídios',
+  'Transferências',
   'Outros',
 ] as const
 
@@ -31,6 +32,7 @@ export const EXPENSE_CATEGORIES = [
   'Compras',
   'Viagens',
   'Impostos',
+  'Transferências',
   'Outros',
 ] as const
 
@@ -41,6 +43,11 @@ const DICTIONARY: Record<string, string> = {
   'dividendos': 'Investimentos', 'juros': 'Investimentos', 'mais valias': 'Investimentos',
   'rendas': 'Aluguer', 'aluguer recebido': 'Aluguer', 'arrendamento': 'Aluguer',
   'subsidio': 'Subsídios', 'apoio': 'Subsídios',
+
+  // ── Transferências (in or out) ──────────────────────────
+  'transferencia': 'Transferências', 'transferencias': 'Transferências',
+  'mbway': 'Transferências', 'trf': 'Transferências',
+  'trf mbway': 'Transferências', 'trf inst': 'Transferências', 'anul trf': 'Transferências',
 
   // ── Habitação ───────────────────────────────────────────
   'renda': 'Habitação', 'hipoteca': 'Habitação', 'prestacao casa': 'Habitação',
