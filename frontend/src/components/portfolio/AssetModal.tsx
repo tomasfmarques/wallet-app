@@ -6,6 +6,9 @@ import { useAssetMetric, availableCAGRs } from '@/hooks/useQuotes'
 import { pctSigned } from '@/lib/format'
 import type { PortfolioAsset } from '@/types'
 
+// Round to 2 decimals so the edit form never shows 45.86789295199999.
+const round2 = (n: number) => Math.round(n * 100) / 100
+
 export interface AssetPreset {
   ticker: string
   name: string
@@ -49,8 +52,8 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
       setName(asset.name)
       setTicker(asset.ticker)
       setQty(String(asset.qty))
-      setInvested(String(asset.invested))
-      setValue(String(asset.value))
+      setInvested(String(round2(asset.invested)))
+      setValue(String(round2(asset.value)))
       setMonthly(String(asset.monthly))
       setExpectedReturn(String(asset.expectedReturn * 100))
     } else if (preset) {

@@ -52,6 +52,7 @@ export interface PortfolioAsset {
   value: number
   monthly: number
   expectedReturn: number
+  lastPriceEur?: number | null   // EUR/share at last refresh; drives value updates
 }
 
 export interface PortfolioFlow {

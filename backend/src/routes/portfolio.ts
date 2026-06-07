@@ -17,6 +17,9 @@ const PORTFOLIO_CCY = 'EUR'
 const router = Router()
 router.use(requireAuth)
 
+// Round to 2 decimals — keeps stored/displayed values clean (no 45.86789…).
+const round2 = (n: number) => Math.round(n * 100) / 100
+
 // ── Validation helpers ───────────────────────────────────────────
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
@@ -303,10 +306,16 @@ router.post('/assets/:id/refresh-value', async (req, res) => {
       })
       return
     }
-    const newValue = asset.qty * converted.price
+    // Move `value` by the market's price change since the last refresh, rather
+    // than recomputing qty*price (qty is often an unreliable placeholder, which
+    // made refresh wildly break the user-curated value). First refresh has no
+    // baseline → keep value as-is and just record the price.
+    const newValue = asset.lastPriceEur && asset.lastPriceEur > 0
+      ? round2(asset.value * (converted.price / asset.lastPriceEur))
+      : round2(asset.value)
     const updated = await prisma.portfolioAsset.update({
       where: { id },
-      data: { value: newValue },
+      data: { value: newValue, lastPriceEur: converted.price },
     })
     res.json({
       asset: updated,
@@ -315,6 +324,8 @@ router.post('/assets/:id/refresh-value', async (req, res) => {
       fxRate: converted.rate,
       currency: chart.currency,
       resolvedSymbol: chart.resolvedSymbol,
+      previousValue: asset.value,
+      newValue,
     })
   } catch (err) {
     console.error(`refresh-value failed:`, err)
@@ -342,10 +353,13 @@ router.post('/refresh-values', async (req, res) => {
           error: `No FX ${chart.currency}→${PORTFOLIO_CCY}`,
         }
       }
-      const newValue = asset.qty * converted.price
+      // Scale value by price movement (see single-refresh route for rationale).
+      const newValue = asset.lastPriceEur && asset.lastPriceEur > 0
+        ? round2(asset.value * (converted.price / asset.lastPriceEur))
+        : round2(asset.value)
       await prisma.portfolioAsset.update({
         where: { id: asset.id },
-        data: { value: newValue },
+        data: { value: newValue, lastPriceEur: converted.price },
       })
       return {
         id: asset.id,

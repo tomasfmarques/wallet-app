@@ -151,6 +151,10 @@ model PortfolioAsset {
   value          Float
   monthly        Float  @default(0) // monthly contribution (field `m`)
   expectedReturn Float  @default(0.07) @map("expected_return") // annual return % as fraction
+  // EUR price per share at the last value refresh. Lets "Atualizar valores"
+  // move `value` by the market's price change instead of recomputing qty*price
+  // (qty is often an unreliable placeholder). Null until first refresh.
+  lastPriceEur   Float? @map("last_price_eur")
 
   user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   flows PortfolioFlow[]

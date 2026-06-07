@@ -214,6 +214,7 @@ router.post('/', async (req, res) => {
                 value:    isNum(raw.value)    ? raw.value    : 0,
                 monthly:  isNum(raw.monthly)  ? raw.monthly  : 0,
                 expectedReturn: isNum(raw.expectedReturn) ? raw.expectedReturn : 0.07,
+                lastPriceEur: isNum(raw.lastPriceEur) ? raw.lastPriceEur : null,
               },
             })
 
