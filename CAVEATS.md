@@ -1211,6 +1211,22 @@ All of these are in `DEPLOY.md`.
 
 ---
 
+## Deploys — how they actually trigger
+
+- **Render's "Auto-Deploy: On Commit" is set but does NOT fire.** The service
+  is linked to GitHub by **Git URL + credentials**, not Render's **GitHub App**,
+  so Render receives no push webhook. Every deploy in the history is "Manual"
+  for this reason. Confirmed empirically (pushes never produced a build).
+- **Two ways to get real push-to-deploy:**
+  1. **GitHub Actions → Deploy Hook** (set up): `.github/workflows/deploy.yml`
+     POSTs the Render Deploy Hook on every push to `main`. Needs a one-time repo
+     secret `RENDER_DEPLOY_HOOK` (value = Settings → Deploy → Deploy Hook URL).
+     Skips harmlessly until the secret exists.
+  2. **Reconnect via Render's GitHub App** (Settings → Build → Source) — native
+     webhook, makes "On Commit" work, and the Actions workflow becomes redundant.
+- Until one of those is active, deploys must be triggered manually
+  (Manual Deploy → Deploy latest commit) or by calling the Deploy Hook.
+
 ## Production hosting checklist
 
 Things that are fine for local dev but need attention before exposing the app
