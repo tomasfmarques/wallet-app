@@ -904,6 +904,16 @@ body {
   padding: 12px 18px;
   border-top: 1px solid var(--border-s);
 }
+.hold-row.is-clickable { cursor: pointer; transition: background 0.12s; }
+.hold-row.is-clickable:hover { background: var(--surface-2); }
+.hold-row.is-clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hold-chart-hint {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.hold-row.is-clickable:hover .hold-chart-hint { opacity: 0.7; }
 .hold-badge {
   width: 36px;
   height: 36px;
@@ -942,6 +952,64 @@ body {
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+/* ── Per-stock progression chart modal ──────────────────────── */
+.stock-chart-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.stock-chart-price {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stock-chart-change {
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stock-chart-canvas {
+  position: relative;
+  height: 300px;
+}
+.stock-chart-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+}
+.stock-chart-ranges {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.stock-range-btn {
+  flex: 1;
+  min-width: 48px;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.stock-range-btn:hover { border-color: var(--accent); color: var(--text); }
+.stock-range-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
 }
 
 /* Monthly contributions table */

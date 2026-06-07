@@ -114,6 +114,74 @@ export async function getYahooChart(rawSymbol: string): Promise<YahooChart | nul
   return null
 }
 
+// ── Price history (for the per-stock chart) ──────────────────────
+// Returns a timestamped price series for a symbol over a chosen range, so the
+// frontend can draw a Trading212-style progression chart. Reuses getYahooChart
+// for symbol resolution (suffix probing), then fetches the requested window.
+
+export interface YahooHistory {
+  resolvedSymbol: string
+  currency: string
+  currentPrice: number
+  points: { t: number; price: number }[]  // t = unix seconds, oldest → newest
+}
+
+// rangeKey → Yahoo (range, interval). Coarser interval for longer windows so
+// the payload stays small and the line stays readable.
+const RANGE_MAP: Record<string, { range: string; interval: string }> = {
+  '1mo': { range: '1mo', interval: '1d' },
+  '6mo': { range: '6mo', interval: '1d' },
+  '1y':  { range: '1y',  interval: '1d' },
+  '5y':  { range: '5y',  interval: '1wk' },
+  'max': { range: 'max', interval: '1mo' },
+}
+
+const histCache = new Map<string, { data: YahooHistory | null; expiry: number }>()
+const HIST_TTL_MS = 15 * 60 * 1000 // 15 min
+
+async function fetchHistory(symbol: string, range: string, interval: string): Promise<YahooHistory | null> {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`
+  let res: Response
+  try { res = await fetch(url, { headers: { 'User-Agent': UA } }) } catch { return null }
+  if (!res.ok) return null
+
+  let body: YahooChartResponse
+  try { body = await res.json() as YahooChartResponse } catch { return null }
+
+  const r = body.chart?.result?.[0]
+  if (!r || !r.meta || typeof r.meta.regularMarketPrice !== 'number' || !r.timestamp) return null
+
+  const series = r.indicators?.adjclose?.[0]?.adjclose ?? r.indicators?.quote?.[0]?.close ?? []
+  const points: { t: number; price: number }[] = []
+  for (let i = 0; i < r.timestamp.length; i++) {
+    const p = series[i]
+    if (typeof p === 'number' && Number.isFinite(p) && p > 0) points.push({ t: r.timestamp[i], price: p })
+  }
+  if (points.length < 2) return null
+
+  return {
+    resolvedSymbol: r.meta.symbol ?? symbol,
+    currency: r.meta.currency ?? 'USD',
+    currentPrice: r.meta.regularMarketPrice,
+    points,
+  }
+}
+
+export async function getYahooHistory(rawSymbol: string, rangeKey: string): Promise<YahooHistory | null> {
+  const mapped = RANGE_MAP[rangeKey] ?? RANGE_MAP['1y']
+  // Resolve the symbol once (this also warms getYahooChart's cache).
+  const base = await getYahooChart(rawSymbol)
+  if (!base) return null
+
+  const cacheKey = `${base.resolvedSymbol}:${rangeKey}`
+  const hit = histCache.get(cacheKey)
+  if (hit && hit.expiry > Date.now()) return hit.data
+
+  const data = await fetchHistory(base.resolvedSymbol, mapped.range, mapped.interval)
+  histCache.set(cacheKey, { data, expiry: Date.now() + HIST_TTL_MS })
+  return data
+}
+
 // ── CAGR derivation ──────────────────────────────────────────────
 export interface CAGRReport {
   symbol: string           // original input

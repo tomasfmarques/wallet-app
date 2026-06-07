@@ -4,7 +4,7 @@ import {
   getQuoteCached, getMetricCached,
   type PublicQuote, type PublicMetric,
 } from '../lib/quotesCache'
-import { getYahooChart, computeCAGRs } from '../lib/yahooFinance'
+import { getYahooChart, computeCAGRs, getYahooHistory } from '../lib/yahooFinance'
 
 // Pluck a numeric metric, return null if missing/non-numeric
 function num(m: Record<string, unknown> | undefined, key: string): number | null {
@@ -146,6 +146,30 @@ router.get('/cagr', async (req, res) => {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error(`CAGR fetch failed for ${symbol}: ${msg}`)
     res.status(502).json({ error: 'Failed to fetch historical data' })
+  }
+})
+
+// ── GET /api/quotes/history?symbol=X&range=1y ─────────────────────
+// Timestamped price series (Yahoo Finance) for the per-stock progression
+// chart. range ∈ 1mo | 6mo | 1y | 5y | max. Cached 15 min per symbol+range.
+router.get('/history', async (req, res) => {
+  const symbol = (req.query.symbol as string | undefined)?.toUpperCase()
+  const range = (req.query.range as string | undefined) ?? '1y'
+  if (!symbol) {
+    res.status(400).json({ error: 'symbol query param required' })
+    return
+  }
+  try {
+    const h = await getYahooHistory(symbol, range)
+    if (!h) {
+      res.json({ symbol, resolvedSymbol: null, currency: null, currentPrice: null, points: [], range, error: 'No data' })
+      return
+    }
+    res.json({ symbol, range, ...h })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    console.error(`History fetch failed for ${symbol}: ${msg}`)
+    res.status(502).json({ error: 'Failed to fetch history' })
   }
 })
 

@@ -664,6 +664,47 @@ whenever a new caveat is introduced. Each entry has:
 
 ---
 
+## Phase 6C — Per-stock price chart (Trading212-style)
+
+Clicking an asset row in "A minha carteira" now opens a modal with the stock's
+real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
+
+### Decisions
+
+- **Reuses the Yahoo Finance proxy.** New `getYahooHistory(symbol, range)` in
+  `backend/src/lib/yahooFinance.ts` resolves the symbol via the existing
+  `getYahooChart` (suffix probing + cache), then fetches the requested window.
+  Endpoint: `GET /api/quotes/history?symbol=X&range=1y` → `{ resolvedSymbol,
+  currency, currentPrice, points: [{ t, price }] }`. Cached 15 min per
+  symbol+range. range → (Yahoo range, interval): 1mo/1d, 6mo/1d, 1y/1d,
+  5y/1wk, max/1mo.
+
+- **Chart in native currency, not EUR.** The progression shows the stock's
+  quote currency (USD, etc.) from Yahoo — distinct from the portfolio's
+  EUR-converted `value`. Uses `Intl.NumberFormat`, falling back to a plain
+  number + code for subunit currencies Intl rejects (GBp, ZAc).
+
+- **`StockChartModal`** (react-chartjs-2 Line, gradient fill, green/red by
+  period change). The whole asset row is clickable (`role=button`); the
+  action buttons stop propagation so Reforçar/Editar/Remover still work.
+
+- **Adjusted closes** (split/dividend) are used for the series, consistent
+  with the CAGR feature.
+
+### Behavioural caveats
+
+- **Not real-time.** 15-min cache; this is a progression chart, not a trading
+  ticker. Intraday (1D) ranges aren't offered — Yahoo's free intraday data is
+  flaky and the budget app doesn't need tick-level detail.
+
+- **Same Yahoo-is-unofficial risk** as Phase 6 (endpoint could change/rate-
+  limit). Symbols that don't resolve show a "sem dados" message.
+
+- **Only portfolio rows are wired** so far. The watchlist trend cards could
+  open the same modal trivially (the modal just takes a symbol) — not done yet.
+
+---
+
 ## Phase 7A — Budget module
 
 ### Decisions

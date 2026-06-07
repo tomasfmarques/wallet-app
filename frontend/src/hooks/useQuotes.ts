@@ -107,6 +107,33 @@ export function bestHistoricalReturn(m?: AssetMetric | null): { value: number; l
   return opts.length > 0 ? { value: opts[0].value, label: opts[0].longLabel } : null
 }
 
+// ── Price history (per-stock progression chart) ──────────────────
+export type HistoryRange = '1mo' | '6mo' | '1y' | '5y' | 'max'
+
+export interface StockHistory {
+  symbol: string
+  range: string
+  resolvedSymbol: string | null
+  currency: string | null
+  currentPrice: number | null
+  points: { t: number; price: number }[]
+  error?: string
+}
+
+export function useStockHistory(symbol: string | undefined, range: HistoryRange) {
+  const upper = symbol?.trim().toUpperCase()
+  return useQuery<StockHistory, ApiError>(
+    ['history', upper, range],
+    () => api.get<StockHistory>(`/api/quotes/history?symbol=${encodeURIComponent(upper!)}&range=${range}`),
+    {
+      enabled: !!upper && upper.length >= 1,
+      staleTime: 15 * 60 * 1000, // matches backend cache
+      retry: 0,
+      keepPreviousData: true,    // smooth range switches
+    },
+  )
+}
+
 export function useQuotes(symbols: string[]) {
   const key = symbols.join(',').toUpperCase()
   return useQuery<QuotesResponse, ApiError>(

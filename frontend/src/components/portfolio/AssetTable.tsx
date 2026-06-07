@@ -6,6 +6,7 @@ import {
 } from '@/hooks/usePortfolio'
 import { AssetModal } from './AssetModal'
 import { ReforcarModal } from './ReforcarModal'
+import { StockChartModal } from './StockChartModal'
 import type { PortfolioAsset } from '@/types'
 
 interface Props {
@@ -19,6 +20,7 @@ export function AssetTable({ assets }: Props) {
   const refreshAll = useRefreshAllValues()
   const [editing, setEditing] = useState<PortfolioAsset | null>(null)
   const [reforcando, setReforcando] = useState<PortfolioAsset | null>(null)
+  const [charting, setCharting] = useState<PortfolioAsset | null>(null)
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
 
   const handleRefreshAll = async () => {
@@ -105,6 +107,7 @@ export function AssetTable({ assets }: Props) {
               key={a.id}
               asset={a}
               colour={ALLOC_COLOURS[i % ALLOC_COLOURS.length]}
+              onOpenChart={() => setCharting(a)}
               onEdit={() => setEditing(a)}
               onReforcar={() => setReforcando(a)}
               onDelete={() => {
@@ -114,8 +117,8 @@ export function AssetTable({ assets }: Props) {
           ))}
         </ul>
         <p className="muted asset-table-footer">
-          Dica: clica em <strong>↻ Atualizar valores</strong> ou no <strong>↻</strong> de cada linha para
-          buscar o preço atual de mercado (Yahoo Finance).
+          Dica: clica numa linha para ver a <strong>evolução do preço</strong>, ou em
+          <strong> ↻ Atualizar valores</strong> para buscar a cotação atual (Yahoo Finance).
         </p>
       </div>
 
@@ -129,6 +132,12 @@ export function AssetTable({ assets }: Props) {
         onClose={() => setReforcando(null)}
         asset={reforcando}
       />
+      <StockChartModal
+        open={!!charting}
+        onClose={() => setCharting(null)}
+        symbol={charting?.ticker ?? ''}
+        name={charting?.name ?? ''}
+      />
     </>
   )
 }
@@ -138,12 +147,13 @@ const ALLOC_COLOURS = ['#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706', '#
 interface RowProps {
   asset: AssetWithFlows
   colour: string
+  onOpenChart: () => void
   onEdit: () => void
   onReforcar: () => void
   onDelete: () => void
 }
 
-function HoldRow({ asset, colour, onEdit, onReforcar, onDelete }: RowProps) {
+function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: RowProps) {
   const refresh = useRefreshAssetValue()
   const [refreshErr, setRefreshErr] = useState<string | null>(null)
   const delta = asset.value - asset.invested
@@ -161,12 +171,19 @@ function HoldRow({ asset, colour, onEdit, onReforcar, onDelete }: RowProps) {
   }
 
   return (
-    <li className="hold-row">
+    <li
+      className="hold-row is-clickable"
+      onClick={onOpenChart}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChart() } }}
+      title="Ver evolução do preço"
+    >
       <div className="hold-badge" style={{ background: colour }} aria-hidden>
         {asset.ticker.slice(0, 2)}
       </div>
       <div className="hold-main">
-        <div className="hold-name">{asset.name}</div>
+        <div className="hold-name">{asset.name}<span className="hold-chart-hint" aria-hidden>📈</span></div>
         <div className="hold-sub">
           {asset.ticker} · {asset.qty.toLocaleString('pt-PT', { maximumFractionDigits: 4 })} un.
           {refreshErr && <span className="gain-negative"> · {refreshErr}</span>}
@@ -178,7 +195,7 @@ function HoldRow({ asset, colour, onEdit, onReforcar, onDelete }: RowProps) {
           {eurSigned(delta)} ({pctSigned(deltaPct)})
         </div>
       </div>
-      <div className="hold-actions">
+      <div className="hold-actions" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           className="btn btn-ghost btn-sm hold-refresh"
