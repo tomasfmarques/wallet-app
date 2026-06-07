@@ -43,6 +43,7 @@ model Income {
   amount    Float
   category  String?
   active    Boolean  @default(true)
+  dayOfMonth Int?    @map("day_of_month")
   startYm   String?  @map("start_ym")
   endYm     String?  @map("end_ym")
   notes     String?

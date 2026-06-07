@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 
@@ -54,6 +55,24 @@ function asOptionalDay(v: unknown, errors: Record<string, string>): number | nul
     return null
   }
   return n
+}
+
+// ── Duplicate signature ──────────────────────────────────────────
+// Stable fingerprint for an imported transaction, used to skip re-imports of
+// the same statement. MUST stay byte-for-byte identical to the frontend copy
+// in `frontend/src/lib/statementParser.ts` (`dupSignature`). Keyed on kind +
+// month + day + amount (2dp) + normalized name, so two same-amount
+// transactions on different days are kept distinct.
+function dupSignature(
+  kind: 'income' | 'expense',
+  name: string,
+  amount: number,
+  ym: string,
+  day: number | null,
+): string {
+  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
+  const dd = day != null ? String(day).padStart(2, '0') : '00'
+  return `${kind}|${ym}|${dd}|${amount.toFixed(2)}|${n}`
 }
 
 // ── KPI helper ───────────────────────────────────────────────────
@@ -158,6 +177,117 @@ router.delete('/incomes/:id', async (req, res) => {
     res.json({ ok: true })
   } catch (err) {
     console.error('DELETE /incomes/:id failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── Statement import ────────────────────────────────────────────
+// Bulk-insert transactions parsed from a bank statement (CSV/OFX) on the
+// client. The frontend sends an array of already-reviewed rows; each row is
+// classified as income or expense. Invalid rows are skipped (not fatal) and
+// reported back in the summary so the user knows what didn't make it.
+//
+// Duplicate guard: re-importing the same statement is a common mistake, so we
+// fingerprint every month-scoped row the user already has and skip incoming
+// rows whose signature matches. The frontend pre-flags these too, but the
+// backend is authoritative (catches re-imports from another device/session).
+//
+// NOTE (semantics): the budget model holds *monthly* recurring amounts. An
+// imported statement line is a one-off actual, so we scope it to a single
+// month via startYm = endYm = the transaction's month. That keeps the
+// timeline correct (it won't recur forever) but does inflate that month's
+// KPI totals — see CAVEATS for the planned vs. actuals follow-up.
+router.post('/import', async (req, res) => {
+  const items = req.body?.items
+  if (!Array.isArray(items)) {
+    res.status(400).json({ error: 'items deve ser um array' }); return
+  }
+  if (items.length === 0) {
+    res.status(400).json({ error: 'Nenhuma transação para importar' }); return
+  }
+  if (items.length > 2000) {
+    res.status(400).json({ error: 'Demasiadas transações (máx. 2000 por importação)' }); return
+  }
+
+  const userId = req.session.userId!
+
+  try {
+    // Build the set of signatures the user already has. Only month-scoped rows
+    // (startYm === endYm) are considered — those are the one-off imported
+    // lines; genuine recurring budget items must never block an import.
+    const sel = { name: true, amount: true, dayOfMonth: true, startYm: true, endYm: true } as const
+    const [existingIncomes, existingExpenses] = await Promise.all([
+      prisma.income.findMany({ where: { userId }, select: sel }),
+      prisma.expense.findMany({ where: { userId }, select: sel }),
+    ])
+    const seen = new Set<string>()
+    for (const r of existingIncomes) {
+      if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('income', r.name, r.amount, r.startYm, r.dayOfMonth))
+    }
+    for (const r of existingExpenses) {
+      if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('expense', r.name, r.amount, r.startYm, r.dayOfMonth))
+    }
+
+    const incomeRows: Prisma.IncomeCreateManyInput[] = []
+    const expenseRows: Prisma.ExpenseCreateManyInput[] = []
+    let skipped = 0
+    let duplicates = 0
+
+    for (const raw of items) {
+      if (typeof raw !== 'object' || raw === null) { skipped++; continue }
+      const item = raw as Record<string, unknown>
+      const errs: Record<string, string> = {}
+
+      const name = asName(item.name, 'name', errs)
+      const amount = asPositiveNumber(item.amount, 'amount', errs)
+      const category = asOptionalString(item.category, 40)
+      const dayOfMonth = asOptionalDay(item.dayOfMonth, errs)
+      const startYm = asOptionalYm(item.startYm, 'startYm', errs)
+      const endYm = asOptionalYm(item.endYm, 'endYm', errs)
+      const notes = asOptionalString(item.notes, 500)
+
+      if (Object.keys(errs).length > 0) { skipped++; continue }
+
+      const kind = item.kind === 'income' ? 'income' : item.kind === 'expense' ? 'expense' : null
+      if (!kind) { skipped++; continue }
+
+      // Skip if this month-scoped line already exists. Also dedupes against
+      // rows added earlier in this same batch (e.g. an accidentally doubled
+      // file). Lines without a month can't be fingerprinted — always insert.
+      if (startYm) {
+        const sig = dupSignature(kind, name, amount, startYm, dayOfMonth)
+        if (seen.has(sig)) { duplicates++; continue }
+        seen.add(sig)
+      }
+
+      if (kind === 'income') {
+        incomeRows.push({ userId, name, amount, category, dayOfMonth, startYm, endYm, notes, active: true })
+      } else {
+        const type = item.type === 'fixed' ? 'fixed' : 'variable'
+        expenseRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true })
+      }
+    }
+
+    if (incomeRows.length === 0 && expenseRows.length === 0) {
+      res.status(400).json({
+        error: duplicates > 0
+          ? 'Todas as transações já tinham sido importadas (duplicadas).'
+          : 'Nenhuma transação válida para importar',
+        summary: { incomes: 0, expenses: 0, skipped, duplicates },
+      })
+      return
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (incomeRows.length > 0) await tx.income.createMany({ data: incomeRows })
+      if (expenseRows.length > 0) await tx.expense.createMany({ data: expenseRows })
+    })
+    res.status(201).json({
+      ok: true,
+      summary: { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates },
+    })
+  } catch (err) {
+    console.error('POST /budget/import failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

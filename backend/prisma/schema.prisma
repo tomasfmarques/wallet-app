@@ -41,6 +41,7 @@ model Income {
   amount    Float                           // EUR per month
   category  String?                         // free-text bucket
   active    Boolean  @default(true)
+  dayOfMonth Int?    @map("day_of_month")    // 1-31, set on statement import
   startYm   String?  @map("start_ym")       // "AAAA-MM" — when it started
   endYm     String?  @map("end_ym")         // "AAAA-MM" — null = ongoing
   notes     String?

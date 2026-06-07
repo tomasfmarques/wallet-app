@@ -82,11 +82,11 @@ export function ModuleSummary({
         )}
       </Link>
 
-      {/* ── Orçamento ───────────────────────────────────────── */}
+      {/* ── Saldo ───────────────────────────────────────────── */}
       <Link to="/budget" className="module-card">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>💰</span>
-          <span className="module-card-title">Orçamento</span>
+          <span className="module-card-title">Saldo</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         {budgetKpis && (budgetKpis.incomeTotal > 0 || budgetKpis.expensesTotal > 0) ? (

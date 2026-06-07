@@ -40,6 +40,24 @@ export interface ExpenseInput {
   notes?: string | null
 }
 
+// One reviewed statement line, ready to be inserted as income or expense.
+export interface ImportItem {
+  kind: 'income' | 'expense'
+  name: string
+  amount: number
+  category?: string | null
+  type?: ExpenseType        // expenses only; defaults to 'variable' server-side
+  dayOfMonth?: number | null
+  startYm?: string | null
+  endYm?: string | null
+  notes?: string | null
+}
+
+export interface ImportResult {
+  ok: true
+  summary: { incomes: number; expenses: number; skipped: number; duplicates: number }
+}
+
 export const BUDGET_KEY = ['budget'] as const
 
 export function useBudget() {
@@ -72,6 +90,15 @@ export function useDeleteIncome() {
   const qc = useQueryClient()
   return useMutation<{ ok: true }, ApiError, string>(
     (id) => api.delete<{ ok: true }>(`/api/budget/incomes/${id}`),
+    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+  )
+}
+
+// Bulk import from a parsed bank statement
+export function useImportBudget() {
+  const qc = useQueryClient()
+  return useMutation<ImportResult, ApiError, ImportItem[]>(
+    (items) => api.post<ImportResult>('/api/budget/import', { items }),
     { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
   )
 }

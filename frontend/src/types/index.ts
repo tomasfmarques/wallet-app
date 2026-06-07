@@ -75,6 +75,7 @@ export interface Income {
   amount: number
   category: string | null
   active: boolean
+  dayOfMonth: number | null  // set on statement import; used for dedup
   startYm: string | null
   endYm: string | null
   notes: string | null

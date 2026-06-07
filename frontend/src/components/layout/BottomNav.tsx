@@ -60,7 +60,7 @@ const items: NavItem[] = [
   },
   {
     to: '/budget',
-    label: 'Orçamento',
+    label: 'Saldo',
     icon: (
       <svg {...COMMON}>
         <rect x="3" y="6" width="18" height="14" rx="2" />

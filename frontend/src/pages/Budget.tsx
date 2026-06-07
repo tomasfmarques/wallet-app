@@ -6,6 +6,7 @@ import { ExpenseModal } from '@/components/budget/ExpenseModal'
 import { CategoryDonut } from '@/components/budget/CategoryDonut'
 import { BudgetTimeline } from '@/components/budget/BudgetTimeline'
 import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
+import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { eur } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -19,11 +20,12 @@ export function Budget() {
   const [tab, setTab] = useState<Tab>('tables')
   const [incomeModal, setIncomeModal] = useState<{ open: boolean; income?: Income }>({ open: false })
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense }>({ open: false, type: 'fixed' })
+  const [importOpen, setImportOpen] = useState(false)
 
   if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
   if (error) return (
     <div className="page-stub">
-      <h1>Orçamento</h1>
+      <h1>Saldo</h1>
       <div className="form-error">Erro: {error.message}</div>
     </div>
   )
@@ -37,8 +39,13 @@ export function Budget() {
     <div className="budget-page">
       <header className="page-header">
         <div>
-          <h1>Orçamento</h1>
+          <h1>Saldo</h1>
           <p className="muted">As tuas receitas e despesas planeadas, mês a mês.</p>
+        </div>
+        <div className="page-header-actions">
+          <button type="button" className="btn btn-primary" onClick={() => setImportOpen(true)}>
+            Importar extrato
+          </button>
         </div>
       </header>
 
@@ -164,6 +171,7 @@ export function Budget() {
         type={expenseModal.type}
         expense={expenseModal.expense}
       />
+      <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   )
 }

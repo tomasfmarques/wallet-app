@@ -1541,6 +1541,97 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* ── Import statement modal ───────────────────────────────── */
+.import-intro p { font-size: 13.5px; line-height: 1.5; }
+.import-intro .muted { margin-top: 14px; }
+
+.import-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.import-table-wrap {
+  max-height: 48vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.import-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.import-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.import-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--surface-2);
+  vertical-align: middle;
+}
+.import-table tr.is-excluded { opacity: 0.4; }
+.import-table .import-name {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+}
+.import-table .import-ym {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+.import-table select {
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+}
+.import-summary { padding: 10px 2px; font-size: 12.5px; }
+.import-done p { font-size: 14px; line-height: 1.5; }
+.import-dup-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  border-radius: var(--r);
+  padding: 7px 11px;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+}
+.import-dup-pill {
+  font-size: 10px;
+  font-weight: 600;
+  background: #FEF3C7;
+  color: #92400E;
+  padding: 1px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
 /* ── Watchlist trend cards ──────────────────────────────────── */
 /* Fixed 4-column grid on desktop — 8 tickers fill exactly 2 rows. */
 .trend-grid {

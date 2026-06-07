@@ -757,8 +757,7 @@ whenever a new caveat is introduced. Each entry has:
 
 ### Still deferred (Phase 7C)
 
-- **CSV import from bank statements** — map real transactions to actual
-  spending and compare against planned amounts.
+- ~~**CSV import from bank statements**~~ — done in Phase 7C (CSV **and** OFX).
 - **Actual vs. budget overlays** on the timeline — bands showing variance.
 - **Non-monthly cadences** (annual, weekly, biweekly) for incomes/expenses.
 
@@ -824,6 +823,119 @@ Brought categories back, but smarter:
 - **Auto-suggestions don't persist** by default — they only fill the form
   field. The user must save the entry for the category to land in the DB.
   This is intentional: typing the name shouldn't write to the server.
+
+---
+
+## Phase 7C — Bank statement import (CSV / OFX)
+
+> **This is "Option B".** The user's real goal is a live read of their bank
+> account. The direct route — **"Option A" (GoCardless / Nordigen Bank Account
+> Data API, free PSD2 tier, ~2500 EU banks incl. all major PT ones)** — remains
+> the recommended end state and is **still TODO**. Option B (manual statement
+> upload) is the no-API-keys fallback we built first. When Option A lands, it
+> should feed the *same* `POST /api/budget/import` pipeline, just sourced from
+> the API instead of a file. **Keep reminding the user about Option A.**
+
+### What was built
+
+- **`POST /api/budget/import`** (in `backend/src/routes/budget.ts`) — accepts
+  `{ items: ImportItem[] }`, each item `{ kind: 'income'|'expense', name,
+  amount, category?, type?, dayOfMonth?, startYm?, endYm?, notes? }`. Validates
+  with the existing budget helpers, **skips invalid rows** (not fatal) and
+  reports `summary: { incomes, expenses, skipped }`. Inserts via
+  `createMany` inside a `$transaction`. Caps at 2000 rows/request.
+
+- **`frontend/src/lib/statementParser.ts`** — pure, dependency-free parser.
+  - **CSV**: auto-detects delimiter (`;` / tab / `,`), parses quoted fields,
+    finds the header row by keyword, maps date/description/amount columns
+    (handles separate Débito/Crédito columns → signed amount).
+  - **OFX**: extracts `<STMTTRN>` blocks, reads `TRNAMT` / `DTPOSTED` /
+    `NAME` + `MEMO`.
+  - **Number parsing** handles European `1.234,56`, US `1234.56`, `(45,00)`
+    parentheses-negatives, currency suffixes, NBSP thousands.
+  - **Date parsing** handles `DD-MM-YYYY` (PT default), `YYYY-MM-DD`,
+    `DD/MM/YY`, OFX `YYYYMMDD`.
+
+- **`frontend/src/components/budget/ImportStatementModal.tsx`** — file picker
+  → review table. Each row: include checkbox, editable name, kind toggle
+  (Receita/Despesa, defaulted by amount sign), category select
+  (auto-inferred via `inferCategory`), signed amount. "Importar N" posts the
+  selected rows. File is read **client-side** (FileReader) — nothing leaves
+  the browser until the user confirms.
+
+- **`useImportBudget()`** hook + **"Importar extrato"** button in the Saldo
+  page header.
+
+### Decisions
+
+- **Each statement line → its own income/expense row, scoped to one month.**
+  We set `startYm = endYm = the transaction's month` so the timeline treats it
+  as a one-off (it won't recur forever). Imported expenses default to
+  `type: 'variable'` (actual spend).
+
+- **Auto-classification by sign**: positive amount = income (credit),
+  negative = expense (debit). The user can flip any row in the review table.
+
+- **Category auto-inference reuses the existing dictionary** — Continente →
+  Alimentação, Netflix → Subscrições, Uber Eats → Restauração, Salário →
+  Salário, etc. Works well on real PT statement descriptions.
+
+### Behavioural caveats
+
+- **Planned-vs-actuals tension (important).** The budget model holds *monthly
+  recurring* amounts; statement lines are *one-off actuals*. Importing a
+  month of transactions inflates that month's KPI totals because `summarize()`
+  sums all active rows regardless of month. For now imported lines are
+  month-scoped so the *timeline* stays correct, but the top KPI strip mixes
+  planned + actual. The clean fix is a separate `Transaction`/actuals table
+  with an "actual vs. budget" overlay — flagged as the natural follow-up
+  (and the right home for Option A's API-sourced data too).
+
+- **Duplicate detection (done).** Each imported line is fingerprinted as
+  `kind | ym | day | amount(2dp) | normalized-name` (`dupSignature`, kept
+  identical in `frontend/src/lib/statementParser.ts` and
+  `backend/src/routes/budget.ts`). On import the backend loads the user's
+  existing **month-scoped** rows (startYm === endYm — i.e. prior imports,
+  never genuine recurring items), builds a signature set, and skips matches,
+  reporting a `duplicates` count. It also dedupes within the same batch. The
+  modal pre-flags likely dupes using the cached budget data and unticks them
+  by default, so re-importing the same statement is a safe no-op. Name
+  matching is accent- and whitespace-insensitive.
+
+  - **`dayOfMonth` added to the `Income` model** (it already existed on
+    `Expense`) so the day survives in the DB and cross-import dedup stays
+    day-accurate for income too. Schema change applied to both
+    `schema.prisma` and `schema.prod.prisma`; dev DB updated via `prisma db
+    push`. **Prod note:** `deploy:prep` runs `db push` on deploy, so the
+    Postgres `incomes.day_of_month` column is added automatically — no manual
+    migration needed.
+  - **Residual limitation:** two identical transactions on the *same day*
+    with the same amount and description still collapse to one signature
+    (genuinely indistinguishable from a re-import). Acceptable for budgeting.
+
+- **Encoding is read as UTF-8.** Some PT banks export CSV as
+  Windows-1252/Latin-1, which can garble accented characters. The text is
+  editable in the review table, but a future polish could detect/convert
+  encodings (or let the user pick).
+
+- **Long descriptions are truncated to 80 chars** (the `name` column limit).
+  Nothing is stored in `notes` currently — could preserve the full original
+  there later.
+
+- **CSV format variety.** The parser targets the common PT layouts (CGD, BCP,
+  Novo Banco, Millennium, ActivoBank). An unusual export with no recognizable
+  header falls back to a positional guess (first col = date, last = amount);
+  the user fixes anything wrong in the review table before importing.
+
+### Still TODO (the real goal)
+
+- **Option A — GoCardless Bank Account Data API.** Direct, live, no manual
+  export. Free PSD2 tier. Flow: user picks bank → OAuth → store
+  `requisition_id` per user → backend pulls `/transactions` → feed the same
+  import pipeline. PSD2 consent expires every 90 days (re-auth needed).
+  **This is the thing the user actually wants — keep surfacing it.**
+- ~~**Duplicate detection** on re-import.~~ — done (see caveat above).
+- **Actual-vs-budget overlay** so imported actuals don't distort planned KPIs.
 
 ---
 
