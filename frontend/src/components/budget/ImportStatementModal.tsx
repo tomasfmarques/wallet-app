@@ -54,7 +54,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
   const [filename, setFilename] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ incomes: number; expenses: number; skipped: number; duplicates: number } | null>(null)
+  const [done, setDone] = useState<{ incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number } | null>(null)
 
   // Signatures of month-scoped rows the user already has, so re-importing the
   // same statement flags the existing lines instead of duplicating them.
@@ -168,10 +168,15 @@ export function ImportStatementModal({ open, onClose }: Props) {
             {done.duplicates > 0 && <> {done.duplicates} duplicada(s) ignorada(s).</>}
             {done.skipped > 0 && <> {done.skipped} linha(s) inválida(s) ignorada(s).</>}
           </p>
+          {done.autoClassified > 0 && (
+            <p className="muted" style={{ fontSize: 13 }}>
+              ✨ {done.autoClassified} classificada(s) automaticamente por regras aprendidas.
+            </p>
+          )}
           {(done.incomes > 0 || done.expenses > 0) && (
             <p className="muted" style={{ fontSize: 13 }}>
-              As linhas ficam em <strong>Por classificar</strong> — escolhe <b>Fixa</b> ou
-              <b> Variável</b> em cada uma e movem-se para a tabela certa.
+              As restantes ficam em <strong>Por classificar</strong> — escolhe <b>Fixa</b> ou
+              <b> Variável</b> e a app aprende para as próximas.
             </p>
           )}
           <div className="form-actions">

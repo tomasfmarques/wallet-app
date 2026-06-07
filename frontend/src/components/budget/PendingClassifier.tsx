@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUpdateIncome, useUpdateExpense } from '@/hooks/useBudget'
+import { useClassifyPending } from '@/hooks/useBudget'
 import { eur } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -27,7 +27,7 @@ export function PendingClassifier({ pendingIncomes, pendingExpenses }: Props) {
         <span className="pending-icon" aria-hidden>📥</span>
         <div className="pending-head-text">
           <strong>{total} {total === 1 ? 'linha por classificar' : 'linhas por classificar'}</strong>
-          <span className="muted"> · escolhe <b>Fixa</b> ou <b>Variável</b> e a linha move-se para a tabela certa.</span>
+          <span className="muted"> · escolhe <b>Fixa</b> ou <b>Variável</b>. A app aprende o comércio e aplica às mesmas (agora e em futuras importações).</span>
         </div>
       </div>
       <ul className="pending-list">
@@ -40,15 +40,14 @@ export function PendingClassifier({ pendingIncomes, pendingExpenses }: Props) {
 }
 
 function PendingRow({ kind, item }: { kind: 'income' | 'expense'; item: Income | Expense }) {
-  const updIncome = useUpdateIncome()
-  const updExpense = useUpdateExpense()
+  const classifyMut = useClassifyPending()
   const [busy, setBusy] = useState<ExpenseType | null>(null)
 
   const classify = async (type: ExpenseType) => {
     setBusy(type)
     try {
-      if (kind === 'income') await updIncome.mutateAsync({ id: item.id, patch: { type, pending: false } })
-      else await updExpense.mutateAsync({ id: item.id, patch: { type, pending: false } })
+      // Learns a merchant rule + applies to same-merchant siblings.
+      await classifyMut.mutateAsync({ id: item.id, kind, type })
       // On success the budget query invalidates and the row disappears here.
     } catch {
       setBusy(null)

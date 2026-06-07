@@ -31,8 +31,25 @@ model User {
   portfolioSettings PortfolioSettings?
   incomes           Income[]
   expenses          Expense[]
+  classificationRules ClassificationRule[]
 
   @@map("users")
+}
+
+model ClassificationRule {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  matchKey  String   @map("match_key")
+  kind      String
+  type      String
+  category  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchKey])
+  @@index([userId])
+  @@map("classification_rules")
 }
 
 // ── Budget ───────────────────────────────────────────────────────

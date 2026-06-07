@@ -29,8 +29,28 @@ model User {
   portfolioSettings PortfolioSettings?
   incomes           Income[]
   expenses          Expense[]
+  classificationRules ClassificationRule[]
 
   @@map("users")
+}
+
+// Learned merchant → classification rule. When the user classifies a "Por
+// classificar" line, we store a rule keyed on the normalized merchant and
+// auto-apply it to siblings and to future imports.
+model ClassificationRule {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  matchKey  String   @map("match_key")  // normalized merchant name
+  kind      String                       // 'income' | 'expense'
+  type      String                       // 'fixed' | 'variable'
+  category  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchKey])
+  @@index([userId])
+  @@map("classification_rules")
 }
 
 // ── Budget ───────────────────────────────────────────────────────

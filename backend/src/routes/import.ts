@@ -137,6 +137,7 @@ router.post('/', async (req, res) => {
       await tx.portfolioSettings.deleteMany({ where: { userId } })
       await tx.income.deleteMany({ where: { userId } })
       await tx.expense.deleteMany({ where: { userId } })
+      await tx.classificationRule.deleteMany({ where: { userId } })
 
       // ── Loan ───────────────────────────────────────────────────
       if (isObj(payload.loan)) {
@@ -289,6 +290,21 @@ router.post('/', async (req, res) => {
             }))
           if (expenses.length > 0) await tx.expense.createMany({ data: expenses })
         }
+      }
+
+      // ── Learned classification rules ──────────────────────────
+      if (isArr(payload.classificationRules)) {
+        const rules = (payload.classificationRules as unknown[])
+          .filter(isObj)
+          .filter((r) => isStr(r.matchKey) && (r.kind === 'income' || r.kind === 'expense') && (r.type === 'fixed' || r.type === 'variable'))
+          .map((r) => ({
+            userId,
+            matchKey: r.matchKey as string,
+            kind: r.kind as string,
+            type: r.type as string,
+            category: isStr(r.category) ? r.category : null,
+          }))
+        if (rules.length > 0) await tx.classificationRule.createMany({ data: rules })
       }
     })
 

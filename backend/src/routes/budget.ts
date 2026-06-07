@@ -80,6 +80,22 @@ function dupSignature(
   return `${kind}|${ym}|${dd}|${amount.toFixed(2)}|${n}`
 }
 
+// ── Merchant key (for learned classification rules) ──────────────
+// Normalize a transaction description down to a stable merchant key so that
+// "CONTINENTE BELAS - Cartao 2824" and "CONTINENTE SINTRA - Cartao 3001" both
+// map to "continente belas"/"continente sintra"… actually we strip the card
+// suffix and digits so recurring merchants collapse to the same key.
+function merchantKey(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')             // strip accents
+    .replace(/-\s*(cartao|terminal|cart)\b.*$/i, '')     // drop "- Cartao 2824 …"
+    .replace(/\b\d[\d.,/-]*\b/g, ' ')                    // drop numbers (card/ref)
+    .replace(/[^a-z\s]/g, ' ')                           // drop punctuation
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // ── KPI helper ───────────────────────────────────────────────────
 async function summarize(userId: string) {
   // Pending (imported, not yet classified) items don't count toward totals
@@ -241,10 +257,15 @@ router.post('/import', async (req, res) => {
       if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('expense', r.name, r.amount, r.startYm, r.dayOfMonth))
     }
 
+    // Learned rules: a matched line is auto-classified (skips "Por classificar").
+    const rules = await prisma.classificationRule.findMany({ where: { userId } })
+    const ruleByKey = new Map(rules.map((r) => [r.matchKey, r]))
+
     const incomeRows: Prisma.IncomeCreateManyInput[] = []
     const expenseRows: Prisma.ExpenseCreateManyInput[] = []
     let skipped = 0
     let duplicates = 0
+    let autoClassified = 0
 
     for (const raw of items) {
       if (typeof raw !== 'object' || raw === null) { skipped++; continue }
@@ -273,15 +294,20 @@ router.post('/import', async (req, res) => {
         seen.add(sig)
       }
 
-      // Imported lines land as `pending` — they show in the "Por classificar"
-      // box until the user assigns them fixed/variable, then move to a table.
-      // The type here is a provisional placeholder, overwritten on classify.
+      // If a learned rule matches this merchant, auto-classify (skip the box).
+      // Otherwise the line lands as `pending` for manual fixed/variable triage.
+      const rule = ruleByKey.get(merchantKey(name))
+      const matched = !!rule && rule.kind === kind
+      if (matched) autoClassified++
+      const pending = !matched
+      const cat = category ?? (matched ? rule!.category : null)
+
       if (kind === 'income') {
-        const type = item.type === 'variable' ? 'variable' : 'fixed'
-        incomeRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true, pending: true })
+        const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'variable' ? 'variable' : 'fixed')
+        incomeRows.push({ userId, name, amount, type, category: cat, dayOfMonth, startYm, endYm, notes, active: true, pending })
       } else {
-        const type = item.type === 'fixed' ? 'fixed' : 'variable'
-        expenseRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true, pending: true })
+        const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'fixed' ? 'fixed' : 'variable')
+        expenseRows.push({ userId, name, amount, type, category: cat, dayOfMonth, startYm, endYm, notes, active: true, pending })
       }
     }
 
@@ -290,7 +316,7 @@ router.post('/import', async (req, res) => {
         error: duplicates > 0
           ? 'Todas as transações já tinham sido importadas (duplicadas).'
           : 'Nenhuma transação válida para importar',
-        summary: { incomes: 0, expenses: 0, skipped, duplicates },
+        summary: { incomes: 0, expenses: 0, skipped, duplicates, autoClassified: 0 },
       })
       return
     }
@@ -301,10 +327,58 @@ router.post('/import', async (req, res) => {
     })
     res.status(201).json({
       ok: true,
-      summary: { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates },
+      summary: { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates, autoClassified },
     })
   } catch (err) {
     console.error('POST /budget/import failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── Classify a pending line (and learn a rule) ──────────────────
+// Sets one pending item's type + clears pending, saves a merchant rule, and
+// applies it to every other pending item from the same merchant. Future
+// imports auto-classify matches, so "Por classificar" shrinks over time.
+router.post('/classify', async (req, res) => {
+  const id = typeof req.body?.id === 'string' ? req.body.id : null
+  const kind = req.body?.kind === 'income' ? 'income' : req.body?.kind === 'expense' ? 'expense' : null
+  const type = req.body?.type === 'fixed' ? 'fixed' : req.body?.type === 'variable' ? 'variable' : null
+  if (!id || !kind || !type) { res.status(400).json({ error: 'id, kind e type obrigatórios' }); return }
+
+  const userId = req.session.userId!
+  try {
+    const target = kind === 'income'
+      ? await prisma.income.findUnique({ where: { id } })
+      : await prisma.expense.findUnique({ where: { id } })
+    if (!target || target.userId !== userId) { res.status(404).json({ error: 'Não encontrado' }); return }
+
+    const key = merchantKey(target.name)
+
+    await prisma.classificationRule.upsert({
+      where: { userId_matchKey: { userId, matchKey: key } },
+      create: { userId, matchKey: key, kind, type, category: target.category ?? null },
+      update: { kind, type, category: target.category ?? null },
+    })
+
+    // Apply to this item + all pending siblings of the same kind/merchant.
+    let applied = 0
+    if (kind === 'income') {
+      const pend = await prisma.income.findMany({ where: { userId, pending: true } })
+      const ids = new Set(pend.filter((i) => merchantKey(i.name) === key).map((i) => i.id))
+      ids.add(id)
+      await prisma.income.updateMany({ where: { id: { in: [...ids] } }, data: { type, pending: false } })
+      applied = ids.size
+    } else {
+      const pend = await prisma.expense.findMany({ where: { userId, pending: true } })
+      const ids = new Set(pend.filter((e) => merchantKey(e.name) === key).map((e) => e.id))
+      ids.add(id)
+      await prisma.expense.updateMany({ where: { id: { in: [...ids] } }, data: { type, pending: false } })
+      applied = ids.size
+    }
+
+    res.json({ ok: true, applied })
+  } catch (err) {
+    console.error('POST /budget/classify failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

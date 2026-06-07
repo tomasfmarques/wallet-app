@@ -60,7 +60,7 @@ export interface ImportItem {
 
 export interface ImportResult {
   ok: true
-  summary: { incomes: number; expenses: number; skipped: number; duplicates: number }
+  summary: { incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number }
 }
 
 export const BUDGET_KEY = ['budget'] as const
@@ -95,6 +95,19 @@ export function useDeleteIncome() {
   const qc = useQueryClient()
   return useMutation<{ ok: true }, ApiError, string>(
     (id) => api.delete<{ ok: true }>(`/api/budget/incomes/${id}`),
+    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+  )
+}
+
+// Classify a pending line + learn a rule that auto-applies to same-merchant
+// lines (now and on future imports). Returns how many lines moved.
+export function useClassifyPending() {
+  const qc = useQueryClient()
+  return useMutation<
+    { ok: true; applied: number }, ApiError,
+    { id: string; kind: 'income' | 'expense'; type: ExpenseType }
+  >(
+    (input) => api.post<{ ok: true; applied: number }>('/api/budget/classify', input),
     { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
   )
 }

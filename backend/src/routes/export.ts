@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
 
-    const [user, loan, assets, settings, incomes, expenses] = await Promise.all([
+    const [user, loan, assets, settings, incomes, expenses, classificationRules] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, email: true, name: true, createdAt: true },
@@ -34,6 +34,7 @@ router.get('/', async (req, res) => {
       prisma.portfolioSettings.findUnique({ where: { userId } }),
       prisma.income.findMany({ where: { userId }, orderBy: { name: 'asc' } }),
       prisma.expense.findMany({ where: { userId }, orderBy: [{ type: 'asc' }, { name: 'asc' }] }),
+      prisma.classificationRule.findMany({ where: { userId }, orderBy: { matchKey: 'asc' } }),
     ])
 
     const payload = {
@@ -52,6 +53,7 @@ router.get('/', async (req, res) => {
         incomes,
         expenses,
       },
+      classificationRules,
     }
 
     const stamp = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
