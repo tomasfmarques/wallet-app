@@ -7,6 +7,7 @@ import { CategoryDonut } from '@/components/budget/CategoryDonut'
 import { BudgetTimeline } from '@/components/budget/BudgetTimeline'
 import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
 import { PendingClassifier } from '@/components/budget/PendingClassifier'
+import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { eur } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
@@ -19,8 +20,8 @@ export function Budget() {
   const delExpense = useDeleteExpense()
 
   const [tab, setTab] = useState<Tab>('tables')
-  const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income }>({ open: false, type: 'fixed' })
-  const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense }>({ open: false, type: 'fixed' })
+  const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income; defaultStartYm?: string }>({ open: false, type: 'fixed' })
+  const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
 
   if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
@@ -97,26 +98,6 @@ export function Budget() {
 
           <section>
             <div className="budget-section-head">
-              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS VARIÁVEIS</h2>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true, type: 'variable' })}>
-                + Adicionar variável
-              </button>
-            </div>
-            <BudgetList
-              rows={variableIncomes.map((i) => ({
-                id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
-                meta: i.startYm ? `desde ${i.startYm}` : undefined,
-                onEdit: () => setIncomeModal({ open: true, type: 'variable', income: i }),
-                onDelete: () => { if (confirm(`Remover "${i.name}"?`)) delIncome.mutate(i.id) },
-              }))}
-              totalLabel="Total receitas variáveis"
-              total={sumActive(variableIncomes)}
-              emptyText="Sem receitas variáveis. Adiciona freelance, prémios ou entradas pontuais."
-            />
-          </section>
-
-          <section>
-            <div className="budget-section-head">
               <h2 className="section-label" style={{ margin: 0 }}>DESPESAS FIXAS</h2>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpenseModal({ open: true, type: 'fixed' })}>
                 + Adicionar fixa
@@ -135,25 +116,16 @@ export function Budget() {
             />
           </section>
 
-          <section>
-            <div className="budget-section-head">
-              <h2 className="section-label" style={{ margin: 0 }}>DESPESAS VARIÁVEIS</h2>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpenseModal({ open: true, type: 'variable' })}>
-                + Adicionar variável
-              </button>
-            </div>
-            <BudgetList
-              rows={variableExpenses.map((e) => ({
-                id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
-                meta: undefined,
-                onEdit: () => setExpenseModal({ open: true, type: 'variable', expense: e }),
-                onDelete: () => { if (confirm(`Remover "${e.name}"?`)) delExpense.mutate(e.id) },
-              }))}
-              totalLabel="Total variáveis (planeadas)"
-              total={kpis.variableTotal}
-              emptyText="Sem despesas variáveis. Adiciona o orçamento típico para alimentação, lazer, transportes, etc."
-            />
-          </section>
+          <VariableMonths
+            variableIncomes={variableIncomes}
+            variableExpenses={variableExpenses}
+            fixedIncomeTotal={sumActive(fixedIncomes)}
+            fixedExpenseTotal={kpis.fixedTotal}
+            onEditIncome={(i) => setIncomeModal({ open: true, type: 'variable', income: i })}
+            onEditExpense={(e) => setExpenseModal({ open: true, type: 'variable', expense: e })}
+            onAddIncome={(ym) => setIncomeModal({ open: true, type: 'variable', defaultStartYm: ym })}
+            onAddExpense={(ym) => setExpenseModal({ open: true, type: 'variable', defaultStartYm: ym })}
+          />
         </>
       )}
 
@@ -192,12 +164,14 @@ export function Budget() {
         onClose={() => setIncomeModal({ open: false, type: 'fixed' })}
         type={incomeModal.type}
         income={incomeModal.income}
+        defaultStartYm={incomeModal.defaultStartYm}
       />
       <ExpenseModal
         open={expenseModal.open}
         onClose={() => setExpenseModal({ open: false, type: 'fixed' })}
         type={expenseModal.type}
         expense={expenseModal.expense}
+        defaultStartYm={expenseModal.defaultStartYm}
       />
       <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>

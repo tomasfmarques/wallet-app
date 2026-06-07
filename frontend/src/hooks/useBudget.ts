@@ -112,6 +112,18 @@ export function useClassifyPending() {
   )
 }
 
+// Bulk delete variable lines selected via checkboxes
+export function useBulkDeleteBudget() {
+  const qc = useQueryClient()
+  return useMutation<
+    { ok: true; deleted: number }, ApiError,
+    { incomeIds?: string[]; expenseIds?: string[] }
+  >(
+    (input) => api.post<{ ok: true; deleted: number }>('/api/budget/delete', input),
+    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+  )
+}
+
 // Bulk import from a parsed bank statement
 export function useImportBudget() {
   const qc = useQueryClient()

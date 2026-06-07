@@ -1555,6 +1555,65 @@ body {
   white-space: nowrap;
 }
 
+/* ── Variáveis por mês (month tabs) ─────────────────────────── */
+.var-block { margin-top: 8px; }
+.month-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+}
+.month-tab {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.month-tab:hover { border-color: var(--accent); color: var(--text); }
+.month-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
+}
+.month-tab.is-current:not(.is-active) { border-color: var(--accent); color: var(--accent-d); }
+.month-tab-now { font-weight: 500; opacity: 0.85; }
+
+.month-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.month-summary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+.month-summary-cell strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.month-summary-net { background: var(--surface); border: 1px solid var(--border); }
+
+.var-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.var-row.var-row { grid-template-columns: 22px 1fr auto auto; }
+.var-check { width: 16px; height: 16px; cursor: pointer; }
+.budget-row.is-selected { background: var(--accent-l); }
+@media (max-width: 760px) {
+  .month-summary { grid-template-columns: 1fr; }
+  .var-cols { grid-template-columns: 1fr; }
+}
+
 /* ── Por classificar (imported lines awaiting fixed/variable) ── */
 .pending-box {
   background: var(--surface);

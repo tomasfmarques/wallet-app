@@ -383,6 +383,28 @@ router.post('/classify', async (req, res) => {
   }
 })
 
+// ── Bulk delete (checkbox multi-select on the month view) ───────
+router.post('/delete', async (req, res) => {
+  const incomeIds = Array.isArray(req.body?.incomeIds)
+    ? (req.body.incomeIds as unknown[]).filter((x): x is string => typeof x === 'string') : []
+  const expenseIds = Array.isArray(req.body?.expenseIds)
+    ? (req.body.expenseIds as unknown[]).filter((x): x is string => typeof x === 'string') : []
+  if (incomeIds.length === 0 && expenseIds.length === 0) {
+    res.status(400).json({ error: 'Nada para remover' }); return
+  }
+  const userId = req.session.userId!
+  try {
+    const [inc, exp] = await prisma.$transaction([
+      prisma.income.deleteMany({ where: { userId, id: { in: incomeIds } } }),
+      prisma.expense.deleteMany({ where: { userId, id: { in: expenseIds } } }),
+    ])
+    res.json({ ok: true, deleted: inc.count + exp.count })
+  } catch (err) {
+    console.error('POST /budget/delete failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ── Expenses CRUD ───────────────────────────────────────────────
 router.post('/expenses', async (req, res) => {
   const errors: Record<string, string> = {}

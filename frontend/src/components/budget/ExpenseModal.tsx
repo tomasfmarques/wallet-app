@@ -12,9 +12,10 @@ interface Props {
   onClose: () => void
   type: ExpenseType   // 'fixed' or 'variable' — locked when adding
   expense?: Expense
+  defaultStartYm?: string  // prefill month when adding a variable from a month tab
 }
 
-export function ExpenseModal({ open, onClose, type, expense }: Props) {
+export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: Props) {
   const add = useAddExpense()
   const upd = useUpdateExpense()
   const isEdit = !!expense
@@ -38,13 +39,13 @@ export function ExpenseModal({ open, onClose, type, expense }: Props) {
     setCategory(expense?.category ?? '')
     setAutoSuggested(false)
     setDayOfMonth(expense?.dayOfMonth != null ? String(expense.dayOfMonth) : '')
-    setStartYm(expense?.startYm ?? '')
+    setStartYm(expense?.startYm ?? defaultStartYm ?? '')
     setEndYm(expense?.endYm ?? '')
     setNotes(expense?.notes ?? '')
     setActive(expense?.active ?? true)
     setErrors({})
     userPickedCategory.current = !!expense?.category
-  }, [open, expense])
+  }, [open, expense, defaultStartYm])
 
   useEffect(() => {
     if (userPickedCategory.current) return
@@ -84,7 +85,8 @@ export function ExpenseModal({ open, onClose, type, expense }: Props) {
       category: category.trim() || null,
       dayOfMonth: dayNum,
       startYm: startYm.trim() || null,
-      endYm: endYm.trim() || null,
+      // Variable = one-off → scope it to a single month (endYm = startYm).
+      endYm: effectiveType === 'variable' ? (startYm.trim() || null) : (endYm.trim() || null),
       notes: notes.trim() || null,
       active,
     }

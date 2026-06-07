@@ -12,9 +12,10 @@ interface Props {
   onClose: () => void
   type: ExpenseType   // 'fixed' or 'variable' — locked when adding
   income?: Income
+  defaultStartYm?: string  // prefill month when adding a variable from a month tab
 }
 
-export function IncomeModal({ open, onClose, type, income }: Props) {
+export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Props) {
   const add = useAddIncome()
   const upd = useUpdateIncome()
   const isEdit = !!income
@@ -36,13 +37,13 @@ export function IncomeModal({ open, onClose, type, income }: Props) {
     setAmount(income ? String(income.amount) : '')
     setCategory(income?.category ?? '')
     setAutoSuggested(false)
-    setStartYm(income?.startYm ?? '')
+    setStartYm(income?.startYm ?? defaultStartYm ?? '')
     setEndYm(income?.endYm ?? '')
     setNotes(income?.notes ?? '')
     setActive(income?.active ?? true)
     setErrors({})
     userPickedCategory.current = !!income?.category  // don't overwrite an existing category
-  }, [open, income])
+  }, [open, income, defaultStartYm])
 
   // Auto-suggest category as the user types the name (only while the user
   // hasn't manually picked a category for this entry).
@@ -77,7 +78,8 @@ export function IncomeModal({ open, onClose, type, income }: Props) {
       name: name.trim(), amount: n, type: effectiveType,
       category: category.trim() || null,
       startYm: startYm.trim() || null,
-      endYm: endYm.trim() || null,
+      // Variable = one-off → scope it to a single month (endYm = startYm).
+      endYm: effectiveType === 'variable' ? (startYm.trim() || null) : (endYm.trim() || null),
       notes: notes.trim() || null,
       active,
     }
