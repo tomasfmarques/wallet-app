@@ -700,8 +700,9 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 - **Same Yahoo-is-unofficial risk** as Phase 6 (endpoint could change/rate-
   limit). Symbols that don't resolve show a "sem dados" message.
 
-- **Only portfolio rows are wired** so far. The watchlist trend cards could
-  open the same modal trivially (the modal just takes a symbol) — not done yet.
+- **Both portfolio rows and watchlist cards are wired** to open the chart
+  modal (clicking a "Em alta · Nasdaq" card opens it too; the card's "+
+  Adicionar" button stops propagation).
 
 ---
 
@@ -1224,8 +1225,13 @@ All of these are in `DEPLOY.md`.
      Skips harmlessly until the secret exists.
   2. **Reconnect via Render's GitHub App** (Settings → Build → Source) — native
      webhook, makes "On Commit" work, and the Actions workflow becomes redundant.
-- Until one of those is active, deploys must be triggered manually
-  (Manual Deploy → Deploy latest commit) or by calling the Deploy Hook.
+- **Active since 2026-06-07: option 1.** The `RENDER_DEPLOY_HOOK` secret is set,
+  so pushes to `main` auto-deploy (confirmed: deploys now show trigger "Deploy
+  Hook"). No manual step needed.
+- **Neon cold-start gotcha:** every deploy runs `prisma db push`, and Neon free
+  tier auto-suspends — a sleeping DB returns `P1001` and fails the build (it bit
+  one auto-deploy). `db:push:prod` now retries once after a 12s wait so the
+  first (failed) connection wakes Neon and the retry succeeds.
 
 ## Production hosting checklist
 
