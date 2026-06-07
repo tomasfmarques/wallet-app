@@ -939,6 +939,63 @@ Brought categories back, but smarter:
 
 ---
 
+## Phase 7D — Saldo: 4 buckets + "Por classificar"
+
+Restructured the Saldo (budget) page into four tables — **Receitas fixas /
+variáveis** and **Despesas fixas / variáveis** — plus an e-Fatura-style
+**"Por classificar"** holding box for imported lines.
+
+### Decisions
+
+- **`type` added to `Income`** (`'fixed' | 'variable'`, default `'fixed'`).
+  Income now shares the same fixed/variable axis as `Expense`. The default
+  means existing income rows (salary etc.) backfill to **fixed** on migration
+  — verified against the dev DB, nothing landed in "Por classificar".
+
+- **`pending` boolean added to both `Income` and `Expense`** (default
+  `false`). `pending = true` means an imported line that hasn't been assigned
+  fixed/variable yet. It shows **only** in the "Por classificar" box, and is
+  excluded from KPIs, the timeline, the donuts, and the four tables.
+
+- **Imports now land as `pending: true`** (was: expense defaulted to
+  `variable`). The income/expense split still comes from the +/− sign at
+  import; the fixed/variable split is deferred to the holding box. The stored
+  `type` on a pending row is a provisional placeholder, overwritten on
+  classify.
+
+- **Classify = one PATCH.** Tapping **Fixa**/**Variável** in the box calls the
+  existing income/expense update with `{ type, pending: false }`; the budget
+  query invalidates and the row moves to the matching table automatically. No
+  new endpoint.
+
+- **Backend GET returns pending items separately** (`pendingIncomes`,
+  `pendingExpenses`) from the classified `incomes`/`expenses`. This keeps the
+  blast radius tiny: `summarize()` and every chart/KPI component still receive
+  only classified items, so none of them needed changes.
+
+- **Two "classify" concepts coexist, by design.** The amber
+  `UncategorizedBanner` triages the free-text *spending category* (Habitação,
+  Alimentação…); the new blue "Por classificar" box triages the
+  *fixed/variable* axis. They're orthogonal. Imported lines usually arrive
+  with an auto-inferred category, so most won't trigger the amber banner.
+
+### Behavioural caveats
+
+- **Pending items don't affect any total until classified.** Intentional
+  (mirrors e-Fatura "waiting"), and it nudges the user to classify, but a big
+  import won't move the Saldo final until the box is cleared.
+
+- **Manual adds are never pending.** Adding via "+ Adicionar fixa/variável"
+  on any of the four tables sets the bucket immediately. Only the importer
+  produces pending rows.
+
+- **Re-import dedup spans pending too.** The duplicate guard (backend) queries
+  all rows regardless of `pending`, and the import modal now pre-flags against
+  both classified and pending items, so re-importing before classifying is
+  still a safe no-op.
+
+---
+
 ## Phase 8 — Production deployment readiness
 
 ### What's done in code (no more pending items from the original checklist)

@@ -73,8 +73,10 @@ export interface Income {
   userId: string
   name: string
   amount: number
+  type: ExpenseType          // fixed | variable (shared axis with expenses)
   category: string | null
   active: boolean
+  pending: boolean           // true = imported, awaiting fixed/variable classification
   dayOfMonth: number | null  // set on statement import; used for dedup
   startYm: string | null
   endYm: string | null
@@ -93,6 +95,7 @@ export interface Expense {
   category: string | null
   dayOfMonth: number | null
   active: boolean
+  pending: boolean           // true = imported, awaiting fixed/variable classification
   startYm: string | null
   endYm: string | null
   notes: string | null

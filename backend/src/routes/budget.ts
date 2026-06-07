@@ -47,6 +47,11 @@ function asExpenseType(v: unknown, errors: Record<string, string>): 'fixed' | 'v
   return 'fixed'
 }
 
+// Lenient variant for income (and partial updates): unknown → fallback, no error.
+function asBudgetType(v: unknown, fallback: 'fixed' | 'variable'): 'fixed' | 'variable' {
+  return v === 'fixed' || v === 'variable' ? v : fallback
+}
+
 function asOptionalDay(v: unknown, errors: Record<string, string>): number | null {
   if (v === undefined || v === null || v === '') return null
   const n = typeof v === 'number' ? v : Number(v)
@@ -77,9 +82,11 @@ function dupSignature(
 
 // ── KPI helper ───────────────────────────────────────────────────
 async function summarize(userId: string) {
+  // Pending (imported, not yet classified) items don't count toward totals
+  // until the user assigns them fixed/variable.
   const [incomes, expenses] = await Promise.all([
-    prisma.income.findMany({ where: { userId, active: true } }),
-    prisma.expense.findMany({ where: { userId, active: true } }),
+    prisma.income.findMany({ where: { userId, active: true, pending: false } }),
+    prisma.expense.findMany({ where: { userId, active: true, pending: false } }),
   ])
 
   const incomeTotal = incomes.reduce((s, i) => s + i.amount, 0)
@@ -102,12 +109,14 @@ async function summarize(userId: string) {
 router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
-    const [incomes, expenses, kpis] = await Promise.all([
-      prisma.income.findMany({ where: { userId }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
-      prisma.expense.findMany({ where: { userId }, orderBy: [{ active: 'desc' }, { type: 'asc' }, { name: 'asc' }] }),
+    const [incomes, expenses, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
+      prisma.income.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
+      prisma.expense.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { type: 'asc' }, { name: 'asc' }] }),
+      prisma.income.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
+      prisma.expense.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
       summarize(userId),
     ])
-    res.json({ incomes, expenses, kpis })
+    res.json({ incomes, expenses, pendingIncomes, pendingExpenses, kpis })
   } catch (err) {
     console.error('GET /api/budget failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -119,17 +128,19 @@ router.post('/incomes', async (req, res) => {
   const errors: Record<string, string> = {}
   const name = asName(req.body?.name, 'name', errors)
   const amount = asPositiveNumber(req.body?.amount, 'amount', errors)
+  const type = asBudgetType(req.body?.type, 'fixed')
   const category = asOptionalString(req.body?.category, 40)
   const startYm = asOptionalYm(req.body?.startYm, 'startYm', errors)
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
   const active = typeof req.body?.active === 'boolean' ? req.body.active : true
+  const pending = typeof req.body?.pending === 'boolean' ? req.body.pending : false
 
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
   try {
     const income = await prisma.income.create({
-      data: { userId: req.session.userId!, name, amount, category, startYm, endYm, notes, active },
+      data: { userId: req.session.userId!, name, amount, type, category, startYm, endYm, notes, active, pending },
     })
     res.status(201).json({ income })
   } catch (err) {
@@ -144,11 +155,13 @@ router.put('/incomes/:id', async (req, res) => {
   const data: Record<string, unknown> = {}
   if (req.body?.name !== undefined)     data.name = asName(req.body.name, 'name', errors)
   if (req.body?.amount !== undefined)   data.amount = asPositiveNumber(req.body.amount, 'amount', errors)
+  if (req.body?.type !== undefined)     data.type = asBudgetType(req.body.type, 'fixed')
   if (req.body?.category !== undefined) data.category = asOptionalString(req.body.category, 40)
   if (req.body?.startYm !== undefined)  data.startYm = asOptionalYm(req.body.startYm, 'startYm', errors)
   if (req.body?.endYm !== undefined)    data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)    data.notes = asOptionalString(req.body.notes, 500)
   if (req.body?.active !== undefined && typeof req.body.active === 'boolean') data.active = req.body.active
+  if (req.body?.pending !== undefined && typeof req.body.pending === 'boolean') data.pending = req.body.pending
 
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
   if (Object.keys(data).length === 0) { res.status(400).json({ error: 'Nada para atualizar' }); return }
@@ -260,11 +273,15 @@ router.post('/import', async (req, res) => {
         seen.add(sig)
       }
 
+      // Imported lines land as `pending` — they show in the "Por classificar"
+      // box until the user assigns them fixed/variable, then move to a table.
+      // The type here is a provisional placeholder, overwritten on classify.
       if (kind === 'income') {
-        incomeRows.push({ userId, name, amount, category, dayOfMonth, startYm, endYm, notes, active: true })
+        const type = item.type === 'variable' ? 'variable' : 'fixed'
+        incomeRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true, pending: true })
       } else {
         const type = item.type === 'fixed' ? 'fixed' : 'variable'
-        expenseRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true })
+        expenseRows.push({ userId, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active: true, pending: true })
       }
     }
 
@@ -304,12 +321,13 @@ router.post('/expenses', async (req, res) => {
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
   const active = typeof req.body?.active === 'boolean' ? req.body.active : true
+  const pending = typeof req.body?.pending === 'boolean' ? req.body.pending : false
 
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
   try {
     const expense = await prisma.expense.create({
-      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active },
+      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active, pending },
     })
     res.status(201).json({ expense })
   } catch (err) {
@@ -331,6 +349,7 @@ router.put('/expenses/:id', async (req, res) => {
   if (req.body?.endYm !== undefined)       data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)       data.notes = asOptionalString(req.body.notes, 500)
   if (req.body?.active !== undefined && typeof req.body.active === 'boolean') data.active = req.body.active
+  if (req.body?.pending !== undefined && typeof req.body.pending === 'boolean') data.pending = req.body.pending
 
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
   if (Object.keys(data).length === 0) { res.status(400).json({ error: 'Nada para atualizar' }); return }

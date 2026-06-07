@@ -5,15 +5,16 @@ import {
 } from '@/hooks/useBudget'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { inferCategory, INCOME_CATEGORIES } from '@/lib/categoryDictionary'
-import type { Income } from '@/types'
+import type { Income, ExpenseType } from '@/types'
 
 interface Props {
   open: boolean
   onClose: () => void
+  type: ExpenseType   // 'fixed' or 'variable' — locked when adding
   income?: Income
 }
 
-export function IncomeModal({ open, onClose, income }: Props) {
+export function IncomeModal({ open, onClose, type, income }: Props) {
   const add = useAddIncome()
   const upd = useUpdateIncome()
   const isEdit = !!income
@@ -63,6 +64,8 @@ export function IncomeModal({ open, onClose, income }: Props) {
     setAutoSuggested(false)
   }
 
+  const effectiveType: ExpenseType = income?.type ?? type
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const errs: FieldErrors = {}
@@ -71,7 +74,7 @@ export function IncomeModal({ open, onClose, income }: Props) {
     if (!Number.isFinite(n) || n <= 0) errs.amount = '> 0'
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     const body: IncomeInput = {
-      name: name.trim(), amount: n,
+      name: name.trim(), amount: n, type: effectiveType,
       category: category.trim() || null,
       startYm: startYm.trim() || null,
       endYm: endYm.trim() || null,
@@ -90,7 +93,7 @@ export function IncomeModal({ open, onClose, income }: Props) {
   const busy = add.isLoading || upd.isLoading
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar receita' : 'Nova receita'} maxWidth={520}>
+    <Modal open={open} onClose={onClose} title={`${isEdit ? 'Editar' : 'Nova'} receita ${effectiveType === 'fixed' ? 'fixa' : 'variável'}`} maxWidth={520}>
       <form onSubmit={submit} className="amort-form" noValidate>
         {errors._form && <div className="form-error">{errors._form}</div>}
         <div className="field-grid">

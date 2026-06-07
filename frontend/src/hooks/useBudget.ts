@@ -15,14 +15,18 @@ export interface BudgetKpis {
 export interface BudgetResponse {
   incomes: Income[]
   expenses: Expense[]
+  pendingIncomes: Income[]    // imported, awaiting fixed/variable classification
+  pendingExpenses: Expense[]
   kpis: BudgetKpis
 }
 
 export interface IncomeInput {
   name: string
   amount: number
+  type?: ExpenseType
   category?: string | null
   active?: boolean
+  pending?: boolean
   startYm?: string | null
   endYm?: string | null
   notes?: string | null
@@ -35,6 +39,7 @@ export interface ExpenseInput {
   category?: string | null
   dayOfMonth?: number | null
   active?: boolean
+  pending?: boolean
   startYm?: string | null
   endYm?: string | null
   notes?: string | null

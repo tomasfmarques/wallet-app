@@ -41,8 +41,10 @@ model Income {
   userId    String   @map("user_id")
   name      String
   amount    Float
+  type      String   @default("fixed")
   category  String?
   active    Boolean  @default(true)
+  pending   Boolean  @default(false)
   dayOfMonth Int?    @map("day_of_month")
   startYm   String?  @map("start_ym")
   endYm     String?  @map("end_ym")
@@ -64,6 +66,7 @@ model Expense {
   category    String?
   dayOfMonth  Int?     @map("day_of_month")
   active      Boolean  @default(true)
+  pending     Boolean  @default(false)
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

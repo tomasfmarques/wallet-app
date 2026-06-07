@@ -39,8 +39,10 @@ model Income {
   userId    String   @map("user_id")
   name      String                          // e.g. "Salário", "Freelance"
   amount    Float                           // EUR per month
+  type      String   @default("fixed")      // 'fixed' | 'variable'
   category  String?                         // free-text bucket
   active    Boolean  @default(true)
+  pending   Boolean  @default(false)        // true = imported, awaiting fixed/variable classification
   dayOfMonth Int?    @map("day_of_month")    // 1-31, set on statement import
   startYm   String?  @map("start_ym")       // "AAAA-MM" — when it started
   endYm     String?  @map("end_ym")         // "AAAA-MM" — null = ongoing
@@ -64,6 +66,7 @@ model Expense {
   category    String?
   dayOfMonth  Int?     @map("day_of_month") // 1-31, optional
   active      Boolean  @default(true)
+  pending     Boolean  @default(false)       // true = imported, awaiting fixed/variable classification
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

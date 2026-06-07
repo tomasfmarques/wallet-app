@@ -1487,6 +1487,78 @@ body {
   white-space: nowrap;
 }
 
+/* ── Por classificar (imported lines awaiting fixed/variable) ── */
+.pending-box {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.pending-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pending-icon { font-size: 20px; }
+.pending-head-text { font-size: 13.5px; }
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.pending-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: var(--r);
+}
+.pending-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.pending-row-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pending-row-cat { font-size: 12px; white-space: nowrap; }
+.pending-row-amount {
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.pending-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pending-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.pending-pill.is-income { background: #ECFDF5; color: var(--green-d); }
+.pending-pill.is-expense { background: #FEF2F2; color: var(--red); }
+@media (max-width: 560px) {
+  .pending-row { flex-wrap: wrap; }
+  .pending-row-actions { width: 100%; justify-content: flex-end; }
+}
+
 /* ── Classify modal ───────────────────────────────────────── */
 .classify-list {
   display: flex;

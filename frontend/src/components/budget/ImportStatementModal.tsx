@@ -60,10 +60,13 @@ export function ImportStatementModal({ open, onClose }: Props) {
   const existingSigs = useMemo(() => {
     const set = new Set<string>()
     if (!budget) return set
-    for (const i of budget.incomes) {
+    // Include both classified and still-pending items, so re-importing the same
+    // statement before classifying is flagged client-side too (the backend
+    // dedupes against both regardless).
+    for (const i of [...budget.incomes, ...budget.pendingIncomes]) {
       if (i.startYm && i.startYm === i.endYm) set.add(dupSignature('income', i.name, i.amount, i.startYm, i.dayOfMonth))
     }
-    for (const e of budget.expenses) {
+    for (const e of [...budget.expenses, ...budget.pendingExpenses]) {
       if (e.startYm && e.startYm === e.endYm) set.add(dupSignature('expense', e.name, e.amount, e.startYm, e.dayOfMonth))
     }
     return set
@@ -146,6 +149,12 @@ export function ImportStatementModal({ open, onClose }: Props) {
             {done.duplicates > 0 && <> {done.duplicates} duplicada(s) ignorada(s).</>}
             {done.skipped > 0 && <> {done.skipped} linha(s) inválida(s) ignorada(s).</>}
           </p>
+          {(done.incomes > 0 || done.expenses > 0) && (
+            <p className="muted" style={{ fontSize: 13 }}>
+              As linhas ficam em <strong>Por classificar</strong> — escolhe <b>Fixa</b> ou
+              <b> Variável</b> em cada uma e movem-se para a tabela certa.
+            </p>
+          )}
           <div className="form-actions">
             <button type="button" className="btn btn-primary" onClick={close}>Concluir</button>
           </div>

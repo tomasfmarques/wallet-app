@@ -6,6 +6,7 @@ import { ExpenseModal } from '@/components/budget/ExpenseModal'
 import { CategoryDonut } from '@/components/budget/CategoryDonut'
 import { BudgetTimeline } from '@/components/budget/BudgetTimeline'
 import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
+import { PendingClassifier } from '@/components/budget/PendingClassifier'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { eur } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
@@ -18,7 +19,7 @@ export function Budget() {
   const delExpense = useDeleteExpense()
 
   const [tab, setTab] = useState<Tab>('tables')
-  const [incomeModal, setIncomeModal] = useState<{ open: boolean; income?: Income }>({ open: false })
+  const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income }>({ open: false, type: 'fixed' })
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
 
@@ -31,9 +32,13 @@ export function Budget() {
   )
   if (!data) return null
 
-  const { incomes, expenses, kpis } = data
+  const { incomes, expenses, pendingIncomes, pendingExpenses, kpis } = data
+  const fixedIncomes = incomes.filter((i) => i.type === 'fixed')
+  const variableIncomes = incomes.filter((i) => i.type === 'variable')
   const fixedExpenses = expenses.filter((e) => e.type === 'fixed')
   const variableExpenses = expenses.filter((e) => e.type === 'variable')
+  const sumActive = <T extends { active: boolean; amount: number }>(rows: T[]) =>
+    rows.filter((r) => r.active).reduce((s, r) => s + r.amount, 0)
 
   return (
     <div className="budget-page">
@@ -48,6 +53,8 @@ export function Budget() {
           </button>
         </div>
       </header>
+
+      <PendingClassifier pendingIncomes={pendingIncomes} pendingExpenses={pendingExpenses} />
 
       <UncategorizedBanner incomes={incomes} expenses={expenses} />
 
@@ -70,21 +77,41 @@ export function Budget() {
         <>
           <section>
             <div className="budget-section-head">
-              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS</h2>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true })}>
-                + Adicionar receita
+              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS FIXAS</h2>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true, type: 'fixed' })}>
+                + Adicionar fixa
               </button>
             </div>
             <BudgetList
-              rows={incomes.map((i) => ({
+              rows={fixedIncomes.map((i) => ({
                 id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
                 meta: i.startYm ? `desde ${i.startYm}` : undefined,
-                onEdit: () => setIncomeModal({ open: true, income: i }),
+                onEdit: () => setIncomeModal({ open: true, type: 'fixed', income: i }),
                 onDelete: () => { if (confirm(`Remover "${i.name}"?`)) delIncome.mutate(i.id) },
               }))}
-              totalLabel="Total mensal"
-              total={incomes.filter((i) => i.active).reduce((s, i) => s + i.amount, 0)}
-              emptyText="Sem receitas registadas. Adiciona o salário, freelance ou outras entradas."
+              totalLabel="Total receitas fixas"
+              total={sumActive(fixedIncomes)}
+              emptyText="Sem receitas fixas. Adiciona o salário ou outras entradas recorrentes."
+            />
+          </section>
+
+          <section>
+            <div className="budget-section-head">
+              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS VARIÁVEIS</h2>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true, type: 'variable' })}>
+                + Adicionar variável
+              </button>
+            </div>
+            <BudgetList
+              rows={variableIncomes.map((i) => ({
+                id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
+                meta: i.startYm ? `desde ${i.startYm}` : undefined,
+                onEdit: () => setIncomeModal({ open: true, type: 'variable', income: i }),
+                onDelete: () => { if (confirm(`Remover "${i.name}"?`)) delIncome.mutate(i.id) },
+              }))}
+              totalLabel="Total receitas variáveis"
+              total={sumActive(variableIncomes)}
+              emptyText="Sem receitas variáveis. Adiciona freelance, prémios ou entradas pontuais."
             />
           </section>
 
@@ -162,7 +189,8 @@ export function Budget() {
 
       <IncomeModal
         open={incomeModal.open}
-        onClose={() => setIncomeModal({ open: false })}
+        onClose={() => setIncomeModal({ open: false, type: 'fixed' })}
+        type={incomeModal.type}
         income={incomeModal.income}
       />
       <ExpenseModal
