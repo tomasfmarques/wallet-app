@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 
 // Fixed bottom navigation for mobile (≤768px). Hidden on desktop where the
-// top navbar's nav-links take over. Five tabs covering the main routes.
+// top navbar's nav-links take over. Six tabs covering the main routes.
 //
 // Icons are inline SVG (24×24 stroke-1.7) — keeps the bundle small, matches
 // brand colour via currentColor, and renders crisply at any zoom level.
@@ -66,6 +66,18 @@ const items: NavItem[] = [
         <rect x="3" y="6" width="18" height="14" rx="2" />
         <path d="M3 10h18" />
         <path d="M7 16h4" />
+      </svg>
+    ),
+  },
+  {
+    to: '/comparar',
+    label: 'Comparar',
+    icon: (
+      <svg {...COMMON}>
+        <line x1="12" y1="3" x2="12" y2="21" />
+        <line x1="3" y1="9" x2="21" y2="9" />
+        <path d="M3 9l3.5 7 3.5-7" />
+        <path d="M14 9l3.5 7 3.5-7" />
       </svg>
     ),
   },

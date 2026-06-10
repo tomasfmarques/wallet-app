@@ -16,6 +16,7 @@ import exportRouter from './routes/export'
 import importRouter from './routes/import'
 import budgetRouter from './routes/budget'
 import bankRouter from './routes/bank'
+import simulateRouter from './routes/simulate'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -98,6 +99,7 @@ app.use('/api/export', exportRouter)
 app.use('/api/import', importRouter)
 app.use('/api/budget', budgetRouter)
 app.use('/api/bank', bankRouter)
+app.use('/api/simulate', simulateRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', env: IS_PROD ? 'production' : 'development', timestamp: new Date().toISOString() })

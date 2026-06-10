@@ -112,6 +112,22 @@ export function ModuleSummary({
           <div className="module-card-empty">Regista receitas e despesas</div>
         )}
       </Link>
+      {/* ── Amortizar vs Investir CTA ───────────────────────── */}
+      <Link to="/comparar" className="module-card module-card-compare">
+        <div className="module-card-head">
+          <span className="module-card-icon" aria-hidden>⚖️</span>
+          <span className="module-card-title">Amortizar ou Investir?</span>
+          <span className="module-card-arrow" aria-hidden>→</span>
+        </div>
+        <div className="module-card-compare-body">
+          <div className="module-card-compare-headline">
+            O dinheiro extra — abater o crédito ou colocar no mercado?
+          </div>
+          <div className="module-card-compare-hint">
+            Simulador com juros poupados vs ganho líquido após impostos
+          </div>
+        </div>
+      </Link>
     </div>
   )
 }

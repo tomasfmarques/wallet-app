@@ -8,6 +8,7 @@ const SECTION_LABELS: Record<string, string> = {
   '/loan': 'Crédito',
   '/investments': 'Investimentos',
   '/budget': 'Saldo',
+  '/comparar': 'Amortizar ou Investir?',
   '/settings': 'Configurações',
 }
 
@@ -52,6 +53,7 @@ export function Layout() {
             <NavLink to="/loan" className="nav-link">Crédito</NavLink>
             <NavLink to="/investments" className="nav-link">Investimentos</NavLink>
             <NavLink to="/budget" className="nav-link">Saldo</NavLink>
+            <NavLink to="/comparar" className="nav-link">Amortizar vs Investir</NavLink>
             <NavLink to="/settings" className="nav-link">Configurações</NavLink>
           </nav>
 

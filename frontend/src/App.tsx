@@ -12,6 +12,7 @@ import Loan from '@/pages/Loan'
 import Portfolio from '@/pages/Portfolio'
 import Budget from '@/pages/Budget'
 import Settings from '@/pages/Settings'
+import Compare from '@/pages/Compare'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +45,7 @@ function App() {
               <Route path="/loan" element={<Loan />} />
               <Route path="/investments" element={<Portfolio />} />
               <Route path="/budget" element={<Budget />} />
+              <Route path="/comparar" element={<Compare />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
 

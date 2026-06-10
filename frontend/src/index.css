@@ -2537,7 +2537,7 @@ body {
 @media (max-width: 768px) {
   .bottom-nav {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     position: fixed;
     left: 0;
     right: 0;
@@ -2688,3 +2688,156 @@ body {
 
 /* ── App shell positioning so bottom nav doesn't cover content */
 .app-shell { position: relative; min-height: 100vh; }
+
+/* ── Compare page (Amortizar vs Investir) ─────────────────── */
+.compare-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 24px; }
+.compare-page > .page-header { margin-bottom: 0; }
+
+.compare-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 600px) {
+  .compare-controls-grid { grid-template-columns: 1fr; }
+}
+
+.compare-rec {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+}
+.compare-rec-amortizar {
+  background: #EFF6FF;
+  border-color: var(--accent-b);
+}
+.compare-rec-investir {
+  background: #ECFDF5;
+  border-color: #6EE7B7;
+}
+.compare-rec-equivalente {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.compare-rec-icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+.compare-rec-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.compare-rec-sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .compare-columns { grid-template-columns: 1fr; }
+}
+
+.compare-col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.compare-col-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.compare-col-icon { font-size: 20px; }
+
+.compare-col-amortizar { border-top: 3px solid var(--accent); }
+.compare-col-investir { border-top: 3px solid var(--green); }
+
+.compare-kpis { grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.compare-breakeven {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 18px;
+  font-size: 13px;
+}
+.compare-breakeven-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.compare-breakeven-value {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent-d);
+}
+.compare-breakeven-hint { color: var(--muted); flex-basis: 100%; margin-top: 2px; }
+
+.compare-controls .slider-bounds {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Toggle group ─────────────────────────────────────────── */
+.toggle-group {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--muted);
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.toggle-btn + .toggle-btn { border-left: 1px solid var(--border); }
+.toggle-btn-active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.toggle-btn:not(.toggle-btn-active):hover { background: var(--surface-2); color: var(--text); }
+
+/* ── Compare module card on Overview ─────────────────────── */
+.module-card-compare {
+  background: linear-gradient(135deg, #EFF6FF 0%, #ECFDF5 100%);
+  border-color: var(--accent-b);
+}
+.module-card-compare:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12);
+}
+.module-card-compare-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.module-card-compare-headline {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+.module-card-compare-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
