@@ -4,6 +4,7 @@ import { useSimulation, type SimulationResult } from '@/hooks/useLoan'
 import { CapitalChart } from './CapitalChart'
 
 interface Props {
+  loanId: string
   loanEuribor: number
   loanDataInicio: string
   loanPrazoMeses: number
@@ -14,7 +15,7 @@ interface Props {
 //   • Start year for the recurring amortization
 //   • Future Euribor override (%)
 // Re-runs the backend simulation on each change (debounced).
-export function SimulatorPanel({ loanEuribor, loanDataInicio, loanPrazoMeses }: Props) {
+export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoMeses }: Props) {
   const today = currentYm()
   const todayYear = Number(today.slice(0, 4))
   const startYearBase = Number(loanDataInicio.slice(0, 4))
@@ -32,6 +33,7 @@ export function SimulatorPanel({ loanEuribor, loanDataInicio, loanPrazoMeses }: 
     const t = setTimeout(() => {
       simulate.mutate(
         {
+          loanId,
           annualAmount,
           startYear,
           futureEuribor: futureEuriborPct / 100,

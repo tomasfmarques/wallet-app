@@ -10,6 +10,7 @@ export interface User {
 export interface Loan {
   id: string
   userId: string
+  name: string         // e.g. "Casa", "Carro"
   capital: number
   prazoMeses: number
   tanFixa: number

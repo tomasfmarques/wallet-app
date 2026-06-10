@@ -42,13 +42,20 @@ export interface LoanWithRelations extends Loan {
   euriborHistory: EuriborHistory[]
 }
 
+// One credit with its computed schedule + KPIs.
+export interface LoanItem {
+  loan: LoanWithRelations
+  schedule: LoanSchedule
+  kpis: LoanKpis
+}
+
 export interface LoanResponse {
-  loan: LoanWithRelations | null
-  schedule?: LoanSchedule
-  kpis?: LoanKpis
+  loans: LoanItem[]
 }
 
 export interface LoanInputBody {
+  id?: string          // present → update that credit; absent → create new
+  name: string
   capital: number
   prazoMeses: number
   tanFixa: number
@@ -79,15 +86,23 @@ export function useUpsertLoan() {
   )
 }
 
+export function useDeleteLoan() {
+  const qc = useQueryClient()
+  return useMutation<{ ok: true }, ApiError, string>(
+    (id) => api.delete<{ ok: true }>(`/api/loan/${id}`),
+    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
+  )
+}
+
 export function useUpdatePayment() {
   const qc = useQueryClient()
   return useMutation<
     { payment: LoanPayment },
     ApiError,
-    { ym: string; paid?: boolean; real?: number | null }
+    { loanId: string; ym: string; paid?: boolean; real?: number | null }
   >(
-    ({ ym, ...rest }) =>
-      api.put<{ payment: LoanPayment }>(`/api/loan/payments/${ym}`, rest),
+    ({ loanId, ym, ...rest }) =>
+      api.put<{ payment: LoanPayment }>(`/api/loan/${loanId}/payments/${ym}`, rest),
     { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
   )
 }
@@ -97,10 +112,10 @@ export function useAddAmortization() {
   return useMutation<
     { amortization: LoanAmortization },
     ApiError,
-    { ym: string; valor: number; modo: 'prazo' | 'prestacao' }
+    { loanId: string; ym: string; valor: number; modo: 'prazo' | 'prestacao' }
   >(
-    (input) =>
-      api.post<{ amortization: LoanAmortization }>('/api/loan/amortizations', input),
+    ({ loanId, ...input }) =>
+      api.post<{ amortization: LoanAmortization }>(`/api/loan/${loanId}/amortizations`, input),
     { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
   )
 }
@@ -115,6 +130,7 @@ export function useDeleteAmortization() {
 
 // ── Simulation ────────────────────────────────────────────────────
 export interface SimulationInput {
+  loanId: string
   annualAmount: number
   startYear: number
   futureEuribor: number
@@ -143,6 +159,6 @@ export interface SimulationResult {
 
 export function useSimulation() {
   return useMutation<SimulationResult, ApiError, SimulationInput>(
-    (input) => api.post<SimulationResult>('/api/loan/simulate', input),
+    ({ loanId, ...input }) => api.post<SimulationResult>(`/api/loan/${loanId}/simulate`, input),
   )
 }

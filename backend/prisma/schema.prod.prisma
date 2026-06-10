@@ -101,6 +101,7 @@ model Expense {
 model Loan {
   id          String @id @default(uuid())
   userId      String @map("user_id")
+  name        String @default("Crédito")
   capital     Float
   prazoMeses  Int    @map("prazo_meses")
   tanFixa     Float  @map("tan_fixa")

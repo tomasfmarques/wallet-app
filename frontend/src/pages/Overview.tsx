@@ -18,6 +18,20 @@ export function Overview() {
 
   const loading = loan.isLoading || portfolio.isLoading || budget.isLoading
 
+  // Aggregate across all credits for the Overview's single "Crédito" summary.
+  const loanItems = loan.data?.loans ?? []
+  const loanCapitalAtual = loanItems.reduce((s, l) => s + l.kpis.capitalAtual, 0)
+  const loanCapitalInicial = loanItems.reduce((s, l) => s + l.loan.capital, 0)
+  const aggLoanKpis = loanItems.length > 0
+    ? {
+        ...loanItems[0].kpis,
+        capitalAtual: loanCapitalAtual,
+        pctPago: loanCapitalInicial > 0 ? 1 - loanCapitalAtual / loanCapitalInicial : 0,
+        proximaPrestacao: loanItems.reduce((s, l) => s + l.kpis.proximaPrestacao, 0),
+        conclusaoYm: loanItems.reduce((m, l) => (l.kpis.conclusaoYm > m ? l.kpis.conclusaoYm : m), loanItems[0].kpis.conclusaoYm),
+      }
+    : null
+
   return (
     <div className="overview-page overview-modern">
       <header className="page-header overview-header">
@@ -40,7 +54,7 @@ export function Overview() {
         <>
           <HeroKpis
             portfolioValue={portfolio.data?.kpis.valorAtual ?? null}
-            loanRemaining={loan.data?.kpis?.capitalAtual ?? null}
+            loanRemaining={loanItems.length > 0 ? loanCapitalAtual : null}
             monthlyNet={budget.data?.kpis.netMonthly ?? null}
             monthlyIncome={budget.data?.kpis.incomeTotal ?? null}
           />
@@ -51,8 +65,8 @@ export function Overview() {
           />
 
           <ModuleSummary
-            loanKpis={loan.data?.kpis ?? null}
-            loanCapitalInicial={loan.data?.loan?.capital ?? null}
+            loanKpis={aggLoanKpis}
+            loanCapitalInicial={loanItems.length > 0 ? loanCapitalInicial : null}
             portfolioKpis={portfolio.data?.kpis ?? null}
             portfolioHorizon={portfolio.data?.settings.gH ?? null}
             budgetKpis={budget.data?.kpis ?? null}

@@ -25,7 +25,7 @@ export function ModuleSummary({
       <Link to="/loan" className="module-card">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>🏠</span>
-          <span className="module-card-title">Empréstimo</span>
+          <span className="module-card-title">Crédito</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         {loanKpis && loanCapitalInicial ? (
@@ -49,7 +49,7 @@ export function ModuleSummary({
             </div>
           </>
         ) : (
-          <div className="module-card-empty">Configura o teu empréstimo</div>
+          <div className="module-card-empty">Adiciona o teu primeiro crédito</div>
         )}
       </Link>
 

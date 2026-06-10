@@ -5,7 +5,7 @@ import { BottomNav } from './BottomNav'
 // Map route → label shown as section subtitle in the navbar
 const SECTION_LABELS: Record<string, string> = {
   '/overview': 'Visão geral',
-  '/loan': 'Empréstimo',
+  '/loan': 'Crédito',
   '/investments': 'Investimentos',
   '/budget': 'Saldo',
   '/settings': 'Configurações',
@@ -49,7 +49,7 @@ export function Layout() {
           {/* Desktop nav links — hidden on mobile (BottomNav takes over) */}
           <nav className="nav-links nav-links-desktop" aria-label="Navegação principal">
             <NavLink to="/overview" className="nav-link" end>Visão geral</NavLink>
-            <NavLink to="/loan" className="nav-link">Empréstimo</NavLink>
+            <NavLink to="/loan" className="nav-link">Crédito</NavLink>
             <NavLink to="/investments" className="nav-link">Investimentos</NavLink>
             <NavLink to="/budget" className="nav-link">Saldo</NavLink>
             <NavLink to="/settings" className="nav-link">Configurações</NavLink>

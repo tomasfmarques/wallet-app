@@ -39,7 +39,7 @@ const items: NavItem[] = [
   },
   {
     to: '/loan',
-    label: 'Empréstimo',
+    label: 'Crédito',
     icon: (
       <svg {...COMMON}>
         <path d="M3 21h18" />

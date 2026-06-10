@@ -4,6 +4,7 @@ import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 
 interface Props {
   initial?: Partial<LoanInputBody>
+  loanId?: string   // present → editing an existing credit
   onSaved?: () => void
   onCancel?: () => void
   submitLabel?: string
@@ -16,12 +17,14 @@ interface Props {
 // fractions (0.022). Conversion happens at submit.
 export function LoanSetupForm({
   initial,
+  loanId,
   onSaved,
   onCancel,
   submitLabel = 'Guardar',
 }: Props) {
   const upsert = useUpsertLoan()
 
+  const [name,       setName]       = useState(initial?.name ?? '')
   const [capital,    setCapital]    = useState(initial?.capital?.toString()    ?? '')
   const [prazoMeses, setPrazoMeses] = useState(initial?.prazoMeses?.toString() ?? '480')
   const [tanFixaPct, setTanFixaPct] = useState(
@@ -42,6 +45,7 @@ export function LoanSetupForm({
     setErrors({})
 
     const clientErrors: FieldErrors = {}
+    if (!name.trim()) clientErrors.name = 'Dá um nome (ex: Casa, Carro)'
     const cap = Number(capital)
     if (!Number.isFinite(cap) || cap <= 0) clientErrors.capital = 'Valor obrigatório'
     const prazo = Number(prazoMeses)
@@ -65,6 +69,8 @@ export function LoanSetupForm({
     }
 
     const body: LoanInputBody = {
+      ...(loanId ? { id: loanId } : {}),
+      name: name.trim(),
       capital: cap,
       prazoMeses: prazo,
       tanFixa: tan / 100,
@@ -87,6 +93,16 @@ export function LoanSetupForm({
       {errors._form && <div className="form-error" role="alert">{errors._form}</div>}
 
       <div className="field-grid">
+        <div className="field">
+          <label htmlFor="credit-name">Nome do crédito</label>
+          <input
+            id="credit-name" type="text" placeholder="Casa, Carro…"
+            value={name} onChange={(e) => setName(e.target.value)}
+            aria-invalid={!!errors.name}
+          />
+          {errors.name && <span className="field-error">{errors.name}</span>}
+        </div>
+
         <div className="field">
           <label htmlFor="capital">Capital (€)</label>
           <input

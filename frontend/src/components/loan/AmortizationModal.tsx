@@ -12,12 +12,13 @@ interface Props {
   open: boolean
   onClose: () => void
   amortizations: LoanAmortization[]
+  loanId: string
 }
 
 // Modal for managing extra amortizations: lists existing ones, lets the user
 // add a new one, lets them delete. The Loan page re-fetches automatically on
 // success.
-export function AmortizationModal({ open, onClose, amortizations }: Props) {
+export function AmortizationModal({ open, onClose, amortizations, loanId }: Props) {
   const add = useAddAmortization()
   const del = useDeleteAmortization()
 
@@ -45,7 +46,7 @@ export function AmortizationModal({ open, onClose, amortizations }: Props) {
       return
     }
     try {
-      await add.mutateAsync({ ym, valor: v, modo })
+      await add.mutateAsync({ loanId, ym, valor: v, modo })
       reset()
     } catch (err) {
       setErrors(fieldErrorsFrom(err))

@@ -139,13 +139,17 @@ router.post('/', async (req, res) => {
       await tx.expense.deleteMany({ where: { userId } })
       await tx.classificationRule.deleteMany({ where: { userId } })
 
-      // ── Loan ───────────────────────────────────────────────────
-      if (isObj(payload.loan)) {
-        const loan = payload.loan as Record<string, unknown>
+      // ── Loans (multiple credits) ───────────────────────────────
+      // Accept the new `loans` array; fall back to a single legacy `loan`.
+      const loanList: Record<string, unknown>[] = isArr(payload.loans)
+        ? (payload.loans as unknown[]).filter(isObj)
+        : (isObj(payload.loan) ? [payload.loan as Record<string, unknown>] : [])
+      for (const loan of loanList) {
         if (isNum(loan.capital) && isNum(loan.prazoMeses) && isStr(loan.dataInicio)) {
           const createdLoan = await tx.loan.create({
             data: {
               userId,
+              name:       isStr(loan.name) ? (loan.name as string) : 'Crédito',
               capital:    loan.capital,
               prazoMeses: Math.round(loan.prazoMeses),
               tanFixa:    isNum(loan.tanFixa)    ? loan.tanFixa    : 0,

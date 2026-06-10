@@ -8,11 +8,11 @@ import type { EuriborHistory } from '@/types'
 
 // Locally-defined mutation since the existing useLoan hook didn't expose this one.
 // Backend endpoint already exists (POST /api/loan/euribor) since Phase 2A.
-interface EuriborInput { valor: number; ym?: string }
+interface EuriborInput { loanId: string; valor: number; ym?: string }
 function usePostEuribor() {
   const qc = useQueryClient()
   return useMutation<{ entry: EuriborHistory }, ApiError, EuriborInput>(
-    (input) => api.post<{ entry: EuriborHistory }>('/api/loan/euribor', input),
+    ({ loanId, ...input }) => api.post<{ entry: EuriborHistory }>(`/api/loan/${loanId}/euribor`, input),
     { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
   )
 }
@@ -24,20 +24,23 @@ export function EuriborSection() {
   const [ym, setYm] = useState(currentYm())
   const [valorPct, setValorPct] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
+  const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null)
 
   if (isLoading) {
     return <div className="card card-pad-lg muted">A carregar…</div>
   }
-  if (!data?.loan) {
+  const loans = data?.loans ?? []
+  if (loans.length === 0) {
     return (
       <div className="card card-pad-lg muted">
-        Configura primeiro o empréstimo (separador <strong>Empréstimo</strong>)
+        Configura primeiro um crédito (separador <strong>Crédito</strong>)
         para poderes editar o histórico da Euribor.
       </div>
     )
   }
 
-  const loan = data.loan
+  const selected = loans.find((l) => l.loan.id === selectedLoanId) ?? loans[0]
+  const loan = selected.loan
   const history = [...loan.euriborHistory].sort((a, b) => b.ym.localeCompare(a.ym))
 
   const submit = async (e: FormEvent) => {
@@ -50,7 +53,7 @@ export function EuriborSection() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     try {
-      await post.mutateAsync({ valor: v / 100, ym })
+      await post.mutateAsync({ loanId: loan.id, valor: v / 100, ym })
       setValorPct('')
       setYm(currentYm())
     } catch (err) {
@@ -60,8 +63,16 @@ export function EuriborSection() {
 
   return (
     <div className="card card-pad-lg">
+      {loans.length > 1 && (
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label htmlFor="eur-loan">Crédito</label>
+          <select id="eur-loan" value={loan.id} onChange={(e) => setSelectedLoanId(e.target.value)}>
+            {loans.map((l) => <option key={l.loan.id} value={l.loan.id}>{l.loan.name}</option>)}
+          </select>
+        </div>
+      )}
       <p className="muted modal-intro">
-        A Euribor atual usada no engine é <strong>{pct(loan.euribor)}</strong>.
+        A Euribor atual de <strong>{loan.name}</strong> é <strong>{pct(loan.euribor)}</strong>.
         Adicionar uma nova entrada também atualiza este valor.
       </p>
 

@@ -6,11 +6,12 @@ import type { LoanPayment } from '@/types'
 interface Props {
   rows: LoanScheduleRow[]
   payments: LoanPayment[]
+  loanId: string
 }
 
 // Year-grouped accordion replacing the flat tracking list. Current year is
 // open by default; clicking the header collapses/expands.
-export function YearAccordion({ rows, payments }: Props) {
+export function YearAccordion({ rows, payments, loanId }: Props) {
   const today = currentYm()
   const todayYear = today.slice(0, 4)
 
@@ -72,6 +73,7 @@ export function YearAccordion({ rows, payments }: Props) {
                     row={r}
                     payment={paymentsByYm.get(r.ym)}
                     isCurrent={r.ym === today}
+                    loanId={loanId}
                   />
                 ))}
               </div>
@@ -87,23 +89,24 @@ interface RowProps {
   row: LoanScheduleRow
   payment?: LoanPayment
   isCurrent: boolean
+  loanId: string
 }
 
-function TrackingRow({ row, payment, isCurrent }: RowProps) {
+function TrackingRow({ row, payment, isCurrent, loanId }: RowProps) {
   const mutation = useUpdatePayment()
   const [realInput, setRealInput] = useState<string>(
     payment?.real != null ? String(payment.real) : '',
   )
 
   const onTogglePaid = () => {
-    mutation.mutate({ ym: row.ym, paid: !payment?.paid })
+    mutation.mutate({ loanId, ym: row.ym, paid: !payment?.paid })
   }
   const onRealBlur = () => {
     const trimmed = realInput.trim()
     const value = trimmed === '' ? null : Number(trimmed)
     if (trimmed !== '' && !Number.isFinite(value)) return
     if ((payment?.real ?? null) === value) return
-    mutation.mutate({ ym: row.ym, real: value })
+    mutation.mutate({ loanId, ym: row.ym, real: value })
   }
 
   return (

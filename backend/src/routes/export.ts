@@ -13,13 +13,14 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
 
-    const [user, loan, assets, settings, incomes, expenses, classificationRules] = await Promise.all([
+    const [user, loans, assets, settings, incomes, expenses, classificationRules] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, email: true, name: true, createdAt: true },
       }),
-      prisma.loan.findFirst({
+      prisma.loan.findMany({
         where: { userId },
+        orderBy: { name: 'asc' },
         include: {
           payments: { orderBy: { ym: 'asc' } },
           amortizations: { orderBy: { ym: 'asc' } },
@@ -44,7 +45,7 @@ router.get('/', async (req, res) => {
         schemaVersion: 1,
       },
       user,
-      loan,
+      loans,
       portfolio: {
         assets,
         settings,
