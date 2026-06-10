@@ -15,7 +15,8 @@
     "db:studio": "npm run db:studio --workspace=backend",
     "deploy:prep": "npm run deploy:prep --workspace=backend",
     "prod:build": "npm install --include=dev && npm run deploy:prep && npm run build",
-    "prod:start": "npm run start --workspace=backend"
+    "prod:start": "npm run start --workspace=backend",
+    "vercel-build": "npm run db:generate:prod --workspace=backend && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

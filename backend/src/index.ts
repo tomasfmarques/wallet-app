@@ -105,9 +105,11 @@ app.get('/api/health', (_req, res) => {
 
 // ── Static frontend (production only) ──────────────────────────────
 // In dev, Vite serves the frontend on :5173 and we don't want to serve
-// stale built files. In prod we serve frontend/dist from the same Node
-// instance — single-origin deployment, no CORS dance needed.
-if (IS_PROD) {
+// stale built files. On Render we serve frontend/dist from the same Node
+// instance (single-origin). On Vercel the SPA is served by the CDN and only
+// /api/* reaches this function, so we skip static there.
+const IS_VERCEL = !!process.env.VERCEL
+if (IS_PROD && !IS_VERCEL) {
   // Resolve dist relative to the project root (process.cwd() at start time)
   const distPath = path.resolve(process.cwd(), '../frontend/dist')
   app.use(express.static(distPath))
@@ -120,8 +122,11 @@ if (IS_PROD) {
 }
 
 // ── Start ──────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`💸 Wallet360 backend running on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'})`)
-})
+// On Vercel the app is invoked as a serverless function (no listen).
+if (!IS_VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`💸 Wallet360 backend running on http://localhost:${PORT} (${IS_PROD ? 'production' : 'development'})`)
+  })
+}
 
 export default app
