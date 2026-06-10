@@ -32,8 +32,25 @@ model User {
   incomes           Income[]
   expenses          Expense[]
   classificationRules ClassificationRule[]
+  bankConnections   BankConnection[]
 
   @@map("users")
+}
+
+model BankConnection {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  requisitionId   String   @unique @map("requisition_id")
+  institutionId   String   @map("institution_id")
+  institutionName String   @map("institution_name")
+  logo            String?
+  status          String   @default("created")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("bank_connections")
 }
 
 model ClassificationRule {
@@ -63,6 +80,7 @@ model Income {
   active    Boolean  @default(true)
   pending   Boolean  @default(false)
   dayOfMonth Int?    @map("day_of_month")
+  source    String?
   startYm   String?  @map("start_ym")
   endYm     String?  @map("end_ym")
   notes     String?
@@ -84,6 +102,7 @@ model Expense {
   dayOfMonth  Int?     @map("day_of_month")
   active      Boolean  @default(true)
   pending     Boolean  @default(false)
+  source      String?
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

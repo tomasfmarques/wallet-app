@@ -1091,6 +1091,47 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
 
 ---
 
+## Phase 7F — Bank connect (Option A scaffold) + merchant-grouped movements
+
+### Bank connect (GoCardless Bank Account Data, PSD2)
+
+- **Full backend flow built** in `backend/src/routes/bank.ts`: `/status`,
+  `/institutions` (full PT list, 24h cache), `/connect` (creates requisition →
+  returns the bank's consent link), `/sync` (pulls booked transactions for all
+  linked accounts → **same import pipeline** as statement uploads: dedup +
+  learned rules + "Por classificar", `source` = bank name), `DELETE
+  /connections/:id`. New `BankConnection` model (in export/import backup).
+- **Gated on env vars** `GOCARDLESS_SECRET_ID` + `GOCARDLESS_SECRET_KEY`
+  (free account at bankaccountdata.gocardless.com → User secrets). Until set
+  on Render, `/status` returns `configured:false` and the modal shows the
+  featured banks (CTT, Millennium BCP, Montepio — Clearbit logos) as
+  "brevemente". **Once the user creates the GoCardless account and sets the
+  two env vars, everything goes live with no code change.**
+- **"Ligar banco" modal** explains why it's secure (PSD2/regulated provider,
+  auth happens on the bank's own site, read-only, 90-day revocable consent).
+  When configured: featured banks first + search across all PT institutions
+  (logos from GoCardless). After consent the user returns and hits
+  "⟳ Sincronizar transações".
+- Redirect URL is derived from the request origin → works on wallet360.pt and
+  on the onrender.com host alike.
+
+### Merchant-grouped movements (Saldo)
+
+- The per-month variable list is now **grouped by merchant** (Excel-pivot
+  style): one row per comerciante with count badge + signed total, sorted by
+  movement size; expanding shows each transaction with **date (dia X), source
+  bank badge, category, value**, per-transaction checkbox + edit. Group
+  checkbox selects all (indeterminate state supported). Income+expense live in
+  one combined list now — much more compact than the old two columns.
+- New `source String?` on Income/Expense (in export/import). The statement
+  importer infers it from the file name (CTT/BCP/Montepio → bank name, else
+  "Extrato"); bank sync sets the institution name; manual adds stay null and
+  display as "Manual".
+- Grouping reuses the same merchant-key normalization as learned rules
+  (`frontend/src/lib/merchant.ts` — keep in sync with backend).
+
+---
+
 ## Phase 8 — Production deployment readiness
 
 ### What's done in code (no more pending items from the original checklist)

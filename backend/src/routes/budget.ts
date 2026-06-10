@@ -241,99 +241,109 @@ router.post('/import', async (req, res) => {
   const userId = req.session.userId!
 
   try {
-    // Build the set of signatures the user already has. Only month-scoped rows
-    // (startYm === endYm) are considered — those are the one-off imported
-    // lines; genuine recurring budget items must never block an import.
-    const sel = { name: true, amount: true, dayOfMonth: true, startYm: true, endYm: true } as const
-    const [existingIncomes, existingExpenses] = await Promise.all([
-      prisma.income.findMany({ where: { userId }, select: sel }),
-      prisma.expense.findMany({ where: { userId }, select: sel }),
-    ])
-    const seen = new Set<string>()
-    for (const r of existingIncomes) {
-      if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('income', r.name, r.amount, r.startYm, r.dayOfMonth))
-    }
-    for (const r of existingExpenses) {
-      if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('expense', r.name, r.amount, r.startYm, r.dayOfMonth))
-    }
-
-    // Learned rules: a matched line is auto-classified (skips "Por classificar").
-    const rules = await prisma.classificationRule.findMany({ where: { userId } })
-    const ruleByKey = new Map(rules.map((r) => [r.matchKey, r]))
-
-    const incomeRows: Prisma.IncomeCreateManyInput[] = []
-    const expenseRows: Prisma.ExpenseCreateManyInput[] = []
-    let skipped = 0
-    let duplicates = 0
-    let autoClassified = 0
-
-    for (const raw of items) {
-      if (typeof raw !== 'object' || raw === null) { skipped++; continue }
-      const item = raw as Record<string, unknown>
-      const errs: Record<string, string> = {}
-
-      const name = asName(item.name, 'name', errs)
-      const amount = asPositiveNumber(item.amount, 'amount', errs)
-      const category = asOptionalString(item.category, 40)
-      const dayOfMonth = asOptionalDay(item.dayOfMonth, errs)
-      const startYm = asOptionalYm(item.startYm, 'startYm', errs)
-      const endYm = asOptionalYm(item.endYm, 'endYm', errs)
-      const notes = asOptionalString(item.notes, 500)
-
-      if (Object.keys(errs).length > 0) { skipped++; continue }
-
-      const kind = item.kind === 'income' ? 'income' : item.kind === 'expense' ? 'expense' : null
-      if (!kind) { skipped++; continue }
-
-      // Skip if this month-scoped line already exists. Also dedupes against
-      // rows added earlier in this same batch (e.g. an accidentally doubled
-      // file). Lines without a month can't be fingerprinted — always insert.
-      if (startYm) {
-        const sig = dupSignature(kind, name, amount, startYm, dayOfMonth)
-        if (seen.has(sig)) { duplicates++; continue }
-        seen.add(sig)
-      }
-
-      // If a learned rule matches this merchant, auto-classify (skip the box).
-      // Otherwise the line lands as `pending` for manual fixed/variable triage.
-      const rule = ruleByKey.get(merchantKey(name))
-      const matched = !!rule && rule.kind === kind
-      if (matched) autoClassified++
-      const pending = !matched
-      const cat = category ?? (matched ? rule!.category : null)
-
-      if (kind === 'income') {
-        const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'variable' ? 'variable' : 'fixed')
-        incomeRows.push({ userId, name, amount, type, category: cat, dayOfMonth, startYm, endYm, notes, active: true, pending })
-      } else {
-        const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'fixed' ? 'fixed' : 'variable')
-        expenseRows.push({ userId, name, amount, type, category: cat, dayOfMonth, startYm, endYm, notes, active: true, pending })
-      }
-    }
-
-    if (incomeRows.length === 0 && expenseRows.length === 0) {
+    const summary = await processImportItems(userId, items)
+    if (summary.incomes === 0 && summary.expenses === 0) {
       res.status(400).json({
-        error: duplicates > 0
+        error: summary.duplicates > 0
           ? 'Todas as transações já tinham sido importadas (duplicadas).'
           : 'Nenhuma transação válida para importar',
-        summary: { incomes: 0, expenses: 0, skipped, duplicates, autoClassified: 0 },
+        summary,
       })
       return
     }
-
-    await prisma.$transaction(async (tx) => {
-      if (incomeRows.length > 0) await tx.income.createMany({ data: incomeRows })
-      if (expenseRows.length > 0) await tx.expense.createMany({ data: expenseRows })
-    })
-    res.status(201).json({
-      ok: true,
-      summary: { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates, autoClassified },
-    })
+    res.status(201).json({ ok: true, summary })
   } catch (err) {
     console.error('POST /budget/import failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
+
+// Shared import pipeline: dedup → learned-rule auto-classify → insert.
+// Used by the statement import above AND by the bank sync (routes/bank.ts),
+// so file uploads and live bank transactions behave identically.
+export interface ImportSummary {
+  incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number
+}
+export async function processImportItems(userId: string, items: unknown[]): Promise<ImportSummary> {
+  // Build the set of signatures the user already has. Only month-scoped rows
+  // (startYm === endYm) are considered — those are the one-off imported
+  // lines; genuine recurring budget items must never block an import.
+  const sel = { name: true, amount: true, dayOfMonth: true, startYm: true, endYm: true } as const
+  const [existingIncomes, existingExpenses] = await Promise.all([
+    prisma.income.findMany({ where: { userId }, select: sel }),
+    prisma.expense.findMany({ where: { userId }, select: sel }),
+  ])
+  const seen = new Set<string>()
+  for (const r of existingIncomes) {
+    if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('income', r.name, r.amount, r.startYm, r.dayOfMonth))
+  }
+  for (const r of existingExpenses) {
+    if (r.startYm && r.startYm === r.endYm) seen.add(dupSignature('expense', r.name, r.amount, r.startYm, r.dayOfMonth))
+  }
+
+  // Learned rules: a matched line is auto-classified (skips "Por classificar").
+  const rules = await prisma.classificationRule.findMany({ where: { userId } })
+  const ruleByKey = new Map(rules.map((r) => [r.matchKey, r]))
+
+  const incomeRows: Prisma.IncomeCreateManyInput[] = []
+  const expenseRows: Prisma.ExpenseCreateManyInput[] = []
+  let skipped = 0
+  let duplicates = 0
+  let autoClassified = 0
+
+  for (const raw of items) {
+    if (typeof raw !== 'object' || raw === null) { skipped++; continue }
+    const item = raw as Record<string, unknown>
+    const errs: Record<string, string> = {}
+
+    const name = asName(item.name, 'name', errs)
+    const amount = asPositiveNumber(item.amount, 'amount', errs)
+    const category = asOptionalString(item.category, 40)
+    const dayOfMonth = asOptionalDay(item.dayOfMonth, errs)
+    const startYm = asOptionalYm(item.startYm, 'startYm', errs)
+    const endYm = asOptionalYm(item.endYm, 'endYm', errs)
+    const notes = asOptionalString(item.notes, 500)
+    const source = asOptionalString(item.source, 40)
+
+    if (Object.keys(errs).length > 0) { skipped++; continue }
+
+    const kind = item.kind === 'income' ? 'income' : item.kind === 'expense' ? 'expense' : null
+    if (!kind) { skipped++; continue }
+
+    // Skip if this month-scoped line already exists. Also dedupes against
+    // rows added earlier in this same batch (e.g. an accidentally doubled
+    // file). Lines without a month can't be fingerprinted — always insert.
+    if (startYm) {
+      const sig = dupSignature(kind, name, amount, startYm, dayOfMonth)
+      if (seen.has(sig)) { duplicates++; continue }
+      seen.add(sig)
+    }
+
+    // If a learned rule matches this merchant, auto-classify (skip the box).
+    // Otherwise the line lands as `pending` for manual fixed/variable triage.
+    const rule = ruleByKey.get(merchantKey(name))
+    const matched = !!rule && rule.kind === kind
+    if (matched) autoClassified++
+    const pending = !matched
+    const cat = category ?? (matched ? rule!.category : null)
+
+    if (kind === 'income') {
+      const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'variable' ? 'variable' : 'fixed')
+      incomeRows.push({ userId, name, amount, type, category: cat, dayOfMonth, source, startYm, endYm, notes, active: true, pending })
+    } else {
+      const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'fixed' ? 'fixed' : 'variable')
+      expenseRows.push({ userId, name, amount, type, category: cat, dayOfMonth, source, startYm, endYm, notes, active: true, pending })
+    }
+  }
+
+  if (incomeRows.length > 0 || expenseRows.length > 0) {
+    await prisma.$transaction(async (tx) => {
+      if (incomeRows.length > 0) await tx.income.createMany({ data: incomeRows })
+      if (expenseRows.length > 0) await tx.expense.createMany({ data: expenseRows })
+    })
+  }
+  return { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates, autoClassified }
+}
 
 // ── Classify a pending line (and learn a rule) ──────────────────
 // Sets one pending item's type + clears pending, saves a merchant rule, and

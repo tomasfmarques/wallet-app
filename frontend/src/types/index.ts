@@ -80,6 +80,7 @@ export interface Income {
   active: boolean
   pending: boolean           // true = imported, awaiting fixed/variable classification
   dayOfMonth: number | null  // set on statement import; used for dedup
+  source: string | null      // origin bank/import label; null = manual
   startYm: string | null
   endYm: string | null
   notes: string | null
@@ -98,6 +99,7 @@ export interface Expense {
   dayOfMonth: number | null
   active: boolean
   pending: boolean           // true = imported, awaiting fixed/variable classification
+  source: string | null     // origin bank/import label; null = manual
   startYm: string | null
   endYm: string | null
   notes: string | null

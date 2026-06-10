@@ -9,6 +9,7 @@ import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
 import { PendingClassifier } from '@/components/budget/PendingClassifier'
 import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
+import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { eur } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -23,6 +24,7 @@ export function Budget() {
   const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
+  const [bankOpen, setBankOpen] = useState(false)
 
   if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
   if (error) return (
@@ -49,6 +51,9 @@ export function Budget() {
           <p className="muted">As tuas receitas e despesas planeadas, mês a mês.</p>
         </div>
         <div className="page-header-actions">
+          <button type="button" className="btn btn-ghost" onClick={() => setBankOpen(true)}>
+            🏦 Ligar banco
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => setImportOpen(true)}>
             Importar extrato
           </button>
@@ -174,6 +179,7 @@ export function Budget() {
         defaultStartYm={expenseModal.defaultStartYm}
       />
       <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <BankConnectModal open={bankOpen} onClose={() => setBankOpen(false)} />
     </div>
   )
 }

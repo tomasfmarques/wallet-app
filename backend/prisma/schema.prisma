@@ -30,6 +30,7 @@ model User {
   incomes           Income[]
   expenses          Expense[]
   classificationRules ClassificationRule[]
+  bankConnections   BankConnection[]
 
   @@map("users")
 }
@@ -37,6 +38,24 @@ model User {
 // Learned merchant → classification rule. When the user classifies a "Por
 // classificar" line, we store a rule keyed on the normalized merchant and
 // auto-apply it to siblings and to future imports.
+// A linked bank via GoCardless Bank Account Data (PSD2). One row per
+// requisition; transactions sync into the same budget-import pipeline.
+model BankConnection {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  requisitionId   String   @unique @map("requisition_id")
+  institutionId   String   @map("institution_id")
+  institutionName String   @map("institution_name")
+  logo            String?
+  status          String   @default("created") // created | linked | expired
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("bank_connections")
+}
+
 model ClassificationRule {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
@@ -64,6 +83,7 @@ model Income {
   active    Boolean  @default(true)
   pending   Boolean  @default(false)        // true = imported, awaiting fixed/variable classification
   dayOfMonth Int?    @map("day_of_month")    // 1-31, set on statement import
+  source    String?                          // origin: "Banco CTT", "Millennium BCP", null = manual
   startYm   String?  @map("start_ym")       // "AAAA-MM" — when it started
   endYm     String?  @map("end_ym")         // "AAAA-MM" — null = ongoing
   notes     String?
@@ -87,6 +107,7 @@ model Expense {
   dayOfMonth  Int?     @map("day_of_month") // 1-31, optional
   active      Boolean  @default(true)
   pending     Boolean  @default(false)       // true = imported, awaiting fixed/variable classification
+  source      String?                         // origin bank/import label; null = manual
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

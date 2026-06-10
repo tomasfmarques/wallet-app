@@ -53,6 +53,7 @@ export interface ImportItem {
   category?: string | null
   type?: ExpenseType        // expenses only; defaults to 'variable' server-side
   dayOfMonth?: number | null
+  source?: string | null    // origin bank/import label
   startYm?: string | null
   endYm?: string | null
   notes?: string | null

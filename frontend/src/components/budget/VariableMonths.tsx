@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useBulkDeleteBudget } from '@/hooks/useBudget'
 import { eur2, eurSigned, ymToShort, currentYm } from '@/lib/format'
+import { merchantKey, merchantDisplayName } from '@/lib/merchant'
 import type { Income, Expense } from '@/types'
 
 interface Props {
@@ -19,6 +20,19 @@ interface Props {
 const monthOf = (it: { startYm: string | null }) => it.startYm || currentYm()
 const sumActive = (rows: Array<{ active: boolean; amount: number }>) =>
   rows.filter((r) => r.active).reduce((s, r) => s + r.amount, 0)
+
+interface Txn {
+  kind: 'income' | 'expense'
+  item: Income | Expense
+}
+
+interface MerchantGroup {
+  key: string
+  name: string
+  txns: Txn[]
+  total: number      // signed: incomes − expenses
+  totalAbs: number   // for sorting (movement size)
+}
 
 export function VariableMonths({
   variableIncomes, variableExpenses, fixedIncomeTotal, fixedExpenseTotal,
@@ -39,41 +53,92 @@ export function VariableMonths({
     if (!months.includes(selected)) setSelected(months[0] ?? cur)
   }, [months, selected, cur])
 
-  const [selInc, setSelInc] = useState<Set<string>>(new Set())
-  const [selExp, setSelExp] = useState<Set<string>>(new Set())
-  useEffect(() => { setSelInc(new Set()); setSelExp(new Set()) }, [selected])
+  const [checked, setChecked] = useState<Set<string>>(new Set())     // "kind:id"
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  useEffect(() => { setChecked(new Set()); setOpenGroups(new Set()) }, [selected])
 
   const incs = variableIncomes.filter((i) => monthOf(i) === selected)
   const exps = variableExpenses.filter((e) => monthOf(e) === selected)
+
+  // ── Group by merchant (Excel-pivot style) ──
+  const groups = useMemo<MerchantGroup[]>(() => {
+    const map = new Map<string, Txn[]>()
+    const push = (t: Txn) => {
+      const k = merchantKey(t.item.name) || t.item.name.toLowerCase()
+      const list = map.get(k) ?? []
+      list.push(t)
+      map.set(k, list)
+    }
+    for (const i of incs) push({ kind: 'income', item: i })
+    for (const e of exps) push({ kind: 'expense', item: e })
+    return [...map.entries()]
+      .map(([key, txns]) => {
+        const total = txns.reduce((s, t) => s + (t.kind === 'income' ? t.item.amount : -t.item.amount), 0)
+        return {
+          key,
+          name: merchantDisplayName(txns.map((t) => t.item.name)),
+          txns: txns.sort((a, b) => (b.item.dayOfMonth ?? 0) - (a.item.dayOfMonth ?? 0)),
+          total,
+          totalAbs: txns.reduce((s, t) => s + t.item.amount, 0),
+        }
+      })
+      .sort((a, b) => b.totalAbs - a.totalAbs)
+  }, [incs, exps])
 
   const incTotal = sumActive(incs)
   const expTotal = sumActive(exps)
   // Real monthly balance: recurring baseline + this month's variable movements.
   const saldo = fixedIncomeTotal - fixedExpenseTotal + incTotal - expTotal
 
-  const selectedCount = selInc.size + selExp.size
-  const removeSelected = async () => {
-    if (selectedCount === 0) return
-    if (!confirm(`Remover ${selectedCount} transação(ões)? Podes voltar a importá-las depois.`)) return
-    await del.mutateAsync({ incomeIds: [...selInc], expenseIds: [...selExp] })
-    setSelInc(new Set()); setSelExp(new Set())
+  const idOf = (t: Txn) => `${t.kind}:${t.item.id}`
+  const toggleTxn = (t: Txn) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      const id = idOf(t)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  const toggleGroup = (g: MerchantGroup) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      const allIn = g.txns.every((t) => next.has(idOf(t)))
+      for (const t of g.txns) {
+        if (allIn) next.delete(idOf(t)); else next.add(idOf(t))
+      }
+      return next
+    })
+  }
+  const toggleOpen = (key: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
   }
 
-  const toggle = (set: Set<string>, setter: (s: Set<string>) => void, id: string) => {
-    const next = new Set(set)
-    if (next.has(id)) next.delete(id); else next.add(id)
-    setter(next)
+  const removeSelected = async () => {
+    if (checked.size === 0) return
+    if (!confirm(`Remover ${checked.size} transação(ões)? Podes voltar a importá-las depois.`)) return
+    const incomeIds = [...checked].filter((c) => c.startsWith('income:')).map((c) => c.slice(7))
+    const expenseIds = [...checked].filter((c) => c.startsWith('expense:')).map((c) => c.slice(8))
+    await del.mutateAsync({ incomeIds, expenseIds })
+    setChecked(new Set())
   }
 
   return (
     <section className="var-block">
       <div className="budget-section-head">
-        <h2 className="section-label" style={{ margin: 0 }}>VARIÁVEIS (POR MÊS)</h2>
-        {selectedCount > 0 && (
-          <button type="button" className="btn btn-danger btn-sm" disabled={del.isLoading} onClick={removeSelected}>
-            Remover selecionados ({selectedCount})
-          </button>
-        )}
+        <h2 className="section-label" style={{ margin: 0 }}>MOVIMENTOS DO MÊS</h2>
+        <div className="var-head-actions">
+          {checked.size > 0 && (
+            <button type="button" className="btn btn-danger btn-sm" disabled={del.isLoading} onClick={removeSelected}>
+              Remover ({checked.size})
+            </button>
+          )}
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddIncome(selected)}>+ Receita</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddExpense(selected)}>+ Despesa</button>
+        </div>
       </div>
 
       {/* Month tabs */}
@@ -109,76 +174,73 @@ export function VariableMonths({
         </div>
       </div>
 
-      <div className="var-cols">
-        <VarList
-          title="Receitas" rows={incs} selected={selInc}
-          onToggle={(id) => toggle(selInc, setSelInc, id)}
-          onEdit={(id) => onEditIncome(incs.find((x) => x.id === id)!)}
-          onAdd={() => onAddIncome(selected)}
-          emptyText="Sem receitas variáveis neste mês."
-        />
-        <VarList
-          title="Despesas" rows={exps} selected={selExp}
-          onToggle={(id) => toggle(selExp, setSelExp, id)}
-          onEdit={(id) => onEditExpense(exps.find((x) => x.id === id)!)}
-          onAdd={() => onAddExpense(selected)}
-          emptyText="Sem despesas variáveis neste mês."
-        />
-      </div>
-    </section>
-  )
-}
-
-interface VarRow { id: string; name: string; amount: number; category: string | null; active: boolean; dayOfMonth?: number | null }
-function VarList({
-  title, rows, selected, onToggle, onEdit, onAdd, emptyText,
-}: {
-  title: string
-  rows: VarRow[]
-  selected: Set<string>
-  onToggle: (id: string) => void
-  onEdit: (id: string) => void
-  onAdd: () => void
-  emptyText: string
-}) {
-  return (
-    <div className="var-col">
-      <div className="budget-section-head" style={{ marginBottom: 8 }}>
-        <h3 className="settings-subhead" style={{ margin: 0 }}>{title}</h3>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onAdd}>+ Adicionar</button>
-      </div>
-      {rows.length === 0 ? (
-        <div className="card card-pad-lg muted">{emptyText}</div>
+      {/* Merchant-grouped list */}
+      {groups.length === 0 ? (
+        <div className="card card-pad-lg muted">Sem movimentos variáveis neste mês. Importa um extrato ou adiciona manualmente.</div>
       ) : (
-        <div className="card budget-list">
-          <ul>
-            {rows.map((r) => (
-              <li key={r.id} className={`budget-row var-row ${r.active ? '' : 'is-inactive'} ${selected.has(r.id) ? 'is-selected' : ''}`}>
-                <input
-                  type="checkbox" className="var-check" checked={selected.has(r.id)}
-                  onChange={() => onToggle(r.id)} aria-label={`Selecionar ${r.name}`}
-                />
-                <div className="budget-row-main">
-                  <div className="budget-row-name">{r.name}</div>
-                  {(r.category || r.dayOfMonth) && (
-                    <div className="budget-row-sub">
-                      {r.category
-                        ? <span className="budget-row-category">{r.category}</span>
-                        : <span className="budget-pill-uncat">por classificar</span>}
-                      {r.dayOfMonth && <span className="muted">dia {r.dayOfMonth}</span>}
-                    </div>
-                  )}
+        <div className="card merchant-list">
+          {groups.map((g) => {
+            const isOpen = openGroups.has(g.key)
+            const allChecked = g.txns.every((t) => checked.has(idOf(t)))
+            const someChecked = !allChecked && g.txns.some((t) => checked.has(idOf(t)))
+            return (
+              <div key={g.key} className={`merchant-group ${isOpen ? 'is-open' : ''}`}>
+                <div className="merchant-head">
+                  <input
+                    type="checkbox" className="var-check"
+                    checked={allChecked}
+                    ref={(el) => { if (el) el.indeterminate = someChecked }}
+                    onChange={() => toggleGroup(g)}
+                    aria-label={`Selecionar ${g.name}`}
+                  />
+                  <button type="button" className="merchant-toggle" onClick={() => toggleOpen(g.key)} aria-expanded={isOpen}>
+                    <span className="merchant-chevron" aria-hidden>{isOpen ? '▾' : '▸'}</span>
+                    <span className="merchant-name">{g.name}</span>
+                    {g.txns.length > 1 && <span className="merchant-count">{g.txns.length}×</span>}
+                    <span className={`merchant-total ${g.total >= 0 ? 'gain-positive' : 'gain-negative'}`}>
+                      {eurSigned(g.total)}
+                    </span>
+                  </button>
                 </div>
-                <div className="budget-row-amount">{eur2(r.amount)}</div>
-                <div className="budget-row-actions">
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => onEdit(r.id)}>Editar</button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                {isOpen && (
+                  <ul className="merchant-txns">
+                    {g.txns.map((t) => {
+                      const it = t.item
+                      return (
+                        <li key={idOf(t)} className={`merchant-txn ${checked.has(idOf(t)) ? 'is-selected' : ''}`}>
+                          <input
+                            type="checkbox" className="var-check"
+                            checked={checked.has(idOf(t))}
+                            onChange={() => toggleTxn(t)}
+                            aria-label={`Selecionar ${it.name}`}
+                          />
+                          <div className="merchant-txn-main">
+                            <span className="merchant-txn-date">
+                              {it.dayOfMonth ? `dia ${it.dayOfMonth}` : ymToShort(monthOf(it))}
+                            </span>
+                            <span className="merchant-txn-source">{it.source ?? 'Manual'}</span>
+                            {it.category && <span className="merchant-txn-cat">{it.category}</span>}
+                          </div>
+                          <span className={`merchant-txn-value ${t.kind === 'income' ? 'gain-positive' : 'gain-negative'}`}>
+                            {t.kind === 'income' ? '+' : '−'}{eur2(it.amount)}
+                          </span>
+                          <button
+                            type="button" className="btn btn-ghost btn-sm"
+                            onClick={() => (t.kind === 'income' ? onEditIncome(it as Income) : onEditExpense(it as Expense))}
+                          >
+                            ✎
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
-    </div>
+    </section>
   )
 }
 

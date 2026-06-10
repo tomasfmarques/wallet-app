@@ -47,6 +47,15 @@ function rowsFromTxns(txns: ParsedTransaction[], existing: Set<string>): ReviewR
   })
 }
 
+// Best-effort source label from the statement's file name, so grouped views
+// can show which bank a transaction came from.
+function sourceFromFilename(filename: string): string {
+  if (/ctt/i.test(filename)) return 'Banco CTT'
+  if (/bcp|millennium/i.test(filename)) return 'Millennium BCP'
+  if (/montepio/i.test(filename)) return 'Montepio'
+  return 'Extrato'
+}
+
 export function ImportStatementModal({ open, onClose }: Props) {
   const importMut = useImportBudget()
   const { data: budget } = useBudget()
@@ -142,6 +151,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
         amount: r.amount,
         category: r.category || null,
         dayOfMonth: r.day,
+        source: sourceFromFilename(filename),
         ...(r.kind === 'expense' ? { type: 'variable' as const } : {}),
         // Scope each one-off line to its own month so the timeline doesn't
         // treat it as a recurring entry.

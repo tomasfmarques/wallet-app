@@ -138,6 +138,7 @@ router.post('/', async (req, res) => {
       await tx.income.deleteMany({ where: { userId } })
       await tx.expense.deleteMany({ where: { userId } })
       await tx.classificationRule.deleteMany({ where: { userId } })
+      await tx.bankConnection.deleteMany({ where: { userId } })
 
       // ── Loans (multiple credits) ───────────────────────────────
       // Accept the new `loans` array; fall back to a single legacy `loan`.
@@ -268,6 +269,7 @@ router.post('/', async (req, res) => {
               dayOfMonth: isNum(i.dayOfMonth) ? Math.round(i.dayOfMonth as number) : null,
               active: isBool(i.active) ? i.active : true,
               pending: isBool(i.pending) ? i.pending : false,
+              source: isStr(i.source) ? i.source : null,
               startYm: isStr(i.startYm) ? i.startYm : null,
               endYm:   isStr(i.endYm)   ? i.endYm   : null,
               notes:   isStr(i.notes)   ? i.notes   : null,
@@ -288,12 +290,29 @@ router.post('/', async (req, res) => {
               dayOfMonth: isNum(e.dayOfMonth) ? Math.round(e.dayOfMonth as number) : null,
               active: isBool(e.active) ? e.active : true,
               pending: isBool(e.pending) ? e.pending : false,
+              source: isStr(e.source) ? e.source : null,
               startYm: isStr(e.startYm) ? e.startYm : null,
               endYm:   isStr(e.endYm)   ? e.endYm   : null,
               notes:   isStr(e.notes)   ? e.notes   : null,
             }))
           if (expenses.length > 0) await tx.expense.createMany({ data: expenses })
         }
+      }
+
+      // ── Bank connections (GoCardless requisitions) ────────────
+      if (isArr(payload.bankConnections)) {
+        const conns = (payload.bankConnections as unknown[])
+          .filter(isObj)
+          .filter((c) => isStr(c.requisitionId) && isStr(c.institutionId) && isStr(c.institutionName))
+          .map((c) => ({
+            userId,
+            requisitionId: c.requisitionId as string,
+            institutionId: c.institutionId as string,
+            institutionName: c.institutionName as string,
+            logo: isStr(c.logo) ? c.logo : null,
+            status: isStr(c.status) ? c.status : 'created',
+          }))
+        if (conns.length > 0) await tx.bankConnection.createMany({ data: conns })
       }
 
       // ── Learned classification rules ──────────────────────────
