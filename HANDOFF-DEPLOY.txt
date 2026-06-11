@@ -1,0 +1,204 @@
+WALLET360 — DEPLOYMENT HANDOFF
+================================
+App: tomasfmarques/wallet-app (GitHub)
+Domain target: wallet360.pt
+Stack: Vite SPA + Express API (serverless on Vercel) + Neon PostgreSQL
+Date: 2026-06-11
+
+The codebase is fully ready for production. Everything is already wired:
+vercel.json, Prisma prod schema, serverless handler (api/index.ts), session
+store, CORS, security headers, GoCardless bank integration. You only need
+to configure external services and set environment variables.
+
+The user already has:
+- GitHub account with the repo
+- Vercel account (created, no project yet)
+- GoCardless account at bankaccountdata.gocardless.com (created, no keys yet)
+- Domain: wallet360.pt (DNS not yet pointed to Vercel)
+
+==========================================================================
+STEP 1 — NEON POSTGRESQL (database)
+==========================================================================
+
+1. Go to neon.tech → create a free project (name it "wallet360").
+2. In the Neon dashboard → Connection Details → select "Pooled connection"
+   (the host ending in "-pooler.…neon.tech").
+3. Copy the full connection string. It looks like:
+     postgresql://user:pass@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+4. Keep this string — it becomes DATABASE_URL in Vercel.
+5. Run the schema against the new database FROM YOUR LOCAL MACHINE
+   (or any machine with the repo cloned):
+     cd /path/to/wallet-app/backend
+     DATABASE_URL="<your neon connection string>" npx prisma db push --schema prisma/schema.prod.prisma
+   This creates all tables. Only needs to be done once (and again after
+   any future schema changes).
+
+==========================================================================
+STEP 2 — VERCEL PROJECT SETUP
+==========================================================================
+
+1. vercel.com → Add New Project → Import Git Repository →
+   select tomasfmarques/wallet-app.
+
+2. Configuration screen:
+   - Framework Preset: OTHER (important — do not pick Next.js or anything else)
+   - Root Directory: leave blank (repo root)
+   - Build Command: leave blank (taken from vercel.json)
+   - Output Directory: leave blank (taken from vercel.json)
+
+3. Do NOT deploy yet — set environment variables first (Step 3).
+
+==========================================================================
+STEP 3 — ENVIRONMENT VARIABLES IN VERCEL
+==========================================================================
+
+In the Vercel project → Settings → Environment Variables,
+add ALL of the following for environments: Production + Preview.
+
+  DATABASE_URL
+    Value: the Neon POOLED connection string from Step 1
+    (the one with -pooler in the hostname, ending ?sslmode=require)
+
+  SESSION_SECRET
+    Value: a random string of at least 32 characters
+    Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+    Example (do not reuse): a3f8c2e1d4b7a9f0e2c1d3b5a7f9e1c3d5b7a9f1e3c5d7b9a1f3e5c7d9b1a3f5
+
+  GOOGLE_CLIENT_ID
+    Value: your Google OAuth 2.0 Web Client ID
+    Where to find: console.cloud.google.com → APIs & Services → Credentials
+    Looks like: 123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com
+
+  VITE_GOOGLE_CLIENT_ID
+    Value: SAME as GOOGLE_CLIENT_ID (the frontend needs it too with the VITE_ prefix)
+
+  FINNHUB_API_KEY
+    Value: your Finnhub API key (finnhub.io → free account → API key)
+    Used for stock price quotes in the portfolio page. If you don't have one,
+    leave it empty — the portfolio page will just not refresh live prices.
+
+  GOCARDLESS_SECRET_ID
+    Value: from Step 4 below
+
+  GOCARDLESS_SECRET_KEY
+    Value: from Step 4 below
+
+  APP_ORIGIN
+    Value: https://wallet360.pt
+    (used as the redirect URL after bank OAuth — set this before connecting any bank)
+
+  ALLOWED_ORIGINS
+    Value: leave EMPTY
+    (frontend and API share the same Vercel domain, so CORS is same-origin)
+
+  DO NOT SET: NODE_ENV, VERCEL — Vercel sets these automatically.
+
+==========================================================================
+STEP 4 — GOCARDLESS CREDENTIALS
+==========================================================================
+
+1. Go to bankaccountdata.gocardless.com → log in.
+
+2. In the dashboard → User Secrets (left sidebar) → Create new secret.
+   - Give it a name like "wallet360-production"
+   - Copy the Secret ID and Secret Key immediately — the key is only shown once.
+
+3. Add them to Vercel (Step 3 above):
+   GOCARDLESS_SECRET_ID = <the Secret ID>
+   GOCARDLESS_SECRET_KEY = <the Secret Key>
+
+4. No redirect URI needs to be pre-registered with GoCardless.
+   The app passes the callback URL dynamically when the user connects a bank
+   (it redirects back to https://wallet360.pt/budget?bank=back).
+
+==========================================================================
+STEP 5 — FIRST DEPLOY
+==========================================================================
+
+1. In Vercel → project → Deployments → trigger a new deployment
+   (or push any commit to the main branch on GitHub).
+
+2. Watch the build logs. A successful build ends with:
+   "Generating Prisma Client... Done"
+   "Build Completed"
+
+3. Smoke-test the preview URL:
+   https://<your-app>.vercel.app/api/health   → should return {"ok":true}
+   https://<your-app>.vercel.app              → should load the SPA login screen
+
+4. If the function crashes on first API call, check:
+   - DATABASE_URL is the POOLED Neon string (with -pooler)
+   - SESSION_SECRET is set and at least 32 chars
+   - Build log shows Prisma client was generated
+
+==========================================================================
+STEP 6 — GOOGLE OAUTH (allow the new domain)
+==========================================================================
+
+1. console.cloud.google.com → APIs & Services → Credentials →
+   click your OAuth 2.0 Web Client.
+
+2. Under "Authorized JavaScript origins" ADD:
+   https://wallet360.pt
+   https://<your-app>.vercel.app   (the preview URL from Step 5)
+
+3. Under "Authorized redirect URIs" — no change needed
+   (this app uses the Google Identity Services popup flow, not redirect).
+
+4. Save.
+
+==========================================================================
+STEP 7 — DOMAIN (wallet360.pt → Vercel)
+==========================================================================
+
+1. Vercel → Project → Settings → Domains → Add Domain → wallet360.pt
+   Vercel will show you DNS records to create (usually an A record and
+   a CNAME for www).
+
+2. Log in to your domain registrar (dominios.pt or wherever wallet360.pt
+   is registered).
+
+3. Add/update the DNS records as Vercel instructs.
+   DNS propagation can take 5–60 minutes.
+
+4. Vercel auto-provisions a free TLS certificate once DNS resolves.
+
+==========================================================================
+STEP 8 — POST-DEPLOY CHECKLIST
+==========================================================================
+
+[ ] https://wallet360.pt loads the login page
+[ ] Can register a new account with email + password
+[ ] Can sign in with Google
+[ ] Budget page loads with no errors
+[ ] "Ligar banco" button on Budget page opens the bank picker modal
+    (if GOCARDLESS_* vars are set, banks will be listed; otherwise shows
+    "brevemente" fallback — this means GoCardless is not yet configured)
+[ ] Portfolio page loads
+[ ] Crédito page loads
+[ ] https://wallet360.pt/api/health returns {"ok":true}
+
+==========================================================================
+KNOWN NOTES / GOTCHAS
+==========================================================================
+
+- DATABASE_URL must use the POOLED Neon connection string (with -pooler
+  in the hostname). The non-pooled string will time out under serverless
+  concurrency.
+
+- SESSION_SECRET must be the same across all Vercel deployments. If you
+  rotate it, all active sessions are invalidated (users get logged out).
+
+- In-memory caches (stock quotes, GoCardless token) reset on every cold
+  start. This is harmless — just means occasional extra upstream calls.
+
+- Future schema changes: run the following locally against Neon before
+  deploying code that requires new columns/tables:
+    cd backend
+    DATABASE_URL="<neon pooled url>" npx prisma db push --schema prisma/schema.prod.prisma
+
+- The app is on branch "main". All recent features are committed there.
+
+==========================================================================
+END OF HANDOFF
+==========================================================================
