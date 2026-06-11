@@ -473,6 +473,13 @@ body {
   border-color: #A7F3D0;
 }
 .kpi-accent-green .kpi-value { color: var(--green-d); }
+.kpi-accent-yellow {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+.kpi-accent-yellow .kpi-value { color: #92400E; }
+.tracking-delta-pos { color: var(--green-d); font-weight: 500; }
+.tracking-delta-neg { color: var(--red); font-weight: 500; }
 .kpi-meta-bon { color: var(--green-d); font-weight: 500; }
 .bon-tag {
   font-size: 10px;

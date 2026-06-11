@@ -144,6 +144,8 @@ export function Loan() {
         taeg={loan.taeg}
         bonificacaoMensal={loan.bonificacaoMensal}
         bonificacaoMeses={loan.bonificacaoMeses}
+        scheduleRows={schedule.rows}
+        payments={loan.payments}
       />
 
       <div className="subtabs" role="tablist">

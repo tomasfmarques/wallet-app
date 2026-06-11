@@ -1,5 +1,6 @@
 import { eur, eur2, pct, ymToLong, ymYearsDiff, currentYm, ymAddMonths } from '@/lib/format'
-import type { LoanKpis as LoanKpisData } from '@/hooks/useLoan'
+import type { LoanKpis as LoanKpisData, LoanScheduleRow } from '@/hooks/useLoan'
+import type { LoanPayment } from '@/types'
 
 interface Props {
   kpis: LoanKpisData
@@ -11,12 +12,15 @@ interface Props {
   taeg?: number | null
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
+  scheduleRows: LoanScheduleRow[]
+  payments: LoanPayment[]
 }
 
 export function LoanKpis({
   kpis, capitalInicial, dataInicio,
   tanFixa, spread, euribor, taeg,
   bonificacaoMensal, bonificacaoMeses,
+  scheduleRows, payments,
 }: Props) {
   const today = currentYm()
   const anosRestantes = ymYearsDiff(today, kpis.conclusaoYm)
@@ -28,6 +32,19 @@ export function LoanKpis({
   const netPrestacao = bonAtiva ? kpis.proximaPrestacao - bonificacaoMensal! : null
 
   const isFixedOnly = spread === 0 && euribor === 0
+
+  // Expected vs actual tracking
+  const pastRows = scheduleRows.filter((r) => r.ym <= today)
+  const countExpected = pastRows.length
+  const expectedPaid = pastRows.reduce((s, r) => s + r.prestacao, 0)
+  const paymentMap = new Map(payments.map((p) => [p.ym, p]))
+  const paidRows = pastRows.filter((r) => paymentMap.get(r.ym)?.paid)
+  const countPaid = paidRows.length
+  const actualPaid = paidRows.reduce((s, r) => {
+    const p = paymentMap.get(r.ym)
+    return s + (p?.real != null ? p.real : r.prestacao)
+  }, 0)
+  const delta = actualPaid - expectedPaid
 
   return (
     <div className="kpi-grid">
@@ -89,6 +106,25 @@ export function LoanKpis({
             </div>
           </>
         )}
+      </div>
+
+      <div className="kpi">
+        <div className="kpi-label">PREVISTO ACUMULADO</div>
+        <div className="kpi-value">{eur(expectedPaid)}</div>
+        <div className="kpi-meta">{countExpected} meses desde início</div>
+      </div>
+
+      <div className={`kpi ${countPaid === countExpected && countExpected > 0 ? 'kpi-accent-green' : countPaid < countExpected ? 'kpi-accent-yellow' : ''}`}>
+        <div className="kpi-label">REAL PAGO</div>
+        <div className="kpi-value">{countPaid > 0 ? eur(actualPaid) : '—'}</div>
+        <div className="kpi-meta">
+          {countPaid}/{countExpected} meses confirmados
+          {countPaid > 0 && delta !== 0 && (
+            <span className={delta > 0 ? 'tracking-delta-pos' : 'tracking-delta-neg'}>
+              {' '}· {delta > 0 ? '+' : ''}{eur2(delta)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
