@@ -5,13 +5,19 @@ interface Props {
   kpis: LoanKpisData
   capitalInicial: number
   dataInicio: string
+  tanFixa: number
+  spread: number
+  euribor: number
+  taeg?: number | null
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
 }
 
-// 4-card grid mirroring the design's "Empréstimo da casa" section:
-// CAPITAL EM DÍVIDA · PRÓXIMA PRESTAÇÃO · CONCLUSÃO PREVISTA · POUPANÇA EM JUROS
-export function LoanKpis({ kpis, capitalInicial, dataInicio, bonificacaoMensal, bonificacaoMeses }: Props) {
+export function LoanKpis({
+  kpis, capitalInicial, dataInicio,
+  tanFixa, spread, euribor, taeg,
+  bonificacaoMensal, bonificacaoMeses,
+}: Props) {
   const today = currentYm()
   const anosRestantes = ymYearsDiff(today, kpis.conclusaoYm)
   const [anoConclusao] = kpis.conclusaoYm.split('-')
@@ -20,6 +26,8 @@ export function LoanKpis({ kpis, capitalInicial, dataInicio, bonificacaoMensal, 
     && bonificacaoMeses != null && bonificacaoMeses > 0
     && today < ymAddMonths(dataInicio, bonificacaoMeses)
   const netPrestacao = bonAtiva ? kpis.proximaPrestacao - bonificacaoMensal! : null
+
+  const isFixedOnly = spread === 0 && euribor === 0
 
   return (
     <div className="kpi-grid">
@@ -58,6 +66,29 @@ export function LoanKpis({ kpis, capitalInicial, dataInicio, bonificacaoMensal, 
         <div className="kpi-meta">
           {kpis.poupancaJuros > 0 ? 'das amortizações registadas' : 'amortizações registadas'}
         </div>
+      </div>
+
+      {/* Rate info card — shows TAEG if set, otherwise effective rate */}
+      <div className="kpi">
+        <div className="kpi-label">TAXA EFETIVA</div>
+        {taeg != null ? (
+          <>
+            <div className="kpi-value">{(taeg * 100).toFixed(2)} %</div>
+            <div className="kpi-meta">TAEG · TAN {(tanFixa * 100).toFixed(2)} %</div>
+          </>
+        ) : isFixedOnly ? (
+          <>
+            <div className="kpi-value">{(tanFixa * 100).toFixed(2)} %</div>
+            <div className="kpi-meta">TAN fixa</div>
+          </>
+        ) : (
+          <>
+            <div className="kpi-value">{((euribor + spread) * 100).toFixed(2)} %</div>
+            <div className="kpi-meta">
+              Euribor {(euribor * 100).toFixed(2)} % + spread {(spread * 100).toFixed(2)} %
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

@@ -65,6 +65,7 @@ export interface LoanInputBody {
   dataInicio: string
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
+  taeg?: number | null
 }
 
 // ── Query key ────────────────────────────────────────────────────

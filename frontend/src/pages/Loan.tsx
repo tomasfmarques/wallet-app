@@ -80,6 +80,7 @@ export function Loan() {
               name: loan.name, capital: loan.capital, prazoMeses: loan.prazoMeses, tanFixa: loan.tanFixa,
               mesesFixos: loan.mesesFixos, spread: loan.spread, euribor: loan.euribor, dataInicio: loan.dataInicio,
               bonificacaoMensal: loan.bonificacaoMensal, bonificacaoMeses: loan.bonificacaoMeses,
+              taeg: loan.taeg,
             }}
             onSaved={() => setMode('view')}
             onCancel={() => setMode('view')}
@@ -137,6 +138,10 @@ export function Loan() {
         kpis={kpis}
         capitalInicial={loan.capital}
         dataInicio={loan.dataInicio}
+        tanFixa={loan.tanFixa}
+        spread={loan.spread}
+        euribor={loan.euribor}
+        taeg={loan.taeg}
         bonificacaoMensal={loan.bonificacaoMensal}
         bonificacaoMeses={loan.bonificacaoMeses}
       />

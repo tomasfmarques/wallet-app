@@ -145,6 +145,7 @@ model Loan {
   dataInicio  String @map("data_inicio")
   bonificacaoMensal Float? @map("bonificacao_mensal")
   bonificacaoMeses  Int?   @map("bonificacao_meses")
+  taeg              Float?
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments      LoanPayment[]

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLoan } from '@/hooks/useLoan'
+import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
-import { eur, ymToShort } from '@/lib/format'
+import { eur, eur2, ymToShort } from '@/lib/format'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
 
@@ -20,21 +21,49 @@ function addMonths(ym: string, n: number): string {
 
 export function Compare() {
   const { data: loanData, isLoading: loanLoading } = useLoan()
+  const { data: portData } = usePortfolio()
   const compare = useCompare()
 
   const loans = loanData?.loans ?? []
-
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [valor, setValor] = useState(5000)
-  const [valorInput, setValorInput] = useState('5000')
-  const [modo, setModo] = useState<Modo>('prazo')
-  const [investReturn, setInvestReturn] = useState(7)
-  const [taxRate, setTaxRate] = useState(28)
-  const [result, setResult] = useState<CompareResult | null>(null)
-
   const selectedLoan = loans.find((l) => l.loan.id === selectedId) ?? loans[0] ?? null
 
-  // Auto-run when inputs change
+  // ── Smart defaults derived from actual user data ──────────────
+  const smartDefaults = useMemo(() => {
+    // Investment return: use portfolio settings gFY (future yield %) if available
+    const gFY = portData?.settings?.gFY
+    const avgAssetReturn = portData?.assets?.length
+      ? portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length * 100
+      : null
+    const investReturn = gFY ?? avgAssetReturn ?? 7
+
+    // Amount: use the selected loan's next installment, rounded to nearest 100
+    const nextPrestacao = selectedLoan?.kpis?.proximaPrestacao ?? 5000
+    const valor = Math.max(100, Math.round(nextPrestacao / 100) * 100)
+
+    return { valor, investReturn: Math.round(investReturn * 10) / 10, taxRate: 28, modo: 'prazo' as Modo }
+  }, [selectedLoan?.loan.id, portData])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [valor, setValor] = useState(smartDefaults.valor)
+  const [valorInput, setValorInput] = useState(String(smartDefaults.valor))
+  const [modo, setModo] = useState<Modo>(smartDefaults.modo)
+  const [investReturn, setInvestReturn] = useState(smartDefaults.investReturn)
+  const [taxRate, setTaxRate] = useState(smartDefaults.taxRate)
+  const [result, setResult] = useState<CompareResult | null>(null)
+
+  // When the selected loan changes, reset to smart defaults for that loan
+  const resetToDefaults = () => {
+    setValor(smartDefaults.valor)
+    setValorInput(String(smartDefaults.valor))
+    setModo(smartDefaults.modo)
+    setInvestReturn(smartDefaults.investReturn)
+    setTaxRate(smartDefaults.taxRate)
+  }
+
+  // Re-seed when loan selection changes
+  useEffect(() => { resetToDefaults() }, [selectedLoan?.loan.id])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-run simulation when inputs change
   useEffect(() => {
     if (!selectedLoan) return
     if (!Number.isFinite(valor) || valor <= 0) return
@@ -76,6 +105,18 @@ export function Compare() {
     if (Number.isFinite(n) && n > 0) setValor(n)
   }
 
+  const loan = selectedLoan?.loan
+  const kpis = selectedLoan?.kpis
+
+  // Effective rate label for the context card
+  const effectiveRateLabel = loan
+    ? loan.taeg != null
+      ? `TAEG ${(loan.taeg * 100).toFixed(2)} %`
+      : loan.spread === 0 && loan.euribor === 0
+        ? `TAN ${(loan.tanFixa * 100).toFixed(2)} %`
+        : `${((loan.euribor + loan.spread) * 100).toFixed(2)} % (Euribor + spread)`
+    : '—'
+
   const rec = result?.recommendation
 
   return (
@@ -87,25 +128,59 @@ export function Compare() {
         </p>
       </header>
 
-      {/* ── Loan selector ── */}
+      {/* Loan selector */}
       {loans.length > 1 && (
-        <div className="chip-row" style={{ marginBottom: 16 }}>
-          {loans.map(({ loan }) => (
+        <div className="chip-row" style={{ marginBottom: 0 }}>
+          {loans.map(({ loan: l }) => (
             <button
-              key={loan.id}
-              type="button"
-              className={`chip ${(selectedLoan?.loan.id === loan.id) ? 'chip-active' : ''}`}
-              onClick={() => setSelectedId(loan.id)}
+              key={l.id} type="button"
+              className={`chip ${(selectedLoan?.loan.id === l.id) ? 'chip-active' : ''}`}
+              onClick={() => setSelectedId(l.id)}
             >
-              {loan.name}
+              {l.name}
             </button>
           ))}
         </div>
       )}
 
-      {/* ── Controls ── */}
+      {/* Loan context strip */}
+      {loan && kpis && (
+        <div className="compare-context-strip">
+          <div className="compare-context-item">
+            <span className="compare-context-label">Crédito</span>
+            <span className="compare-context-value">{loan.name}</span>
+          </div>
+          <div className="compare-context-item">
+            <span className="compare-context-label">Taxa</span>
+            <span className="compare-context-value">{effectiveRateLabel}</span>
+          </div>
+          <div className="compare-context-item">
+            <span className="compare-context-label">Capital em dívida</span>
+            <span className="compare-context-value">{eur(kpis.capitalAtual)}</span>
+          </div>
+          <div className="compare-context-item">
+            <span className="compare-context-label">Prestação mensal</span>
+            <span className="compare-context-value">{eur2(kpis.proximaPrestacao)}</span>
+          </div>
+          <div className="compare-context-item">
+            <span className="compare-context-label">Conclusão prevista</span>
+            <span className="compare-context-value">{kpis.conclusaoYm.slice(0, 4)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Controls */}
       <div className="card card-pad-lg compare-controls">
-        <h3 className="section-label" style={{ marginTop: 0 }}>PARÂMETROS</h3>
+        <div className="compare-controls-header">
+          <h3 className="section-label" style={{ margin: 0 }}>PARÂMETROS</h3>
+          <button
+            type="button" className="btn btn-ghost btn-sm"
+            onClick={resetToDefaults}
+            title="Repor valores predefinidos do teu crédito e portfolio"
+          >
+            ↺ Repor valores
+          </button>
+        </div>
 
         <div className="compare-controls-grid">
           {/* Montante */}
@@ -113,12 +188,15 @@ export function Compare() {
             <label className="form-label">Montante a alocar (€)</label>
             <input
               className="form-input"
-              type="number"
-              min={100}
-              step={500}
+              type="number" min={100} step={100}
               value={valorInput}
               onChange={(e) => handleValorChange(e.target.value)}
             />
+            {kpis && (
+              <span className="form-hint">
+                Prestação mensal: {eur2(kpis.proximaPrestacao)}
+              </span>
+            )}
           </div>
 
           {/* Modo */}
@@ -160,6 +238,11 @@ export function Compare() {
               style={{ accentColor: 'var(--green)' }}
             />
             <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
+            {portData?.settings?.gFY != null && (
+              <span className="form-hint">
+                O teu portfolio usa {portData.settings.gFY} % de rentabilidade futura.
+              </span>
+            )}
           </div>
 
           {/* Taxa de imposto */}
@@ -180,19 +263,16 @@ export function Compare() {
         </div>
       </div>
 
-      {/* ── Loading ── */}
+      {/* Loading */}
       {compare.isLoading && !result && (
         <div className="card card-pad-lg muted">A calcular…</div>
       )}
 
-      {/* ── Results ── */}
+      {/* Results */}
       {result && (
         <>
           {/* Recommendation banner */}
-          <div
-            className={`compare-rec compare-rec-${rec}`}
-            role="status"
-          >
+          <div className={`compare-rec compare-rec-${rec}`} role="status">
             <span className="compare-rec-icon" aria-hidden>
               {rec === 'amortizar' ? '🏠' : rec === 'investir' ? '📈' : '⚖️'}
             </span>
@@ -215,7 +295,6 @@ export function Compare() {
 
           {/* KPI comparison grid */}
           <div className="compare-columns">
-            {/* Amortizar column */}
             <div className="card card-pad-lg compare-col compare-col-amortizar">
               <div className="compare-col-header">
                 <span className="compare-col-icon" aria-hidden>🏠</span>
@@ -230,9 +309,7 @@ export function Compare() {
                 <div className="kpi">
                   <div className="kpi-label">TEMPO POUPADO</div>
                   <div className="kpi-value">{result.amortizar.monthsSaved} meses</div>
-                  <div className="kpi-meta">
-                    nova conclusão: {ymToShort(result.amortizar.payoffYm)}
-                  </div>
+                  <div className="kpi-meta">nova conclusão: {ymToShort(result.amortizar.payoffYm)}</div>
                 </div>
                 {modo === 'prestacao' && result.amortizar.monthlyFreed != null && (
                   <div className="kpi">
@@ -240,7 +317,9 @@ export function Compare() {
                     <div className="kpi-value" style={{ color: 'var(--green-d)' }}>
                       {eur(result.amortizar.monthlyFreed)}
                     </div>
-                    <div className="kpi-meta">nova prestação: {result.amortizar.newPrestacao != null ? eur(result.amortizar.newPrestacao) : '—'}</div>
+                    <div className="kpi-meta">
+                      nova prestação: {result.amortizar.newPrestacao != null ? eur(result.amortizar.newPrestacao) : '—'}
+                    </div>
                   </div>
                 )}
                 <div className="kpi">
@@ -253,7 +332,6 @@ export function Compare() {
               </div>
             </div>
 
-            {/* Investir column */}
             <div className="card card-pad-lg compare-col compare-col-investir">
               <div className="compare-col-header">
                 <span className="compare-col-icon" aria-hidden>📈</span>
@@ -268,9 +346,7 @@ export function Compare() {
                 <div className="kpi">
                   <div className="kpi-label">VALOR FUTURO</div>
                   <div className="kpi-value">{eur(result.investir.futureValue)}</div>
-                  <div className="kpi-meta">
-                    ao fim de {Math.round(result.horizonMonths / 12)} anos
-                  </div>
+                  <div className="kpi-meta">ao fim de {Math.round(result.horizonMonths / 12)} anos</div>
                 </div>
                 <div className="kpi">
                   <div className="kpi-label">GANHO BRUTO</div>
@@ -290,20 +366,18 @@ export function Compare() {
 
           {/* Break-even callout */}
           <div className="compare-breakeven card">
-            <span className="compare-breakeven-label">
-              ⚖️ Ponto de equilíbrio
-            </span>
+            <span className="compare-breakeven-label">⚖️ Ponto de equilíbrio</span>
             <span className="compare-breakeven-value">
               {result.breakEvenReturn < 0.05
                 ? 'Qualquer rentabilidade positiva favorece investir'
                 : `${result.breakEvenReturn.toFixed(2)} % ao ano`}
             </span>
             <span className="compare-breakeven-hint">
-              {result.breakEvenReturn < 0.05
-                ? ''
-                : investReturn >= result.breakEvenReturn
+              {result.breakEvenReturn >= 0.05 && (
+                investReturn >= result.breakEvenReturn
                   ? `Com ${investReturn.toFixed(1)} % superas o ponto de equilíbrio — investir vence.`
-                  : `Com ${investReturn.toFixed(1)} % ficas abaixo do ponto de equilíbrio — amortizar vence.`}
+                  : `Com ${investReturn.toFixed(1)} % ficas abaixo do ponto de equilíbrio — amortizar vence.`
+              )}
             </span>
           </div>
 
@@ -355,26 +429,12 @@ function CompareChart({ curve }: { curve: Array<{ ym: string; amortizar: number;
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: {
-        display: true,
-        position: 'top',
-        align: 'end',
-        labels: { boxWidth: 12, boxHeight: 12, padding: 12 },
-      },
-      tooltip: {
-        callbacks: {
-          label: (ctx) =>
-            `${ctx.dataset.label}: ${ctx.parsed.y != null ? eur(ctx.parsed.y) : '—'}`,
-        },
-      },
+      legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, boxHeight: 12, padding: 12 } },
+      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y != null ? eur(ctx.parsed.y) : '—'}` } },
     },
     scales: {
       x: { grid: { display: false }, ticks: { maxTicksLimit: 8, autoSkip: true } },
-      y: {
-        grid: { color: '#F1F5F9' },
-        ticks: { callback: (v) => eur(Number(v)) },
-        beginAtZero: true,
-      },
+      y: { grid: { color: '#F1F5F9' }, ticks: { callback: (v) => eur(Number(v)) }, beginAtZero: true },
     },
   }
 

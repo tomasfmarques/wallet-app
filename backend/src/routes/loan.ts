@@ -108,11 +108,18 @@ router.put('/', async (req, res) => {
     if (!Number.isInteger(m) || m < 0) errors.bonificacaoMeses = 'Inteiro ≥ 0'
     else bonificacaoMeses = m > 0 ? m : null
   }
+  const taegRaw = req.body?.taeg
+  let taeg: number | null = null
+  if (taegRaw !== undefined && taegRaw !== null && taegRaw !== '') {
+    const t = Number(taegRaw)
+    if (!Number.isFinite(t) || t < 0) errors.taeg = 'Valor inválido'
+    else taeg = t > 0 ? t : null
+  }
 
   if (mesesFixos > prazoMeses) errors.mesesFixos = 'mesesFixos não pode exceder prazoMeses'
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
-  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses }
+  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses, taeg }
   const id = typeof req.body?.id === 'string' ? req.body.id : null
 
   try {

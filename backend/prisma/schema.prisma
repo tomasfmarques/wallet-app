@@ -150,6 +150,7 @@ model Loan {
   // the bank charges the full PMT but returns this amount each month.
   bonificacaoMensal Float? @map("bonificacao_mensal")
   bonificacaoMeses  Int?   @map("bonificacao_meses")
+  taeg              Float? // display-only TAEG for fixed-rate loans (e.g. car, personal)
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments      LoanPayment[]

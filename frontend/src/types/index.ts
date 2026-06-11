@@ -21,6 +21,7 @@ export interface Loan {
   dataInicio: string // "AAAA-MM"
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
+  taeg?: number | null
 }
 
 export interface LoanPayment {
