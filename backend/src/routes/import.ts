@@ -331,7 +331,7 @@ router.post('/', async (req, res) => {
           }))
         if (rules.length > 0) await tx.classificationRule.createMany({ data: rules })
       }
-    })
+    }, { timeout: 30_000 })
 
     // Summary
     const [loanCount, assetCount, settings, incomeCount, expenseCount] = await Promise.all([

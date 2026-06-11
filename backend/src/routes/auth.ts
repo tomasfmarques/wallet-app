@@ -4,6 +4,27 @@ import { prisma } from '../lib/prisma'
 
 const router = Router()
 
+// ── Per-account lockout for change-password ──────────────────────
+// Simple in-memory store: works for single-instance and serverless cold
+// starts. Replace with a Redis counter for multi-instance deployments.
+const CP_MAX = 5
+const CP_WINDOW_MS = 15 * 60 * 1000
+const cpAttempts = new Map<string, { count: number; resetAt: number }>()
+
+function cpIsLocked(userId: string): boolean {
+  const e = cpAttempts.get(userId)
+  if (!e) return false
+  if (Date.now() > e.resetAt) { cpAttempts.delete(userId); return false }
+  return e.count >= CP_MAX
+}
+function cpRecordFail(userId: string): void {
+  const now = Date.now()
+  const e = cpAttempts.get(userId)
+  if (!e || now > e.resetAt) { cpAttempts.set(userId, { count: 1, resetAt: now + CP_WINDOW_MS }); return }
+  e.count++
+}
+function cpClear(userId: string): void { cpAttempts.delete(userId) }
+
 // ── Validation helpers ───────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -145,14 +166,19 @@ router.post('/change-password', async (req, res) => {
     return
   }
 
+  const userId = req.session.userId!
+  if (cpIsLocked(userId)) {
+    res.status(429).json({ error: 'Demasiadas tentativas falhadas. Tenta novamente em 15 minutos.' })
+    return
+  }
+
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
+    const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
       res.status(401).json({ error: 'Sessão inválida' })
       return
     }
     if (!user.passwordHash) {
-      // Google-only account — no current password to verify against
       res.status(400).json({
         error: 'A conta usa Sign in with Google. Não existe password local para mudar.',
       })
@@ -160,10 +186,12 @@ router.post('/change-password', async (req, res) => {
     }
     const ok = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!ok) {
+      cpRecordFail(userId)
       res.status(401).json({ errors: { currentPassword: 'Password atual incorreta' } })
       return
     }
 
+    cpClear(userId)
     const passwordHash = await bcrypt.hash(newPassword, 12)
     await prisma.user.update({
       where: { id: user.id },

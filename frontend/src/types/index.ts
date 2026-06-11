@@ -5,6 +5,7 @@ export interface User {
   email: string
   name: string
   createdAt: string
+  hasPassword: boolean
 }
 
 export interface Loan {

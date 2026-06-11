@@ -62,10 +62,16 @@ router.post('/', async (req, res) => {
     if (!user && emailVerified) {
       const byEmail = await prisma.user.findUnique({ where: { email } })
       if (byEmail) {
-        user = await prisma.user.update({
-          where: { id: byEmail.id },
-          data: { googleId },
-        })
+        try {
+          user = await prisma.user.update({
+            where: { id: byEmail.id },
+            data: { googleId },
+          })
+        } catch {
+          // Concurrent request already linked this googleId — re-read the final state
+          user = await prisma.user.findUnique({ where: { googleId } })
+               ?? await prisma.user.findUnique({ where: { email } })
+        }
       }
     }
 

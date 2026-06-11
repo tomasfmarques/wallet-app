@@ -26,6 +26,7 @@ router.get('/', requireAuth, async (req, res) => {
         email: user.email,
         name: user.name,
         createdAt: user.createdAt.toISOString(),
+        hasPassword: !!user.passwordHash,
       },
     })
   } catch (err) {
