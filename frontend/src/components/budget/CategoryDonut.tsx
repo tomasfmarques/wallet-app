@@ -14,6 +14,7 @@ interface Props {
   items: Item[]
   title: string
   emptyText: string
+  totalSuffix?: string   // appended to the total, e.g. "/mês"; "" for month views
 }
 
 // Tones from the existing accent palette.
@@ -25,7 +26,7 @@ const COLOURS = [
 // Donut chart breaking down a budget list by category. Inactive items are
 // excluded — they don't count toward the active budget. Items without a
 // category fall into the "Por classificar" bucket.
-export function CategoryDonut({ items, title, emptyText }: Props) {
+export function CategoryDonut({ items, title, emptyText, totalSuffix = '/mês' }: Props) {
   const { data, options, total, hasData } = useMemo(() => {
     const byCat = new Map<string, number>()
     for (const it of items) {
@@ -96,7 +97,7 @@ export function CategoryDonut({ items, title, emptyText }: Props) {
   return (
     <div className="card card-pad-lg category-donut">
       <h3 className="settings-subhead" style={{ marginBottom: 4 }}>{title}</h3>
-      <div className="muted donut-total">Total: <strong>{eur(total)}/mês</strong></div>
+      <div className="muted donut-total">Total: <strong>{eur(total)}{totalSuffix}</strong></div>
       {hasData ? (
         <div className="chart-wrap" style={{ height: 220 }}>
           <Doughnut data={data} options={options} />

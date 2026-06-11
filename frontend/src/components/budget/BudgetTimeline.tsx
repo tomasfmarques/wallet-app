@@ -10,6 +10,7 @@ interface Props {
   months?: number   // default 12 (rolling year)
   endAt?: string    // default current YM (rolling window ends here)
   futureMonths?: number  // optional months in the future to show planned
+  onMonthClick?: (ym: string) => void  // bar click → drill into that month
 }
 
 interface TimedItem {
@@ -38,7 +39,7 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 // net-line overlay. Honours each row's startYm/endYm so historical months
 // reflect what was actually active back then (e.g. salary started in March).
 export function BudgetTimeline({
-  incomes, expenses, months = 12, endAt, futureMonths = 0,
+  incomes, expenses, months = 12, endAt, futureMonths = 0, onMonthClick,
 }: Props) {
   const today = endAt ?? currentYm()
   const totalMonths = months + futureMonths
@@ -46,6 +47,7 @@ export function BudgetTimeline({
   const { chartData, chartOptions, avgNet } = useMemo(() => {
     const start = ymAddMonths(today, -(months - 1))
     const labels: string[] = []
+    const yms: string[] = []
     const incomeSeries: number[] = []
     const fixedSeries: number[] = []
     const variableSeries: number[] = []
@@ -53,6 +55,7 @@ export function BudgetTimeline({
 
     for (let i = 0; i < totalMonths; i++) {
       const ym = ymAddMonths(start, i)
+      yms.push(ym)
       labels.push(ymToShort(ym))
       const inc = incomes
         .filter((x) => isActiveInMonth(x, ym))
@@ -118,6 +121,15 @@ export function BudgetTimeline({
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      onClick: (_evt, elements) => {
+        if (!onMonthClick || elements.length === 0) return
+        const ym = yms[elements[0].index]
+        if (ym) onMonthClick(ym)
+      },
+      onHover: (evt, elements) => {
+        const target = evt.native?.target as HTMLElement | undefined
+        if (target && onMonthClick) target.style.cursor = elements.length > 0 ? 'pointer' : 'default'
+      },
       plugins: {
         legend: {
           position: 'top',
@@ -147,7 +159,7 @@ export function BudgetTimeline({
     const avg = past.length > 0 ? past.reduce((s, v) => s + v, 0) / past.length : 0
 
     return { chartData: data, chartOptions: opts, avgNet: avg }
-  }, [incomes, expenses, today, months, totalMonths])
+  }, [incomes, expenses, today, months, totalMonths, onMonthClick])
 
   return (
     <div className="card card-pad-lg">
@@ -165,6 +177,7 @@ export function BudgetTimeline({
       <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
         Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês,
         respeitando os campos <em>início</em> e <em>fim</em> de cada registo.
+        {onMonthClick && <> Clica num mês para o analisar em detalhe.</>}
       </p>
     </div>
   )

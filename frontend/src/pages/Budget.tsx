@@ -10,10 +10,12 @@ import { PendingClassifier } from '@/components/budget/PendingClassifier'
 import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
-import { eur } from '@/lib/format'
+import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
+import { eur, currentYm } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 type Tab = 'tables' | 'analysis'
+type AnalysisScope = 'overview' | 'month'
 
 export function Budget() {
   const { data, isLoading, error } = useBudget()
@@ -21,6 +23,8 @@ export function Budget() {
   const delExpense = useDeleteExpense()
 
   const [tab, setTab] = useState<Tab>('tables')
+  const [analysisScope, setAnalysisScope] = useState<AnalysisScope>('overview')
+  const [analysisYm, setAnalysisYm] = useState(currentYm())
   const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
@@ -136,31 +140,64 @@ export function Budget() {
 
       {tab === 'analysis' && (
         <>
-          <section>
-            <h2 className="section-label">HISTÓRICO</h2>
-            <BudgetTimeline incomes={incomes} expenses={expenses} months={12} />
-          </section>
+          <div className="toggle-group analysis-scope-toggle">
+            <button
+              type="button"
+              className={`toggle-btn ${analysisScope === 'overview' ? 'toggle-btn-active' : ''}`}
+              onClick={() => setAnalysisScope('overview')}
+            >
+              Visão geral
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn ${analysisScope === 'month' ? 'toggle-btn-active' : ''}`}
+              onClick={() => setAnalysisScope('month')}
+            >
+              Mês a mês
+            </button>
+          </div>
 
-          <section>
-            <h2 className="section-label">DISTRIBUIÇÃO POR CATEGORIA</h2>
-            <div className="donut-grid">
-              <CategoryDonut
-                items={fixedExpenses}
-                title="Despesas fixas"
-                emptyText="Adiciona despesas fixas para ver a distribuição."
-              />
-              <CategoryDonut
-                items={variableExpenses}
-                title="Despesas variáveis"
-                emptyText="Adiciona despesas variáveis para ver a distribuição."
-              />
-              <CategoryDonut
-                items={incomes}
-                title="Receitas"
-                emptyText="Adiciona receitas para ver a distribuição."
-              />
-            </div>
-          </section>
+          {analysisScope === 'overview' ? (
+            <>
+              <section>
+                <h2 className="section-label">HISTÓRICO</h2>
+                <BudgetTimeline
+                  incomes={incomes}
+                  expenses={expenses}
+                  months={12}
+                  onMonthClick={(ym) => { setAnalysisYm(ym); setAnalysisScope('month') }}
+                />
+              </section>
+
+              <section>
+                <h2 className="section-label">DISTRIBUIÇÃO POR CATEGORIA</h2>
+                <div className="donut-grid">
+                  <CategoryDonut
+                    items={fixedExpenses}
+                    title="Despesas fixas"
+                    emptyText="Adiciona despesas fixas para ver a distribuição."
+                  />
+                  <CategoryDonut
+                    items={variableExpenses}
+                    title="Despesas variáveis"
+                    emptyText="Adiciona despesas variáveis para ver a distribuição."
+                  />
+                  <CategoryDonut
+                    items={incomes}
+                    title="Receitas"
+                    emptyText="Adiciona receitas para ver a distribuição."
+                  />
+                </div>
+              </section>
+            </>
+          ) : (
+            <MonthAnalysis
+              incomes={incomes}
+              expenses={expenses}
+              ym={analysisYm}
+              onChangeYm={setAnalysisYm}
+            />
+          )}
         </>
       )}
 
