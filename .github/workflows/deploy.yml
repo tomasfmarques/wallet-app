@@ -1,23 +1,49 @@
-name: Deploy to Render
+name: Deploy
 
-# Render's native "Auto-Deploy: On Commit" only fires when the repo is linked
-# via Render's GitHub App (a push webhook). This service is linked by Git URL +
-# credentials instead, so there's no webhook. This workflow bridges that gap:
-# on every push to main it calls the Render Deploy Hook, which triggers a build.
+# Vercel deploys automatically via its GitHub integration on every push to main.
+# This workflow runs the Neon DB schema migration (db push) so Vercel never
+# needs to do it — Vercel's build only generates the Prisma client.
 #
-# One-time setup (done by the repo owner):
-#   1. Render dashboard → service → Settings → Deploy → "Deploy Hook" → copy URL
-#   2. GitHub repo → Settings → Secrets and variables → Actions → New repository
-#      secret → name: RENDER_DEPLOY_HOOK, value: <the hook URL>
-# After that, every push to main auto-deploys. Until the secret is set, this
-# workflow simply skips (no failure).
+# One-time setup:
+#   GitHub repo → Settings → Secrets → Actions:
+#     DATABASE_URL  — Neon pooler connection string (same value as in Vercel env vars)
+#
+# Legacy Render support: if RENDER_DEPLOY_HOOK is still set it will also be
+# triggered, so both platforms stay in sync during the Vercel transition.
 
 on:
   push:
     branches: [main]
 
 jobs:
+  migrate:
+    name: Push DB schema to Neon
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Push schema to Neon (with cold-start retry)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL secret not set — skipping schema migration."
+            exit 0
+          fi
+          echo "Pushing schema to Neon…"
+          npm run db:push:prod --workspace=backend
+          echo "Schema migration done."
+
   trigger-render:
+    name: Trigger Render deploy (legacy — remove once Vercel is primary)
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render deploy via Deploy Hook
@@ -25,9 +51,9 @@ jobs:
           DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           if [ -z "$DEPLOY_HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK secret not set — skipping. See the setup note in this file."
+            echo "RENDER_DEPLOY_HOOK not set — skipping."
             exit 0
           fi
           echo "Triggering Render deploy…"
           curl -fsS -X POST "$DEPLOY_HOOK"
-          echo "Deploy triggered."
+          echo "Render deploy triggered."
