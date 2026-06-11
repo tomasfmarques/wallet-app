@@ -80,10 +80,7 @@ export function SignIn() {
           </div>
 
           <div className="field">
-            <div className="field-label-row">
-              <label htmlFor="password">Password</label>
-              <Link to="/forgot-password" className="field-forgot">Esqueceste a password?</Link>
-            </div>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -96,6 +93,7 @@ export function SignIn() {
             {errors.password && (
               <span id="password-error" className="field-error">{errors.password}</span>
             )}
+            <Link to="/forgot-password" className="field-forgot">Esqueceste a password?</Link>
           </div>
 
           <button
