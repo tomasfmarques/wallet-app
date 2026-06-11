@@ -226,7 +226,7 @@ function BudgetList({
                 </div>
               )}
             </div>
-            <div className="budget-row-amount">{eur(r.amount)}<span className="muted"> /mês</span></div>
+            <div className="budget-row-amount">{eur(r.amount)}</div>
             <div className="budget-row-actions">
               <button type="button" className="btn btn-ghost btn-sm" onClick={r.onEdit}>Editar</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={r.onDelete}>Remover</button>

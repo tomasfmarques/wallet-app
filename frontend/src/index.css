@@ -1633,6 +1633,18 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+.classify-count-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 7px;
+  background: var(--bg-2, #F1F5F9);
+  color: var(--muted, #64748B);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
 .field select {
   font-family: inherit;
   font-size: 14px;

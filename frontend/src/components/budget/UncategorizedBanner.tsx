@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
-import { useUpdateIncome, useUpdateExpense } from '@/hooks/useBudget'
+import { useBulkUpdateBudget } from '@/hooks/useBudget'
 import {
   inferCategory, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
@@ -52,6 +52,9 @@ export function UncategorizedBanner({ incomes, expenses }: Props) {
 }
 
 // ── Triage modal ────────────────────────────────────────────────
+// Items with the same merchant name are collapsed into one row, so one
+// pick classifies every duplicate. Saving batches by category through
+// /api/budget/bulk-update — a handful of requests instead of one per item.
 interface ClassifyProps {
   open: boolean
   onClose: () => void
@@ -59,40 +62,76 @@ interface ClassifyProps {
   expenses: Expense[]
 }
 
+interface Group {
+  key: string              // "income:<name>" | "expense:<name>"
+  kind: 'income' | 'expense'
+  name: string
+  ids: string[]
+  total: number
+  typeLabel: string | null // 'fixa' | 'variável' | null when mixed/income
+}
+
+function groupItems(items: Array<Income | Expense>, kind: 'income' | 'expense'): Group[] {
+  const map = new Map<string, Group>()
+  for (const item of items) {
+    const name = item.name.trim()
+    const key = `${kind}:${name.toLowerCase()}`
+    const g = map.get(key)
+    const typeLabel = item.type === 'fixed' ? 'fixa' : 'variável'
+    if (g) {
+      g.ids.push(item.id)
+      g.total += item.amount
+      if (g.typeLabel !== typeLabel) g.typeLabel = null
+    } else {
+      map.set(key, { key, kind, name, ids: [item.id], total: item.amount, typeLabel })
+    }
+  }
+  return Array.from(map.values())
+}
+
 function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
-  const updIncome = useUpdateIncome()
-  const updExpense = useUpdateExpense()
+  const bulkUpdate = useBulkUpdateBudget()
   const [picks, setPicks] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+
+  const incomeGroups = useMemo(() => groupItems(incomes, 'income'), [incomes])
+  const expenseGroups = useMemo(() => groupItems(expenses, 'expense'), [expenses])
 
   // Pre-fill picks with auto-suggestions whenever the modal opens
   useEffect(() => {
     if (!open) return
     const initial: Record<string, string> = {}
-    for (const i of incomes) initial[i.id] = inferCategory(i.name) ?? ''
-    for (const e of expenses) initial[e.id] = inferCategory(e.name) ?? ''
+    for (const g of [...incomeGroups, ...expenseGroups]) {
+      initial[g.key] = inferCategory(g.name) ?? ''
+    }
     setPicks(initial)
     setErr(null)
-  }, [open, incomes, expenses])
+  }, [open, incomeGroups, expenseGroups])
 
-  const setPick = (id: string, value: string) => {
-    setPicks((p) => ({ ...p, [id]: value }))
+  const setPick = (key: string, value: string) => {
+    setPicks((p) => ({ ...p, [key]: value }))
   }
 
   const saveAll = async () => {
     setErr(null); setSaving(true)
     try {
-      const promises: Promise<unknown>[] = []
-      for (const i of incomes) {
-        const cat = picks[i.id]?.trim()
-        if (cat) promises.push(updIncome.mutateAsync({ id: i.id, patch: { category: cat } }))
+      // One bulk request per distinct category, covering every id in
+      // every group the user assigned to it.
+      const byCategory = new Map<string, { incomeIds: string[]; expenseIds: string[] }>()
+      for (const g of [...incomeGroups, ...expenseGroups]) {
+        const cat = picks[g.key]?.trim()
+        if (!cat) continue
+        const bucket = byCategory.get(cat) ?? { incomeIds: [], expenseIds: [] }
+        if (g.kind === 'income') bucket.incomeIds.push(...g.ids)
+        else bucket.expenseIds.push(...g.ids)
+        byCategory.set(cat, bucket)
       }
-      for (const e of expenses) {
-        const cat = picks[e.id]?.trim()
-        if (cat) promises.push(updExpense.mutateAsync({ id: e.id, patch: { category: cat } }))
-      }
-      await Promise.all(promises)
+      await Promise.all(
+        Array.from(byCategory.entries()).map(([category, ids]) =>
+          bulkUpdate.mutateAsync({ ...ids, patch: { category } }),
+        ),
+      )
       onClose()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro ao guardar')
@@ -101,48 +140,52 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
     }
   }
 
-  const classifiedCount = Object.values(picks).filter((v) => v && v.trim().length > 0).length
+  const classifiedCount = [...incomeGroups, ...expenseGroups]
+    .filter((g) => picks[g.key] && picks[g.key].trim().length > 0)
+    .reduce((s, g) => s + g.ids.length, 0)
   const totalCount = incomes.length + expenses.length
 
   return (
     <Modal open={open} onClose={onClose} title="Classificar itens" maxWidth={620}>
       <p className="muted modal-intro">
-        Escolhe a categoria para cada item. Os valores sugeridos
-        (<strong>✨</strong>) vêm do dicionário automático — podes alterá-los.
-        Deixa em branco para deixar por classificar.
+        Escolhe a categoria para cada comércio — aplica-se a todas as linhas
+        iguais de uma vez. Sugestões (<strong>✨</strong>) vêm do dicionário
+        automático. Deixa em branco para classificar depois.
       </p>
 
       {err && <div className="form-error">{err}</div>}
 
       <div className="classify-list">
-        {incomes.length > 0 && (
+        {incomeGroups.length > 0 && (
           <>
             <div className="classify-section-label">Receitas</div>
-            {incomes.map((i) => (
+            {incomeGroups.map((g) => (
               <ClassifyRow
-                key={i.id}
-                label={i.name}
-                meta={`${eur(i.amount)}/mês`}
-                value={picks[i.id] ?? ''}
-                wasInferred={inferCategory(i.name) === picks[i.id] && !!picks[i.id]}
+                key={g.key}
+                label={g.name}
+                count={g.ids.length}
+                meta={metaFor(g)}
+                value={picks[g.key] ?? ''}
+                wasInferred={inferCategory(g.name) === picks[g.key] && !!picks[g.key]}
                 options={INCOME_CATEGORIES as unknown as string[]}
-                onChange={(v) => setPick(i.id, v)}
+                onChange={(v) => setPick(g.key, v)}
               />
             ))}
           </>
         )}
-        {expenses.length > 0 && (
+        {expenseGroups.length > 0 && (
           <>
             <div className="classify-section-label">Despesas</div>
-            {expenses.map((e) => (
+            {expenseGroups.map((g) => (
               <ClassifyRow
-                key={e.id}
-                label={e.name}
-                meta={`${eur(e.amount)}/mês · ${e.type === 'fixed' ? 'fixa' : 'variável'}`}
-                value={picks[e.id] ?? ''}
-                wasInferred={inferCategory(e.name) === picks[e.id] && !!picks[e.id]}
+                key={g.key}
+                label={g.name}
+                count={g.ids.length}
+                meta={metaFor(g)}
+                value={picks[g.key] ?? ''}
+                wasInferred={inferCategory(g.name) === picks[g.key] && !!picks[g.key]}
                 options={EXPENSE_CATEGORIES as unknown as string[]}
-                onChange={(v) => setPick(e.id, v)}
+                onChange={(v) => setPick(g.key, v)}
               />
             ))}
           </>
@@ -162,20 +205,29 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
   )
 }
 
+function metaFor(g: Group): string {
+  const parts = [eur(g.total)]
+  if (g.ids.length > 1) parts.push(`${g.ids.length} linhas`)
+  if (g.kind === 'expense' && g.typeLabel) parts.push(g.typeLabel)
+  return parts.join(' · ')
+}
+
 interface RowProps {
   label: string
+  count: number
   meta: string
   value: string
   wasInferred: boolean
   options: string[]
   onChange: (v: string) => void
 }
-function ClassifyRow({ label, meta, value, wasInferred, options, onChange }: RowProps) {
+function ClassifyRow({ label, count, meta, value, wasInferred, options, onChange }: RowProps) {
   return (
     <div className="classify-row">
       <div className="classify-row-main">
         <div className="classify-row-name">
           {label}
+          {count > 1 && <span className="classify-count-badge" title={`${count} linhas iguais`}>×{count}</span>}
           {wasInferred && <span className="auto-pill" title="Sugerida automaticamente">✨</span>}
         </div>
         <div className="classify-row-meta muted">{meta}</div>
