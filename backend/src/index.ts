@@ -36,7 +36,29 @@ if (IS_PROD && (!SESSION_SECRET || SESSION_SECRET.length < 32)) {
 if (IS_PROD) app.set('trust proxy', 1)
 
 // ── Security headers ───────────────────────────────────────────────
-app.use(helmet())
+// crossOriginOpenerPolicy must be relaxed (unsafe-none) so Google Identity
+// Services can communicate back from its popup window. The default
+// "same-origin" severs that cross-origin channel and silently breaks GIS.
+// CSP explicitly whitelists accounts.google.com for the same reason.
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:            ["'self'"],
+      scriptSrc:             ["'self'", 'https://accounts.google.com'],
+      frameSrc:              ["'self'", 'https://accounts.google.com'],
+      connectSrc:            ["'self'", 'https://accounts.google.com', 'https://oauth2.googleapis.com'],
+      imgSrc:                ["'self'", 'data:', 'https:'],
+      styleSrc:              ["'self'", 'https:', "'unsafe-inline'"],
+      fontSrc:               ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      objectSrc:             ["'none'"],
+      baseUri:               ["'self'"],
+      formAction:            ["'self'"],
+      frameAncestors:        ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}))
 
 // ── CORS ───────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
