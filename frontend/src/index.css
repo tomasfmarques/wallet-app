@@ -1720,7 +1720,74 @@ body {
 }
 
 /* ── Merchant-grouped movements (Saldo) ─────────────────────── */
-.var-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.var-list-toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.var-edit-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.var-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.var-edit-label {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 68px;
+}
+.var-edit-select {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 180px;
+}
+.var-edit-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-l);
+}
+.var-edit-type {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.var-type-btn {
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.var-type-btn:hover { background: var(--surface-2); color: var(--text); }
+.var-type-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.var-edit-actions {
+  display: flex;
+  gap: 6px;
+}
 .merchant-list { padding: 4px 0; }
 .merchant-group { border-bottom: 1px solid var(--border-s); }
 .merchant-group:last-child { border-bottom: none; }

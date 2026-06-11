@@ -394,6 +394,46 @@ router.post('/classify', async (req, res) => {
 })
 
 // ── Bulk delete (checkbox multi-select on the month view) ───────
+// ── PUT /api/budget/bulk-update ─────────────────────────────────
+// Patches category and/or type on multiple incomes and/or expenses.
+router.put('/bulk-update', async (req, res) => {
+  const incomeIds = Array.isArray(req.body?.incomeIds)
+    ? (req.body.incomeIds as unknown[]).filter((x): x is string => typeof x === 'string') : []
+  const expenseIds = Array.isArray(req.body?.expenseIds)
+    ? (req.body.expenseIds as unknown[]).filter((x): x is string => typeof x === 'string') : []
+  if (incomeIds.length === 0 && expenseIds.length === 0) {
+    res.status(400).json({ error: 'Nada para actualizar' }); return
+  }
+  const patch = req.body?.patch
+  if (typeof patch !== 'object' || patch === null) {
+    res.status(400).json({ error: 'patch obrigatório' }); return
+  }
+  const data: { category?: string | null; type?: 'fixed' | 'variable' } = {}
+  if ('category' in patch) data.category = asOptionalString(patch.category, 40)
+  if ('type' in patch) {
+    if (patch.type !== 'fixed' && patch.type !== 'variable') {
+      res.status(400).json({ error: "type deve ser 'fixed' ou 'variable'" }); return
+    }
+    data.type = patch.type
+  }
+  if (Object.keys(data).length === 0) {
+    res.status(400).json({ error: 'patch vazio — indica category ou type' }); return
+  }
+  const userId = req.session.userId!
+  try {
+    const ops: Prisma.PrismaPromise<unknown>[] = []
+    if (incomeIds.length > 0)
+      ops.push(prisma.income.updateMany({ where: { userId, id: { in: incomeIds } }, data }))
+    if (expenseIds.length > 0)
+      ops.push(prisma.expense.updateMany({ where: { userId, id: { in: expenseIds } }, data }))
+    await prisma.$transaction(ops)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('PUT /budget/bulk-update failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 router.post('/delete', async (req, res) => {
   const incomeIds = Array.isArray(req.body?.incomeIds)
     ? (req.body.incomeIds as unknown[]).filter((x): x is string => typeof x === 'string') : []

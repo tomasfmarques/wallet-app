@@ -113,6 +113,18 @@ export function useClassifyPending() {
   )
 }
 
+// Bulk patch category / type on selected lines
+export function useBulkUpdateBudget() {
+  const qc = useQueryClient()
+  return useMutation<
+    { ok: true }, ApiError,
+    { incomeIds?: string[]; expenseIds?: string[]; patch: { category?: string | null; type?: ExpenseType } }
+  >(
+    (input) => api.put<{ ok: true }>('/api/budget/bulk-update', input),
+    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+  )
+}
+
 // Bulk delete variable lines selected via checkboxes
 export function useBulkDeleteBudget() {
   const qc = useQueryClient()

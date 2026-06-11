@@ -1,37 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useBulkDeleteBudget } from '@/hooks/useBudget'
+import { useBulkDeleteBudget, useBulkUpdateBudget } from '@/hooks/useBudget'
 import { eur2, eurSigned, ymToShort, currentYm } from '@/lib/format'
 import { merchantKey, merchantDisplayName } from '@/lib/merchant'
-import type { Income, Expense } from '@/types'
+import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
+import type { Income, Expense, ExpenseType } from '@/types'
 
 interface Props {
-  variableIncomes: Income[]   // type 'variable', non-pending
+  variableIncomes: Income[]
   variableExpenses: Expense[]
-  fixedIncomeTotal: number    // active recurring receitas (counts every month)
-  fixedExpenseTotal: number   // active recurring despesas
+  fixedIncomeTotal: number
+  fixedExpenseTotal: number
   onEditIncome: (i: Income) => void
   onEditExpense: (e: Expense) => void
   onAddIncome: (ym: string) => void
   onAddExpense: (ym: string) => void
 }
 
-// A variable line belongs to its transaction month; undated ones fall in the
-// current month.
 const monthOf = (it: { startYm: string | null }) => it.startYm || currentYm()
 const sumActive = (rows: Array<{ active: boolean; amount: number }>) =>
   rows.filter((r) => r.active).reduce((s, r) => s + r.amount, 0)
 
-interface Txn {
-  kind: 'income' | 'expense'
-  item: Income | Expense
-}
+interface Txn { kind: 'income' | 'expense'; item: Income | Expense }
 
 interface MerchantGroup {
-  key: string
-  name: string
-  txns: Txn[]
-  total: number      // signed: incomes − expenses
-  totalAbs: number   // for sorting (movement size)
+  key: string; name: string; txns: Txn[]
+  total: number; totalAbs: number
 }
 
 export function VariableMonths({
@@ -40,12 +33,13 @@ export function VariableMonths({
 }: Props) {
   const cur = currentYm()
   const del = useBulkDeleteBudget()
+  const bulkEdit = useBulkUpdateBudget()
 
   const months = useMemo(() => {
     const set = new Set<string>([cur])
     for (const i of variableIncomes) set.add(monthOf(i))
     for (const e of variableExpenses) set.add(monthOf(e))
-    return [...set].sort((a, b) => b.localeCompare(a)) // newest first
+    return [...set].sort((a, b) => b.localeCompare(a))
   }, [variableIncomes, variableExpenses, cur])
 
   const [selected, setSelected] = useState(cur)
@@ -53,14 +47,20 @@ export function VariableMonths({
     if (!months.includes(selected)) setSelected(months[0] ?? cur)
   }, [months, selected, cur])
 
-  const [checked, setChecked] = useState<Set<string>>(new Set())     // "kind:id"
+  const [checked, setChecked] = useState<Set<string>>(new Set())
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   useEffect(() => { setChecked(new Set()); setOpenGroups(new Set()) }, [selected])
+
+  // Edit panel state
+  const [showEdit, setShowEdit] = useState(false)
+  const [editCategory, setEditCategory] = useState('')   // '' = don't change
+  const [editType, setEditType] = useState<ExpenseType | ''>('')
+
+  useEffect(() => { if (checked.size === 0) setShowEdit(false) }, [checked.size])
 
   const incs = variableIncomes.filter((i) => monthOf(i) === selected)
   const exps = variableExpenses.filter((e) => monthOf(e) === selected)
 
-  // ── Group by merchant (Excel-pivot style) ──
   const groups = useMemo<MerchantGroup[]>(() => {
     const map = new Map<string, Txn[]>()
     const push = (t: Txn) => {
@@ -75,11 +75,9 @@ export function VariableMonths({
       .map(([key, txns]) => {
         const total = txns.reduce((s, t) => s + (t.kind === 'income' ? t.item.amount : -t.item.amount), 0)
         return {
-          key,
-          name: merchantDisplayName(txns.map((t) => t.item.name)),
+          key, name: merchantDisplayName(txns.map((t) => t.item.name)),
           txns: txns.sort((a, b) => (b.item.dayOfMonth ?? 0) - (a.item.dayOfMonth ?? 0)),
-          total,
-          totalAbs: txns.reduce((s, t) => s + t.item.amount, 0),
+          total, totalAbs: txns.reduce((s, t) => s + t.item.amount, 0),
         }
       })
       .sort((a, b) => b.totalAbs - a.totalAbs)
@@ -87,7 +85,6 @@ export function VariableMonths({
 
   const incTotal = sumActive(incs)
   const expTotal = sumActive(exps)
-  // Real monthly balance: recurring baseline + this month's variable movements.
   const saldo = fixedIncomeTotal - fixedExpenseTotal + incTotal - expTotal
 
   const idOf = (t: Txn) => `${t.kind}:${t.item.id}`
@@ -126,28 +123,38 @@ export function VariableMonths({
     setChecked(new Set())
   }
 
+  const applyEdit = async () => {
+    if (editCategory === '' && editType === '') return
+    const incomeIds = [...checked].filter((c) => c.startsWith('income:')).map((c) => c.slice(7))
+    const expenseIds = [...checked].filter((c) => c.startsWith('expense:')).map((c) => c.slice(8))
+    const patch: { category?: string | null; type?: ExpenseType } = {}
+    if (editCategory !== '') patch.category = editCategory === '__clear__' ? null : editCategory
+    if (editType !== '') patch.type = editType
+    await bulkEdit.mutateAsync({ incomeIds, expenseIds, patch })
+    setShowEdit(false)
+    setEditCategory('')
+    setEditType('')
+  }
+
+  // Category list appropriate for the current selection mix
+  const checkedArr = [...checked]
+  const hasInc = checkedArr.some((c) => c.startsWith('income:'))
+  const hasExp = checkedArr.some((c) => c.startsWith('expense:'))
+  const categoryOptions: string[] = hasInc && hasExp
+    ? [...new Set([...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES])]
+    : hasInc ? [...INCOME_CATEGORIES] : [...EXPENSE_CATEGORIES]
+
   return (
     <section className="var-block">
       <div className="budget-section-head">
         <h2 className="section-label" style={{ margin: 0 }}>MOVIMENTOS DO MÊS</h2>
-        <div className="var-head-actions">
-          {checked.size > 0 && (
-            <button type="button" className="btn btn-danger btn-sm" disabled={del.isLoading} onClick={removeSelected}>
-              Remover ({checked.size})
-            </button>
-          )}
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddIncome(selected)}>+ Receita</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddExpense(selected)}>+ Despesa</button>
-        </div>
       </div>
 
       {/* Month tabs */}
       <div className="month-tabs" role="tablist">
         {months.map((ym) => (
           <button
-            key={ym}
-            type="button"
-            role="tab"
+            key={ym} type="button" role="tab"
             aria-selected={ym === selected}
             className={`month-tab ${ym === selected ? 'is-active' : ''} ${ym === cur ? 'is-current' : ''}`}
             onClick={() => setSelected(ym)}
@@ -173,6 +180,77 @@ export function VariableMonths({
           <span className="muted" style={{ fontSize: 11 }}>inclui fixas recorrentes</span>
         </div>
       </div>
+
+      {/* Action toolbar — lives just above the transaction list */}
+      <div className="var-list-toolbar">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddIncome(selected)}>+ Receita</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddExpense(selected)}>+ Despesa</button>
+        {checked.size > 0 && (
+          <>
+            <button
+              type="button" className="btn btn-ghost btn-sm"
+              onClick={() => { setShowEdit((v) => !v); setEditCategory(''); setEditType('') }}
+            >
+              Editar ({checked.size})
+            </button>
+            <button
+              type="button" className="btn btn-danger btn-sm"
+              disabled={del.isLoading} onClick={removeSelected}
+            >
+              Remover ({checked.size})
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Inline bulk-edit panel */}
+      {showEdit && checked.size > 0 && (
+        <div className="var-edit-panel">
+          <div className="var-edit-row">
+            <label className="var-edit-label">Categoria</label>
+            <select
+              className="var-edit-select"
+              value={editCategory}
+              onChange={(e) => setEditCategory(e.target.value)}
+            >
+              <option value="">— não alterar —</option>
+              <option value="__clear__">(remover categoria)</option>
+              {categoryOptions.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div className="var-edit-row">
+            <label className="var-edit-label">Tipo</label>
+            <div className="var-edit-type">
+              {(['', 'fixed', 'variable'] as const).map((v) => (
+                <button
+                  key={v} type="button"
+                  className={`var-type-btn ${editType === v ? 'is-active' : ''}`}
+                  onClick={() => setEditType(v)}
+                >
+                  {v === '' ? '— não alterar —' : v === 'fixed' ? 'Fixa' : 'Variável'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="var-edit-actions">
+            <button
+              type="button" className="btn btn-primary btn-sm"
+              disabled={bulkEdit.isLoading || (editCategory === '' && editType === '')}
+              onClick={applyEdit}
+            >
+              {bulkEdit.isLoading ? 'A guardar…' : 'Aplicar'}
+            </button>
+            <button
+              type="button" className="btn btn-ghost btn-sm"
+              onClick={() => setShowEdit(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Merchant-grouped list */}
       {groups.length === 0 ? (
