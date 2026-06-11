@@ -90,10 +90,26 @@ router.put('/', async (req, res) => {
   const euribor     = asNonNegativeNumber(req.body?.euribor,  'euribor',     errors)
   const dataInicio  = asYm            (req.body?.dataInicio,  'dataInicio',  errors)
 
+  // Optional spread rebate (e.g. Montepio "devolução de spread")
+  const bonRaw = req.body?.bonificacaoMensal
+  let bonificacaoMensal: number | null = null
+  if (bonRaw !== undefined && bonRaw !== null && bonRaw !== '') {
+    const b = Number(bonRaw)
+    if (!Number.isFinite(b) || b < 0) errors.bonificacaoMensal = 'Valor inválido'
+    else bonificacaoMensal = b > 0 ? b : null
+  }
+  const bonMesesRaw = req.body?.bonificacaoMeses
+  let bonificacaoMeses: number | null = null
+  if (bonMesesRaw !== undefined && bonMesesRaw !== null && bonMesesRaw !== '') {
+    const m = Number(bonMesesRaw)
+    if (!Number.isInteger(m) || m < 0) errors.bonificacaoMeses = 'Inteiro ≥ 0'
+    else bonificacaoMeses = m > 0 ? m : null
+  }
+
   if (mesesFixos > prazoMeses) errors.mesesFixos = 'mesesFixos não pode exceder prazoMeses'
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
-  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio }
+  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses }
   const id = typeof req.body?.id === 'string' ? req.body.id : null
 
   try {

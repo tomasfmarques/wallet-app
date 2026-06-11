@@ -18,6 +18,8 @@ export interface Loan {
   spread: number
   euribor: number
   dataInicio: string // "AAAA-MM"
+  bonificacaoMensal?: number | null
+  bonificacaoMeses?: number | null
 }
 
 export interface LoanPayment {

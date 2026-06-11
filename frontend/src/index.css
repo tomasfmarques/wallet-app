@@ -451,6 +451,22 @@ body {
   border-color: #A7F3D0;
 }
 .kpi-accent-green .kpi-value { color: var(--green-d); }
+.kpi-meta-bon { color: var(--green-d); font-weight: 500; }
+.bon-tag {
+  font-size: 10px;
+  background: #D1FAE5;
+  color: var(--green-d);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.field-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
 
 /* ── Tracking list ─────────────────────────────────────────── */
 .tracking-list {

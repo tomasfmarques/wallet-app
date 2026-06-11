@@ -63,6 +63,8 @@ export interface LoanInputBody {
   spread: number
   euribor: number
   dataInicio: string
+  bonificacaoMensal?: number | null
+  bonificacaoMeses?: number | null
 }
 
 // ── Query key ────────────────────────────────────────────────────

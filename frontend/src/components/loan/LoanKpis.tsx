@@ -1,17 +1,25 @@
-import { eur, eur2, pct, ymToLong, ymYearsDiff, currentYm } from '@/lib/format'
+import { eur, eur2, pct, ymToLong, ymYearsDiff, currentYm, ymAddMonths } from '@/lib/format'
 import type { LoanKpis as LoanKpisData } from '@/hooks/useLoan'
 
 interface Props {
   kpis: LoanKpisData
   capitalInicial: number
+  dataInicio: string
+  bonificacaoMensal?: number | null
+  bonificacaoMeses?: number | null
 }
 
 // 4-card grid mirroring the design's "Empréstimo da casa" section:
 // CAPITAL EM DÍVIDA · PRÓXIMA PRESTAÇÃO · CONCLUSÃO PREVISTA · POUPANÇA EM JUROS
-export function LoanKpis({ kpis, capitalInicial }: Props) {
+export function LoanKpis({ kpis, capitalInicial, dataInicio, bonificacaoMensal, bonificacaoMeses }: Props) {
   const today = currentYm()
   const anosRestantes = ymYearsDiff(today, kpis.conclusaoYm)
   const [anoConclusao] = kpis.conclusaoYm.split('-')
+
+  const bonAtiva = bonificacaoMensal != null && bonificacaoMensal > 0
+    && bonificacaoMeses != null && bonificacaoMeses > 0
+    && today < ymAddMonths(dataInicio, bonificacaoMeses)
+  const netPrestacao = bonAtiva ? kpis.proximaPrestacao - bonificacaoMensal! : null
 
   return (
     <div className="kpi-grid">
@@ -30,7 +38,10 @@ export function LoanKpis({ kpis, capitalInicial }: Props) {
       <div className="kpi">
         <div className="kpi-label">PRÓXIMA PRESTAÇÃO</div>
         <div className="kpi-value">{eur2(kpis.proximaPrestacao)}</div>
-        <div className="kpi-meta">{ymToLong(kpis.proximaYm)}</div>
+        {netPrestacao != null
+          ? <div className="kpi-meta kpi-meta-bon">líquido {eur2(netPrestacao)} · bonificação ativa</div>
+          : <div className="kpi-meta">{ymToLong(kpis.proximaYm)}</div>
+        }
       </div>
 
       <div className="kpi">

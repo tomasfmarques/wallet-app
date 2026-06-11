@@ -133,6 +133,10 @@ model Loan {
   spread      Float
   euribor     Float
   dataInicio  String @map("data_inicio") // "AAAA-MM"
+  // Optional spread rebate (e.g. Montepio "devolução de spread"):
+  // the bank charges the full PMT but returns this amount each month.
+  bonificacaoMensal Float? @map("bonificacao_mensal")
+  bonificacaoMeses  Int?   @map("bonificacao_meses")
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments      LoanPayment[]
