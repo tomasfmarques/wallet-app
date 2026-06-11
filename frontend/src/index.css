@@ -325,6 +325,28 @@ body {
   font-size: 13px;
   margin-bottom: 14px;
 }
+.form-success {
+  background: #ECFDF5;
+  color: var(--green-d);
+  border: 1px solid #A7F3D0;
+  border-radius: var(--r);
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.field-label-row label { margin-bottom: 0; }
+.field-forgot {
+  font-size: 12px;
+  color: var(--blue);
+  text-decoration: none;
+}
+.field-forgot:hover { text-decoration: underline; }
 
 /* ── Loading spinner ────────────────────────────────────────── */
 .auth-loading {

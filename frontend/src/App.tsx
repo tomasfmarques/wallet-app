@@ -7,6 +7,8 @@ import Layout from '@/components/layout/Layout'
 
 import SignIn from '@/pages/SignIn'
 import SignUp from '@/pages/SignUp'
+import ForgotPassword from '@/pages/ForgotPassword'
+import ResetPassword from '@/pages/ResetPassword'
 import Overview from '@/pages/Overview'
 import Loan from '@/pages/Loan'
 import Portfolio from '@/pages/Portfolio'
@@ -32,6 +34,8 @@ function App() {
             {/* Public auth routes */}
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
             <Route

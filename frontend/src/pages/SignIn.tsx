@@ -80,7 +80,10 @@ export function SignIn() {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Password</label>
+            <div className="field-label-row">
+              <label htmlFor="password">Password</label>
+              <Link to="/forgot-password" className="field-forgot">Esqueceste a password?</Link>
+            </div>
             <input
               id="password"
               type="password"

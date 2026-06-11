@@ -88,7 +88,10 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiadas tentativas. Tenta novamente em 15 minutos.' },
 })
-app.use(['/api/auth/login', '/api/auth/signup', '/api/auth/google', '/api/auth/change-password'], authLimiter)
+app.use([
+  '/api/auth/login', '/api/auth/signup', '/api/auth/google',
+  '/api/auth/change-password', '/api/auth/forgot-password', '/api/auth/reset-password',
+], authLimiter)
 
 // General rate limiter applied to all API routes to prevent DoS / API abuse.
 const apiLimiter = rateLimit({
