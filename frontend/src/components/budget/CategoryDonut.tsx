@@ -20,8 +20,13 @@ interface Props {
 // Tones from the existing accent palette.
 const COLOURS = [
   '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
-  '#059669', '#DC2626', '#94A3B8', '#475569', '#0F172A',
+  '#059669', '#DC2626', '#475569', '#0F172A',
 ]
+const OTHERS_COLOUR = '#94A3B8'
+
+// Beyond this many slices the right-hand legend overflows the card, so
+// the smallest categories collapse into a single "Outras" bucket.
+const MAX_SLICES = 7
 
 // Donut chart breaking down a budget list by category. Inactive items are
 // excluded — they don't count toward the active budget. Items without a
@@ -34,16 +39,26 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix = '/mês' }
       const key = (it.category && it.category.trim()) || 'Por classificar'
       byCat.set(key, (byCat.get(key) ?? 0) + it.amount)
     }
-    const entries = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1])
+    let entries = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1])
+    let hasOthers = false
+    if (entries.length > MAX_SLICES) {
+      const rest = entries.slice(MAX_SLICES - 1)
+      entries = entries.slice(0, MAX_SLICES - 1)
+      entries.push([`Outras (${rest.length})`, rest.reduce((s, [, v]) => s + v, 0)])
+      hasOthers = true
+    }
     const labels = entries.map(([k]) => k)
     const values = entries.map(([, v]) => v)
     const tot = values.reduce((s, v) => s + v, 0)
+
+    const colours = labels.map((_, i) =>
+      hasOthers && i === labels.length - 1 ? OTHERS_COLOUR : COLOURS[i % COLOURS.length])
 
     const chartData: ChartData<'doughnut'> = {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: labels.map((_, i) => COLOURS[i % COLOURS.length]),
+        backgroundColor: colours,
         borderColor: '#FFFFFF',
         borderWidth: 2,
         hoverOffset: 8,

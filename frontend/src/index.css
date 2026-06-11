@@ -1610,8 +1610,10 @@ body {
 }
 
 /* ── Análise: overview / month scope ───────────────────────── */
-.analysis-scope-toggle {
+/* Doubled class to outrank the base .toggle-group flex rule below */
+.toggle-group.analysis-scope-toggle {
   display: inline-flex;
+  width: fit-content;
   margin: 0 0 16px;
 }
 .analysis-scope-toggle .toggle-btn {
