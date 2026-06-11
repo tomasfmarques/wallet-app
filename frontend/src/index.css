@@ -667,6 +667,14 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
+  background: transparent;
+  transition: background 0.15s;
+}
+.year-header:hover { background: var(--surface-2); }
+.year-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
   gap: 12px;
   padding: 12px 16px;
   background: transparent;
@@ -674,9 +682,56 @@ body {
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: background 0.15s;
+  min-width: 0;
 }
-.year-header:hover { background: var(--surface-2); }
+.btn-pay-year {
+  flex-shrink: 0;
+  margin-right: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-pay-year:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--accent);
+}
+.year-fill-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--accent-l);
+  border-bottom: 1px solid var(--border-s);
+  flex-wrap: wrap;
+}
+.year-fill-label {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.year-fill-input {
+  width: 130px;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--text);
+}
+.year-fill-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-l);
+}
 .year-chevron {
   color: var(--muted);
   font-size: 12px;

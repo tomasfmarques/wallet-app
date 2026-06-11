@@ -109,6 +109,19 @@ export function useUpdatePayment() {
   )
 }
 
+export function useBulkUpdatePayments() {
+  const qc = useQueryClient()
+  return useMutation<
+    { ok: true; updated: number },
+    ApiError,
+    { loanId: string; months: Array<{ ym: string; paid: boolean; real: number | null }> }
+  >(
+    ({ loanId, months }) =>
+      api.put<{ ok: true; updated: number }>(`/api/loan/${loanId}/payments/bulk`, { months }),
+    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
+  )
+}
+
 export function useAddAmortization() {
   const qc = useQueryClient()
   return useMutation<

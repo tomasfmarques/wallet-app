@@ -144,6 +144,53 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
+// ── PUT /api/loan/:loanId/payments/bulk ─────────────────────────
+// Upserts up to 120 payment records in a single transaction.
+// Used by the "pay whole year" shortcut in the UI.
+router.put('/:loanId/payments/bulk', async (req, res) => {
+  const monthsRaw = req.body?.months
+  if (!Array.isArray(monthsRaw) || monthsRaw.length === 0 || monthsRaw.length > 120) {
+    res.status(400).json({ error: 'months must be a non-empty array (max 120)' })
+    return
+  }
+
+  const months: { ym: string; paid: boolean; real: number | null }[] = []
+  for (const item of monthsRaw) {
+    if (typeof item !== 'object' || item === null) { res.status(400).json({ error: 'invalid item' }); return }
+    const errors: Record<string, string> = {}
+    const ym = asYm(item.ym, 'ym', errors)
+    if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
+    const paid = typeof item.paid === 'boolean' ? item.paid : true
+    const realRaw = item.real
+    let real: number | null = null
+    if (realRaw !== undefined && realRaw !== null) {
+      const n = Number(realRaw)
+      if (!Number.isFinite(n) || n < 0) { res.status(400).json({ error: 'real must be ≥ 0' }); return }
+      real = n
+    }
+    months.push({ ym, paid, real })
+  }
+
+  try {
+    const loan = await ownedLoan(req.params.loanId, req.session.userId!)
+    if (!loan) { res.status(404).json({ error: 'Crédito não encontrado' }); return }
+
+    await prisma.$transaction(
+      months.map(({ ym, paid, real }) =>
+        prisma.loanPayment.upsert({
+          where: { loanId_ym: { loanId: loan.id, ym } },
+          create: { loanId: loan.id, ym, paid, real },
+          update: { paid, real },
+        })
+      )
+    )
+    res.json({ ok: true, updated: months.length })
+  } catch (err) {
+    console.error('PUT /api/loan/:loanId/payments/bulk failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ── PUT /api/loan/:loanId/payments/:ym ───────────────────────────
 router.put('/:loanId/payments/:ym', async (req, res) => {
   const errors: Record<string, string> = {}

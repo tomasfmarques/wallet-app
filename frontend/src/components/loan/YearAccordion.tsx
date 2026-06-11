@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { eur2, ymToShort, currentYm, ymAddMonths } from '@/lib/format'
-import { useUpdatePayment, type LoanScheduleRow } from '@/hooks/useLoan'
+import { useUpdatePayment, useBulkUpdatePayments, type LoanScheduleRow } from '@/hooks/useLoan'
 import type { LoanPayment } from '@/types'
 
 interface Props {
@@ -12,8 +12,6 @@ interface Props {
   bonificacaoMeses?: number | null
 }
 
-// Year-grouped accordion replacing the flat tracking list. Current year is
-// open by default; clicking the header collapses/expands.
 export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoMensal, bonificacaoMeses }: Props) {
   const today = currentYm()
   const todayYear = today.slice(0, 4)
@@ -41,7 +39,6 @@ export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoM
     }
     return Array.from(m.entries()).map(([year, yearRows]) => {
       const monthsPaid = yearRows.filter((r) => paymentsByYm.get(r.ym)?.paid).length
-      // Use payment.real when paid and available; otherwise use scheduled prestacao
       const totalPrestacao = yearRows.reduce((s, r) => {
         const p = paymentsByYm.get(r.ym)
         return s + (p?.paid && p.real != null ? p.real : r.prestacao)
@@ -51,35 +48,109 @@ export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoM
   }, [rows, paymentsByYm])
 
   const [openYears, setOpenYears] = useState<Set<string>>(new Set([todayYear]))
+  const [fillingYear, setFillingYear] = useState<string | null>(null)
+  const [fillAmount, setFillAmount] = useState('')
+  const bulkUpdate = useBulkUpdatePayments()
 
   const toggle = (year: string) => {
+    const isCurrentlyOpen = openYears.has(year)
     setOpenYears((prev) => {
       const next = new Set(prev)
       if (next.has(year)) next.delete(year); else next.add(year)
       return next
     })
+    if (isCurrentlyOpen && fillingYear === year) cancelFill()
+  }
+
+  const startFill = (e: React.MouseEvent, year: string) => {
+    e.stopPropagation()
+    setFillingYear(year)
+    setFillAmount('')
+    setOpenYears((prev) => { const n = new Set(prev); n.add(year); return n })
+  }
+
+  const cancelFill = () => { setFillingYear(null); setFillAmount('') }
+
+  const confirmFill = async (yearRows: LoanScheduleRow[]) => {
+    const val = Number(fillAmount)
+    if (!Number.isFinite(val) || val < 0) return
+    const months = yearRows.map((r) => ({ ym: r.ym, paid: true, real: val }))
+    try {
+      await bulkUpdate.mutateAsync({ loanId, months })
+      setFillingYear(null)
+      setFillAmount('')
+    } catch {
+      // error stays visible via bulkUpdate.error if needed
+    }
   }
 
   return (
     <div className="year-accordion">
       {byYear.map(({ year, rows: yearRows, totalPrestacao, monthsPaid }) => {
         const isOpen = openYears.has(year)
+        const isFilling = fillingYear === year
         return (
           <div key={year} className={`year-block ${isOpen ? 'is-open' : ''}`}>
-            <button
-              type="button"
-              className="year-header"
-              onClick={() => toggle(year)}
-              aria-expanded={isOpen}
-            >
-              <span className="year-chevron" aria-hidden>{isOpen ? '▾' : '▸'}</span>
-              <span className="year-label">{year}</span>
-              <span className="year-meta">
-                {monthsPaid}/{yearRows.length} pagos · {eur2(totalPrestacao)}
-              </span>
-            </button>
+            <div className="year-header">
+              <button
+                type="button"
+                className="year-toggle"
+                onClick={() => toggle(year)}
+                aria-expanded={isOpen}
+              >
+                <span className="year-chevron" aria-hidden>{isOpen ? '▾' : '▸'}</span>
+                <span className="year-label">{year}</span>
+                <span className="year-meta">
+                  {monthsPaid}/{yearRows.length} pagos · {eur2(totalPrestacao)}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="btn-pay-year"
+                onClick={(e) => startFill(e, year)}
+                title="Preencher todos os meses com o mesmo valor"
+              >
+                Pagar ano
+              </button>
+            </div>
             {isOpen && (
               <div className="year-body">
+                {isFilling && (
+                  <div className="year-fill-bar">
+                    <span className="year-fill-label">Valor pago por mês (€)</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      min="0"
+                      className="year-fill-input"
+                      placeholder="ex: 831.73"
+                      value={fillAmount}
+                      onChange={(e) => setFillAmount(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') confirmFill(yearRows)
+                        if (e.key === 'Escape') cancelFill()
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => confirmFill(yearRows)}
+                      disabled={bulkUpdate.isLoading || fillAmount.trim() === ''}
+                    >
+                      {bulkUpdate.isLoading ? '…' : 'Confirmar'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={cancelFill}
+                      disabled={bulkUpdate.isLoading}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
                 {yearRows.map((r) => (
                   <TrackingRow
                     key={r.ym}
