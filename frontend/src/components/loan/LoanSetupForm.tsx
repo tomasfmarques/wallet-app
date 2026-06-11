@@ -140,9 +140,9 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="dataInicio">Início (AAAA-MM)</label>
+          <label htmlFor="dataInicio">Data de início</label>
           <input
-            id="dataInicio" type="text" placeholder="2024-01"
+            id="dataInicio" type="month"
             value={dataInicio} onChange={(e) => setDataInicio(e.target.value)}
             aria-invalid={!!errors.dataInicio}
           />

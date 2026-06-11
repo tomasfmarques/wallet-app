@@ -264,6 +264,10 @@ body {
 .field input[aria-invalid="true"] {
   border-color: var(--red);
 }
+.field input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+}
 .field-error {
   font-size: 12.5px;
   color: var(--red);
