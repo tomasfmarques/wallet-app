@@ -67,8 +67,11 @@ router.post('/signup', async (req, res) => {
       data: { email, passwordHash, name: name.trim() },
     })
 
-    req.session.userId = user.id
-    res.status(201).json({ user: serializeUser(user) })
+    req.session.regenerate((err) => {
+      if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user.id
+      res.status(201).json({ user: serializeUser(user) })
+    })
   } catch (err) {
     console.error('Signup failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -107,8 +110,11 @@ router.post('/login', async (req, res) => {
       return
     }
 
-    req.session.userId = user.id
-    res.json({ user: serializeUser(user) })
+    req.session.regenerate((err) => {
+      if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user.id
+      res.json({ user: serializeUser(user) })
+    })
   } catch (err) {
     console.error('Login failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -178,7 +184,7 @@ router.post('/logout', (req, res) => {
       res.status(500).json({ error: 'Erro ao terminar sessão' })
       return
     }
-    res.clearCookie('connect.sid')
+    res.clearCookie('wid', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' })
     res.json({ ok: true })
   })
 })

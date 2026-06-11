@@ -112,7 +112,7 @@ router.delete('/', requireAuth, async (req, res) => {
     // Cascade deletes everything via schema FKs
     await prisma.user.delete({ where: { id: userId } })
     req.session.destroy(() => {
-      res.clearCookie('connect.sid')
+      res.clearCookie('wid', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' })
       res.json({ ok: true })
     })
   } catch (err) {

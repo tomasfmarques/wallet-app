@@ -83,8 +83,11 @@ router.post('/', async (req, res) => {
       })
     }
 
-    req.session.userId = user.id
-    res.json({ user: serializeUser(user) })
+    req.session.regenerate((regenErr) => {
+      if (regenErr) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user!.id
+      res.json({ user: serializeUser(user!) })
+    })
   } catch (err) {
     console.error('Google sign-in failed:', err instanceof Error ? err.message : err)
     res.status(401).json({ error: 'Não foi possível validar a sessão Google' })

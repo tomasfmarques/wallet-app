@@ -132,25 +132,7 @@ export function useResetData() {
 export function useDeleteAccount() {
   const qc = useQueryClient()
   return useMutation<{ ok: true }, ApiError, PasswordConfirm>(
-    (input) =>
-      // DELETE with body — use fetch directly since the api helper's `delete`
-      // doesn't take a body
-      fetch('/api/me', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      }).then(async (res) => {
-        const data = await res.json().catch(() => null)
-        if (!res.ok) {
-          const msg =
-            (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
-              ? data.error
-              : null) ?? `Erro ${res.status}`
-          throw new ApiError(res.status, msg, data)
-        }
-        return data as { ok: true }
-      }),
+    (input) => api.delete<{ ok: true }>('/api/me', input),
     {
       onSuccess: () => {
         qc.setQueryData(ME_KEY, null)

@@ -22,6 +22,23 @@ const GC_BASE = 'https://bankaccountdata.gocardless.com/api/v2'
 const router = Router()
 router.use(requireAuth)
 
+function sanitizeLogo(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  try {
+    const u = new URL(v)
+    return u.protocol === 'https:' ? v : null
+  } catch { return null }
+}
+
+// Derive the app's public origin from server config, never from the request.
+function appOrigin(): string {
+  const configured = process.env.APP_ORIGIN
+  if (configured) return configured.replace(/\/$/, '')
+  const origins = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  if (origins.length > 0) return origins[0]
+  return 'http://localhost:5173'
+}
+
 function credentials(): { id: string; key: string } | null {
   const id = process.env.GOCARDLESS_SECRET_ID
   const key = process.env.GOCARDLESS_SECRET_KEY
@@ -120,14 +137,14 @@ router.get('/institutions', async (_req, res) => {
 router.post('/connect', async (req, res) => {
   const institutionId = typeof req.body?.institutionId === 'string' ? req.body.institutionId : null
   const institutionName = typeof req.body?.institutionName === 'string' ? req.body.institutionName.slice(0, 80) : 'Banco'
-  const logo = typeof req.body?.logo === 'string' ? req.body.logo : null
+  const logo = sanitizeLogo(req.body?.logo)
   if (!institutionId) { res.status(400).json({ error: 'institutionId obrigatório' }); return }
 
   const token = await getToken()
   if (!token) { res.status(503).json({ error: 'Integração bancária não configurada' }); return }
 
   try {
-    const origin = req.get('origin') || `${req.protocol}://${req.get('host')}`
+    const origin = appOrigin()
     const reference = `${req.session.userId!.slice(0, 8)}-${Date.now()}`
     const requisition = await gc<{ id?: string; link?: string }>('/requisitions/', token, {
       method: 'POST',

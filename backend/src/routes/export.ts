@@ -36,7 +36,11 @@ router.get('/', async (req, res) => {
       prisma.income.findMany({ where: { userId }, orderBy: { name: 'asc' } }),
       prisma.expense.findMany({ where: { userId }, orderBy: [{ type: 'asc' }, { name: 'asc' }] }),
       prisma.classificationRule.findMany({ where: { userId }, orderBy: { matchKey: 'asc' } }),
-      prisma.bankConnection.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+      prisma.bankConnection.findMany({
+        where: { userId }, orderBy: { createdAt: 'asc' },
+        select: { id: true, userId: true, institutionId: true, institutionName: true, logo: true, status: true, createdAt: true },
+        // requisitionId is excluded — it is a live bank-access handle, not a backup field
+      }),
     ])
 
     const payload = {
