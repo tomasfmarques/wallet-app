@@ -40,7 +40,7 @@ export function LoanKpis({
             style={{ width: `${Math.min(100, kpis.pctPago * 100)}%` }}
           />
         </div>
-        <div className="kpi-meta">{pct(kpis.pctPago)} pago · de {eur(capitalInicial)}</div>
+        <div className="kpi-meta">{pct(kpis.pctPago)} amortizado · de {eur(capitalInicial)}</div>
       </div>
 
       <div className="kpi">
