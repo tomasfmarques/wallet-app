@@ -38,6 +38,12 @@ export function LoanSetupForm({
     initial?.euribor !== undefined ? (initial.euribor * 100).toString() : '2.1',
   )
   const [dataInicio, setDataInicio] = useState(initial?.dataInicio ?? '2024-01')
+  const [bonMensalStr, setBonMensalStr] = useState(
+    initial?.bonificacaoMensal != null ? String(initial.bonificacaoMensal) : '',
+  )
+  const [bonMesesStr, setBonMesesStr] = useState(
+    initial?.bonificacaoMeses != null ? String(initial.bonificacaoMeses) : '',
+  )
   const [errors, setErrors] = useState<FieldErrors>({})
 
   const submit = async (e: FormEvent) => {
@@ -68,6 +74,24 @@ export function LoanSetupForm({
       return
     }
 
+    let bonificacaoMensal: number | null = null
+    if (bonMensalStr.trim() !== '') {
+      const b = Number(bonMensalStr)
+      if (!Number.isFinite(b) || b < 0) { clientErrors.bonificacaoMensal = 'Valor inválido'; }
+      else bonificacaoMensal = b > 0 ? b : null
+    }
+    let bonificacaoMeses: number | null = null
+    if (bonMesesStr.trim() !== '') {
+      const m = Number(bonMesesStr)
+      if (!Number.isInteger(m) || m < 0) { clientErrors.bonificacaoMeses = 'Inteiro ≥ 0'; }
+      else bonificacaoMeses = m > 0 ? m : null
+    }
+
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors)
+      return
+    }
+
     const body: LoanInputBody = {
       ...(loanId ? { id: loanId } : {}),
       name: name.trim(),
@@ -78,6 +102,8 @@ export function LoanSetupForm({
       spread: spr / 100,
       euribor: eur / 100,
       dataInicio,
+      bonificacaoMensal,
+      bonificacaoMeses,
     }
 
     try {
@@ -171,6 +197,28 @@ export function LoanSetupForm({
             aria-invalid={!!errors.euribor}
           />
           {errors.euribor && <span className="field-error">{errors.euribor}</span>}
+        </div>
+
+        <div className="field">
+          <label htmlFor="bonMensal">Bonificação mensal (€) <span className="field-hint">opcional — devolução de spread</span></label>
+          <input
+            id="bonMensal" type="number" inputMode="decimal" step="any" min="0"
+            placeholder="ex: 119.73"
+            value={bonMensalStr} onChange={(e) => setBonMensalStr(e.target.value)}
+            aria-invalid={!!errors.bonificacaoMensal}
+          />
+          {errors.bonificacaoMensal && <span className="field-error">{errors.bonificacaoMensal}</span>}
+        </div>
+
+        <div className="field">
+          <label htmlFor="bonMeses">Duração bonificação (meses) <span className="field-hint">opcional</span></label>
+          <input
+            id="bonMeses" type="number" inputMode="numeric" step="1" min="0"
+            placeholder="ex: 24"
+            value={bonMesesStr} onChange={(e) => setBonMesesStr(e.target.value)}
+            aria-invalid={!!errors.bonificacaoMeses}
+          />
+          {errors.bonificacaoMeses && <span className="field-error">{errors.bonificacaoMeses}</span>}
         </div>
       </div>
 

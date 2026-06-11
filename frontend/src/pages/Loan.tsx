@@ -79,6 +79,7 @@ export function Loan() {
             initial={{
               name: loan.name, capital: loan.capital, prazoMeses: loan.prazoMeses, tanFixa: loan.tanFixa,
               mesesFixos: loan.mesesFixos, spread: loan.spread, euribor: loan.euribor, dataInicio: loan.dataInicio,
+              bonificacaoMensal: loan.bonificacaoMensal, bonificacaoMeses: loan.bonificacaoMeses,
             }}
             onSaved={() => setMode('view')}
             onCancel={() => setMode('view')}
@@ -132,7 +133,13 @@ export function Loan() {
         </div>
       )}
 
-      <LoanKpis kpis={kpis} capitalInicial={loan.capital} />
+      <LoanKpis
+        kpis={kpis}
+        capitalInicial={loan.capital}
+        dataInicio={loan.dataInicio}
+        bonificacaoMensal={loan.bonificacaoMensal}
+        bonificacaoMeses={loan.bonificacaoMeses}
+      />
 
       <div className="subtabs" role="tablist">
         <button
@@ -165,7 +172,14 @@ export function Loan() {
           </section>
           <section>
             <h2 className="section-label">PAGAMENTOS</h2>
-            <YearAccordion rows={schedule.rows} payments={loan.payments} loanId={loan.id} />
+            <YearAccordion
+              rows={schedule.rows}
+              payments={loan.payments}
+              loanId={loan.id}
+              dataInicio={loan.dataInicio}
+              bonificacaoMensal={loan.bonificacaoMensal}
+              bonificacaoMeses={loan.bonificacaoMeses}
+            />
           </section>
         </>
       )}

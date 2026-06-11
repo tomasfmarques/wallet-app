@@ -62,10 +62,16 @@ router.post('/', async (req, res) => {
     if (!user && emailVerified) {
       const byEmail = await prisma.user.findUnique({ where: { email } })
       if (byEmail) {
-        user = await prisma.user.update({
-          where: { id: byEmail.id },
-          data: { googleId },
-        })
+        try {
+          user = await prisma.user.update({
+            where: { id: byEmail.id },
+            data: { googleId },
+          })
+        } catch {
+          // Concurrent request already linked this googleId — re-read the final state
+          user = await prisma.user.findUnique({ where: { googleId } })
+               ?? await prisma.user.findUnique({ where: { email } })
+        }
       }
     }
 
@@ -83,8 +89,11 @@ router.post('/', async (req, res) => {
       })
     }
 
-    req.session.userId = user.id
-    res.json({ user: serializeUser(user) })
+    req.session.regenerate((regenErr) => {
+      if (regenErr) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user!.id
+      res.json({ user: serializeUser(user!) })
+    })
   } catch (err) {
     console.error('Google sign-in failed:', err instanceof Error ? err.message : err)
     res.status(401).json({ error: 'Não foi possível validar a sessão Google' })

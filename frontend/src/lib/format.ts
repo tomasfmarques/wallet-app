@@ -84,3 +84,12 @@ export function ymYearsDiff(a: string, b: string): number {
   const [by, bm] = b.split('-').map(Number)
   return Math.round(((by - ay) * 12 + (bm - am)) / 12)
 }
+
+/** Add N months to a "AAAA-MM" string and return the resulting "AAAA-MM" */
+export function ymAddMonths(ym: string, months: number): string {
+  const [y, m] = ym.split('-').map(Number)
+  const total = (y * 12 + (m - 1)) + months
+  const ny = Math.floor(total / 12)
+  const nm = (total % 12) + 1
+  return `${ny}-${nm.toString().padStart(2, '0')}`
+}

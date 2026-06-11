@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { eur2, ymToShort, currentYm } from '@/lib/format'
+import { eur2, ymToShort, currentYm, ymAddMonths } from '@/lib/format'
 import { useUpdatePayment, type LoanScheduleRow } from '@/hooks/useLoan'
 import type { LoanPayment } from '@/types'
 
@@ -7,13 +7,23 @@ interface Props {
   rows: LoanScheduleRow[]
   payments: LoanPayment[]
   loanId: string
+  dataInicio: string
+  bonificacaoMensal?: number | null
+  bonificacaoMeses?: number | null
 }
 
 // Year-grouped accordion replacing the flat tracking list. Current year is
 // open by default; clicking the header collapses/expands.
-export function YearAccordion({ rows, payments, loanId }: Props) {
+export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoMensal, bonificacaoMeses }: Props) {
   const today = currentYm()
   const todayYear = today.slice(0, 4)
+
+  const bonEndYm = useMemo(() => {
+    if (bonificacaoMensal && bonificacaoMensal > 0 && bonificacaoMeses && bonificacaoMeses > 0) {
+      return ymAddMonths(dataInicio, bonificacaoMeses)
+    }
+    return null
+  }, [dataInicio, bonificacaoMensal, bonificacaoMeses])
 
   const paymentsByYm = useMemo(() => {
     const m = new Map<string, LoanPayment>()
@@ -29,12 +39,15 @@ export function YearAccordion({ rows, payments, loanId }: Props) {
       list.push(r)
       m.set(y, list)
     }
-    return Array.from(m.entries()).map(([year, yearRows]) => ({
-      year,
-      rows: yearRows,
-      totalPrestacao: yearRows.reduce((s, r) => s + r.prestacao, 0),
-      monthsPaid: yearRows.filter((r) => paymentsByYm.get(r.ym)?.paid).length,
-    }))
+    return Array.from(m.entries()).map(([year, yearRows]) => {
+      const monthsPaid = yearRows.filter((r) => paymentsByYm.get(r.ym)?.paid).length
+      // Use payment.real when paid and available; otherwise use scheduled prestacao
+      const totalPrestacao = yearRows.reduce((s, r) => {
+        const p = paymentsByYm.get(r.ym)
+        return s + (p?.paid && p.real != null ? p.real : r.prestacao)
+      }, 0)
+      return { year, rows: yearRows, totalPrestacao, monthsPaid }
+    })
   }, [rows, paymentsByYm])
 
   const [openYears, setOpenYears] = useState<Set<string>>(new Set([todayYear]))
@@ -74,6 +87,7 @@ export function YearAccordion({ rows, payments, loanId }: Props) {
                     payment={paymentsByYm.get(r.ym)}
                     isCurrent={r.ym === today}
                     loanId={loanId}
+                    bonificacaoMensal={bonEndYm && r.ym < bonEndYm ? bonificacaoMensal : null}
                   />
                 ))}
               </div>
@@ -90,9 +104,10 @@ interface RowProps {
   payment?: LoanPayment
   isCurrent: boolean
   loanId: string
+  bonificacaoMensal?: number | null
 }
 
-function TrackingRow({ row, payment, isCurrent, loanId }: RowProps) {
+function TrackingRow({ row, payment, isCurrent, loanId, bonificacaoMensal }: RowProps) {
   const mutation = useUpdatePayment()
   const [realInput, setRealInput] = useState<string>(
     payment?.real != null ? String(payment.real) : '',
@@ -109,10 +124,20 @@ function TrackingRow({ row, payment, isCurrent, loanId }: RowProps) {
     mutation.mutate({ loanId, ym: row.ym, real: value })
   }
 
+  const displayPrestacao = payment?.paid && payment.real != null ? payment.real : row.prestacao
+  const netPrestacao = bonificacaoMensal != null && bonificacaoMensal > 0
+    ? displayPrestacao - bonificacaoMensal
+    : null
+
   return (
     <div className={`tracking-row ${isCurrent ? 'is-current' : ''} ${payment?.paid ? 'is-paid' : ''}`}>
       <div className="tracking-ym">{ymToShort(row.ym)}</div>
-      <div className="tracking-prestacao">{eur2(row.prestacao)}</div>
+      <div className="tracking-prestacao">
+        {netPrestacao != null
+          ? <span title={`Bruto: ${eur2(displayPrestacao)}`}>{eur2(netPrestacao)} <span className="bon-tag">líq.</span></span>
+          : eur2(displayPrestacao)
+        }
+      </div>
       <div className="tracking-paid">
         <label className="checkbox">
           <input

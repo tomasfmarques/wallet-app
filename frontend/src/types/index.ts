@@ -5,6 +5,7 @@ export interface User {
   email: string
   name: string
   createdAt: string
+  hasPassword: boolean
 }
 
 export interface Loan {
@@ -18,6 +19,8 @@ export interface Loan {
   spread: number
   euribor: number
   dataInicio: string // "AAAA-MM"
+  bonificacaoMensal?: number | null
+  bonificacaoMeses?: number | null
 }
 
 export interface LoanPayment {

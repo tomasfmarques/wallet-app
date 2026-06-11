@@ -1,23 +1,37 @@
 import { Router } from 'express'
+import bcrypt from 'bcryptjs'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 
 const router = Router()
 router.use(requireAuth)
 
-// ── GET /api/export ──────────────────────────────────────────────
+// ── POST /api/export ─────────────────────────────────────────────
 // Dumps everything for the current user as a single JSON document.
-// Use it for backup or to seed a fresh install. Password hash and session
-// data are NEVER included.
-router.get('/', async (req, res) => {
+// Requires currentPassword for local-password accounts; Google-only
+// users are allowed through with an active session (the Google token
+// already proves their identity).
+// Password hash, requisitionId, and session data are NEVER included.
+router.post('/', async (req, res) => {
   try {
     const userId = req.session.userId!
 
-    const [user, loans, assets, settings, incomes, expenses, classificationRules, bankConnections] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, name: true, createdAt: true },
-      }),
+    // Step-up authentication
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) { res.status(401).json({ error: 'Sessão inválida' }); return }
+
+    if (user.passwordHash) {
+      const { currentPassword } = req.body ?? {}
+      if (typeof currentPassword !== 'string' || !currentPassword) {
+        res.status(400).json({ errors: { currentPassword: 'Password atual obrigatória para exportar' } }); return
+      }
+      const ok = await bcrypt.compare(currentPassword, user.passwordHash)
+      if (!ok) {
+        res.status(401).json({ errors: { currentPassword: 'Password incorreta' } }); return
+      }
+    }
+
+    const [loans, assets, settings, incomes, expenses, classificationRules, bankConnections] = await Promise.all([
       prisma.loan.findMany({
         where: { userId },
         orderBy: { name: 'asc' },
@@ -36,7 +50,11 @@ router.get('/', async (req, res) => {
       prisma.income.findMany({ where: { userId }, orderBy: { name: 'asc' } }),
       prisma.expense.findMany({ where: { userId }, orderBy: [{ type: 'asc' }, { name: 'asc' }] }),
       prisma.classificationRule.findMany({ where: { userId }, orderBy: { matchKey: 'asc' } }),
-      prisma.bankConnection.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+      prisma.bankConnection.findMany({
+        where: { userId }, orderBy: { createdAt: 'asc' },
+        select: { id: true, userId: true, institutionId: true, institutionName: true, logo: true, status: true, createdAt: true },
+        // requisitionId excluded — it is a live bank-access handle, not backup data
+      }),
     ])
 
     const payload = {
@@ -45,29 +63,20 @@ router.get('/', async (req, res) => {
         exportedAt: new Date().toISOString(),
         schemaVersion: 1,
       },
-      user,
+      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
       loans,
-      portfolio: {
-        assets,
-        settings,
-      },
-      budget: {
-        incomes,
-        expenses,
-      },
+      portfolio: { assets, settings },
+      budget: { incomes, expenses },
       classificationRules,
       bankConnections,
     }
 
-    const stamp = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const stamp = new Date().toISOString().slice(0, 10)
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="wallet-export-${stamp}.json"`,
-    )
+    res.setHeader('Content-Disposition', `attachment; filename="wallet-export-${stamp}.json"`)
     res.send(JSON.stringify(payload, null, 2))
   } catch (err) {
-    console.error('GET /api/export failed:', err)
+    console.error('POST /api/export failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

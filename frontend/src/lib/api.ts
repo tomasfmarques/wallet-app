@@ -1,7 +1,7 @@
 // ── Fetch wrapper for the API ────────────────────────────────────
 // All requests include credentials so the session cookie is sent.
 
-const API_URL = import.meta.env.VITE_API_URL ?? ''
+export const API_URL: string = import.meta.env.VITE_API_URL ?? ''
 
 export class ApiError extends Error {
   status: number
@@ -44,5 +44,5 @@ export const api = {
   get:    <T>(path: string)                => request<T>('GET', path),
   post:   <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put:    <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-  delete: <T>(path: string)                => request<T>('DELETE', path),
+  delete: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 }

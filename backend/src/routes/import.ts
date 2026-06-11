@@ -141,20 +141,21 @@ router.post('/', async (req, res) => {
       await tx.bankConnection.deleteMany({ where: { userId } })
 
       // ── Loans (multiple credits) ───────────────────────────────
-      // Accept the new `loans` array; fall back to a single legacy `loan`.
       const loanList: Record<string, unknown>[] = isArr(payload.loans)
-        ? (payload.loans as unknown[]).filter(isObj)
+        ? (payload.loans as unknown[]).filter(isObj).slice(0, 50)
         : (isObj(payload.loan) ? [payload.loan as Record<string, unknown>] : [])
       for (const loan of loanList) {
         if (isNum(loan.capital) && isNum(loan.prazoMeses) && isStr(loan.dataInicio)) {
+          const prazoMesesRounded = Math.round(loan.prazoMeses as number)
+          if (prazoMesesRounded <= 0 || prazoMesesRounded > 600) continue
           const createdLoan = await tx.loan.create({
             data: {
               userId,
               name:       isStr(loan.name) ? (loan.name as string) : 'Crédito',
               capital:    loan.capital,
-              prazoMeses: Math.round(loan.prazoMeses),
+              prazoMeses: prazoMesesRounded,
               tanFixa:    isNum(loan.tanFixa)    ? loan.tanFixa    : 0,
-              mesesFixos: isNum(loan.mesesFixos) ? Math.round(loan.mesesFixos) : 0,
+              mesesFixos: isNum(loan.mesesFixos) ? Math.min(Math.round(loan.mesesFixos), prazoMesesRounded) : 0,
               spread:     isNum(loan.spread)     ? loan.spread     : 0,
               euribor:    isNum(loan.euribor)    ? loan.euribor    : 0,
               dataInicio: loan.dataInicio,
@@ -206,7 +207,7 @@ router.post('/', async (req, res) => {
         const portfolio = payload.portfolio as Record<string, unknown>
 
         if (isArr(portfolio.assets)) {
-          for (const raw of portfolio.assets) {
+          for (const raw of (portfolio.assets as unknown[]).slice(0, 200)) {
             if (!isObj(raw)) continue
             if (!isStr(raw.name) || !isStr(raw.ticker) || !isNum(raw.qty)) continue
 
@@ -256,8 +257,9 @@ router.post('/', async (req, res) => {
       if (isObj(payload.budget)) {
         const budget = payload.budget as Record<string, unknown>
 
+        const isValidYm = (v: unknown): boolean => isStr(v) && YM_RE.test(v as string)
         if (isArr(budget.incomes)) {
-          const incomes = (budget.incomes as unknown[])
+          const incomes = (budget.incomes as unknown[]).slice(0, 5000)
             .filter(isObj)
             .filter((i) => isStr(i.name) && isNum(i.amount))
             .map((i) => ({
@@ -270,15 +272,15 @@ router.post('/', async (req, res) => {
               active: isBool(i.active) ? i.active : true,
               pending: isBool(i.pending) ? i.pending : false,
               source: isStr(i.source) ? i.source : null,
-              startYm: isStr(i.startYm) ? i.startYm : null,
-              endYm:   isStr(i.endYm)   ? i.endYm   : null,
-              notes:   isStr(i.notes)   ? i.notes   : null,
+              startYm: isValidYm(i.startYm) ? i.startYm as string : null,
+              endYm:   isValidYm(i.endYm)   ? i.endYm as string   : null,
+              notes:   isStr(i.notes)        ? i.notes             : null,
             }))
           if (incomes.length > 0) await tx.income.createMany({ data: incomes })
         }
 
         if (isArr(budget.expenses)) {
-          const expenses = (budget.expenses as unknown[])
+          const expenses = (budget.expenses as unknown[]).slice(0, 5000)
             .filter(isObj)
             .filter((e) => isStr(e.name) && isNum(e.amount))
             .map((e) => ({
@@ -291,9 +293,9 @@ router.post('/', async (req, res) => {
               active: isBool(e.active) ? e.active : true,
               pending: isBool(e.pending) ? e.pending : false,
               source: isStr(e.source) ? e.source : null,
-              startYm: isStr(e.startYm) ? e.startYm : null,
-              endYm:   isStr(e.endYm)   ? e.endYm   : null,
-              notes:   isStr(e.notes)   ? e.notes   : null,
+              startYm: isValidYm(e.startYm) ? e.startYm as string : null,
+              endYm:   isValidYm(e.endYm)   ? e.endYm as string   : null,
+              notes:   isStr(e.notes)        ? e.notes             : null,
             }))
           if (expenses.length > 0) await tx.expense.createMany({ data: expenses })
         }
@@ -329,7 +331,7 @@ router.post('/', async (req, res) => {
           }))
         if (rules.length > 0) await tx.classificationRule.createMany({ data: rules })
       }
-    })
+    }, { timeout: 30_000 })
 
     // Summary
     const [loanCount, assetCount, settings, incomeCount, expenseCount] = await Promise.all([
@@ -353,8 +355,7 @@ router.post('/', async (req, res) => {
     })
   } catch (err) {
     console.error('POST /api/import failed:', err)
-    const msg = err instanceof Error ? err.message : 'Unknown error'
-    res.status(500).json({ error: `Import failed: ${msg}` })
+    res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
 

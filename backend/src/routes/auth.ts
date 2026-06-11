@@ -1,8 +1,31 @@
 import { Router } from 'express'
+import { randomBytes, createHash } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma'
+import { sendPasswordResetEmail } from '../lib/email'
 
 const router = Router()
+
+// ── Per-account lockout for change-password ──────────────────────
+// Simple in-memory store: works for single-instance and serverless cold
+// starts. Replace with a Redis counter for multi-instance deployments.
+const CP_MAX = 5
+const CP_WINDOW_MS = 15 * 60 * 1000
+const cpAttempts = new Map<string, { count: number; resetAt: number }>()
+
+function cpIsLocked(userId: string): boolean {
+  const e = cpAttempts.get(userId)
+  if (!e) return false
+  if (Date.now() > e.resetAt) { cpAttempts.delete(userId); return false }
+  return e.count >= CP_MAX
+}
+function cpRecordFail(userId: string): void {
+  const now = Date.now()
+  const e = cpAttempts.get(userId)
+  if (!e || now > e.resetAt) { cpAttempts.set(userId, { count: 1, resetAt: now + CP_WINDOW_MS }); return }
+  e.count++
+}
+function cpClear(userId: string): void { cpAttempts.delete(userId) }
 
 // ── Validation helpers ───────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -67,8 +90,11 @@ router.post('/signup', async (req, res) => {
       data: { email, passwordHash, name: name.trim() },
     })
 
-    req.session.userId = user.id
-    res.status(201).json({ user: serializeUser(user) })
+    req.session.regenerate((err) => {
+      if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user.id
+      res.status(201).json({ user: serializeUser(user) })
+    })
   } catch (err) {
     console.error('Signup failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -107,8 +133,11 @@ router.post('/login', async (req, res) => {
       return
     }
 
-    req.session.userId = user.id
-    res.json({ user: serializeUser(user) })
+    req.session.regenerate((err) => {
+      if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user.id
+      res.json({ user: serializeUser(user) })
+    })
   } catch (err) {
     console.error('Login failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -139,14 +168,19 @@ router.post('/change-password', async (req, res) => {
     return
   }
 
+  const userId = req.session.userId!
+  if (cpIsLocked(userId)) {
+    res.status(429).json({ error: 'Demasiadas tentativas falhadas. Tenta novamente em 15 minutos.' })
+    return
+  }
+
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
+    const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
       res.status(401).json({ error: 'Sessão inválida' })
       return
     }
     if (!user.passwordHash) {
-      // Google-only account — no current password to verify against
       res.status(400).json({
         error: 'A conta usa Sign in with Google. Não existe password local para mudar.',
       })
@@ -154,10 +188,12 @@ router.post('/change-password', async (req, res) => {
     }
     const ok = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!ok) {
+      cpRecordFail(userId)
       res.status(401).json({ errors: { currentPassword: 'Password atual incorreta' } })
       return
     }
 
+    cpClear(userId)
     const passwordHash = await bcrypt.hash(newPassword, 12)
     await prisma.user.update({
       where: { id: user.id },
@@ -178,9 +214,81 @@ router.post('/logout', (req, res) => {
       res.status(500).json({ error: 'Erro ao terminar sessão' })
       return
     }
-    res.clearCookie('connect.sid')
+    res.clearCookie('wid', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' })
     res.json({ ok: true })
   })
+})
+
+// ── POST /api/auth/forgot-password ───────────────────────────────
+// Accepts an email address and sends a one-time reset link.
+// Always returns 200 so we don't reveal whether the address is registered.
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body ?? {}
+  if (typeof email !== 'string' || !email.includes('@')) {
+    res.status(400).json({ error: 'Email inválido' }); return
+  }
+
+  res.json({ ok: true }) // respond immediately to not leak existence
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
+    // Only send for accounts that have a local password; Google-only users have no password to reset.
+    if (!user || !user.passwordHash) return
+
+    // Invalidate previous unused tokens for this user
+    await prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    })
+
+    const plain = randomBytes(32).toString('hex')
+    const tokenHash = createHash('sha256').update(plain).digest('hex')
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    await prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    })
+
+    const origin = process.env.APP_ORIGIN
+      ?? (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)[0]
+      ?? 'http://localhost:5173'
+
+    await sendPasswordResetEmail(user.email, `${origin}/reset-password?token=${plain}`)
+  } catch (err) {
+    console.error('POST /api/auth/forgot-password failed:', err)
+    // Don't surface the error — response was already sent
+  }
+})
+
+// ── POST /api/auth/reset-password ────────────────────────────────
+// Validates the token from the email link and sets the new password.
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body ?? {}
+  if (typeof token !== 'string' || token.length < 32) {
+    res.status(400).json({ error: 'Token inválido' }); return
+  }
+  const passwordErr = validatePassword(newPassword)
+  if (passwordErr) { res.status(400).json({ errors: { newPassword: passwordErr } }); return }
+
+  try {
+    const tokenHash = createHash('sha256').update(token).digest('hex')
+    const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash } })
+
+    if (!record || record.used || record.expiresAt < new Date()) {
+      res.status(400).json({ error: 'O link de recuperação é inválido ou expirou.' }); return
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      prisma.passwordResetToken.update({ where: { id: record.id }, data: { used: true } }),
+    ])
+
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('POST /api/auth/reset-password failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
 })
 
 export default router

@@ -19,13 +19,16 @@ function asNonNegativeNumber(v: unknown, field: string, errors: Record<string, s
   if (!Number.isFinite(n) || n < 0) { errors[field] = `${field} deve ser ≥ 0`; return 0 }
   return n
 }
-function asPositiveInt(v: unknown, field: string, errors: Record<string, string>): number {
+function asPositiveInt(v: unknown, field: string, errors: Record<string, string>, max?: number): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isInteger(n) || n <= 0) { errors[field] = `${field} deve ser um inteiro positivo`; return 0 }
+  if (max !== undefined && n > max) { errors[field] = `${field} máximo ${max}`; return 0 }
   return n
 }
 function asYm(v: unknown, field: string, errors: Record<string, string>): string {
   if (typeof v !== 'string' || !YM_RE.test(v)) { errors[field] = `${field} deve ter o formato AAAA-MM`; return '' }
+  const year = Number(v.slice(0, 4))
+  if (year < 1990 || year > 2100) { errors[field] = `${field} ano fora do intervalo (1990-2100)`; return '' }
   return v
 }
 function asName(v: unknown): string {
@@ -83,17 +86,33 @@ router.put('/', async (req, res) => {
   const errors: Record<string, string> = {}
   const name        = asName(req.body?.name)
   const capital     = asPositiveNumber(req.body?.capital,     'capital',     errors)
-  const prazoMeses  = asPositiveInt   (req.body?.prazoMeses,  'prazoMeses',  errors)
+  const prazoMeses  = asPositiveInt   (req.body?.prazoMeses,  'prazoMeses',  errors, 600)
   const tanFixa     = asNonNegativeNumber(req.body?.tanFixa,  'tanFixa',     errors)
   const mesesFixos  = asPositiveInt   (req.body?.mesesFixos,  'mesesFixos',  errors)
   const spread      = asNonNegativeNumber(req.body?.spread,   'spread',      errors)
   const euribor     = asNonNegativeNumber(req.body?.euribor,  'euribor',     errors)
   const dataInicio  = asYm            (req.body?.dataInicio,  'dataInicio',  errors)
 
+  // Optional spread rebate (e.g. Montepio "devolução de spread")
+  const bonRaw = req.body?.bonificacaoMensal
+  let bonificacaoMensal: number | null = null
+  if (bonRaw !== undefined && bonRaw !== null && bonRaw !== '') {
+    const b = Number(bonRaw)
+    if (!Number.isFinite(b) || b < 0) errors.bonificacaoMensal = 'Valor inválido'
+    else bonificacaoMensal = b > 0 ? b : null
+  }
+  const bonMesesRaw = req.body?.bonificacaoMeses
+  let bonificacaoMeses: number | null = null
+  if (bonMesesRaw !== undefined && bonMesesRaw !== null && bonMesesRaw !== '') {
+    const m = Number(bonMesesRaw)
+    if (!Number.isInteger(m) || m < 0) errors.bonificacaoMeses = 'Inteiro ≥ 0'
+    else bonificacaoMeses = m > 0 ? m : null
+  }
+
   if (mesesFixos > prazoMeses) errors.mesesFixos = 'mesesFixos não pode exceder prazoMeses'
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
-  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio }
+  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses }
   const id = typeof req.body?.id === 'string' ? req.body.id : null
 
   try {
@@ -222,7 +241,7 @@ router.post('/:loanId/euribor', async (req, res) => {
 router.post('/:loanId/simulate', async (req, res) => {
   const errors: Record<string, string> = {}
   const annualAmount = asNonNegativeNumber(req.body?.annualAmount ?? 0, 'annualAmount', errors)
-  const startYear    = asPositiveInt(req.body?.startYear, 'startYear', errors)
+  const startYear    = asPositiveInt(req.body?.startYear, 'startYear', errors, 2200)
   const futureEuribor = asNonNegativeNumber(req.body?.futureEuribor, 'futureEuribor', errors)
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
@@ -230,10 +249,15 @@ router.post('/:loanId/simulate', async (req, res) => {
     const loan = await ownedLoan(req.params.loanId, req.session.userId!)
     if (!loan) { res.status(404).json({ error: 'Crédito não encontrado' }); return }
 
+    const loanStartYear = Number(loan.dataInicio.slice(0, 4))
+    if (startYear < loanStartYear || startYear > loanStartYear + 60) {
+      res.status(400).json({ error: 'startYear fora do intervalo do empréstimo' }); return
+    }
+
     const baseInput: LoanInput = inputFromLoan(loan, [])
     const simAmortizations: Array<{ ym: string; valor: number; modo: 'prazo' | 'prestacao' }> = []
     if (annualAmount > 0) {
-      const endYear = Number(loan.dataInicio.slice(0, 4)) + Math.ceil(loan.prazoMeses / 12)
+      const endYear = loanStartYear + Math.ceil(loan.prazoMeses / 12)
       for (let y = startYear; y <= endYear; y++) simAmortizations.push({ ym: `${y}-01`, valor: annualAmount, modo: 'prazo' })
     }
     const simInput: LoanInput = { ...baseInput, euribor: futureEuribor, amortizacoes: simAmortizations }
