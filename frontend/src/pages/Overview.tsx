@@ -57,6 +57,7 @@ export function Overview() {
             loanRemaining={loanItems.length > 0 ? loanCapitalAtual : null}
             monthlyNet={budget.data?.kpis.netMonthly ?? null}
             monthlyIncome={budget.data?.kpis.incomeTotal ?? null}
+            pendingCount={(budget.data?.pendingIncomes.length ?? 0) + (budget.data?.pendingExpenses.length ?? 0)}
           />
 
           <CashflowChart

@@ -11,17 +11,19 @@
 
 ## Phase 0 — Stop the bleeding (do first, days)
 
-- [ ] **F1** 🔴 Fix Prisma migration drift so a fresh checkout doesn't 500.
-  Immediate: from `backend/` run `npx prisma db push && npx prisma generate`, restart, retry signup.
-  Real fix: capture a migration for the drifted columns (`loans.bonificacao_mensal`, `loans.bonificacao_meses`, `loans.taeg`, `portfolio_assets.last_price_eur`) and make migrate-vs-push consistent.
-  → `backend/prisma/schema.prisma`, `backend/prisma/schema.prod.prisma`, `backend/prisma/migrations/`
-  ⚠️ In *this* checkout `backend/prisma/migrations/` has **only `migration_lock.toml`** — zero migration folders. The drift is worse than the plan's "stops at `_add_budget`" implies. See [plan F1](../docs/PUBLIC-LAUNCH-PLAN.md).
-- [ ] **F10** 🟡 Fix the `:3001` → `:4000` doc drift. Backend default is `:4000` (`backend/src/index.ts` line 23 + Vite proxy).
-  → `CLAUDE.md` (Commands block), `docs/STATE.md`
-- [ ] **S6** 🟠 Rotate the Neon DB password (shared in plaintext across old handoff files), update `DATABASE_URL` in Vercel, confirm no secret is committed.
+_Done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/plans/crispy-jumping-fairy.md`)._
+
+- [x] **F1** 🔴 Fixed Prisma migration drift so a fresh checkout doesn't 500.
+  Captured catch-up migration `backend/prisma/migrations/20260612163315_sync_schema_drift/` (via `prisma migrate diff`), marked applied on the existing dev.db with `prisma migrate resolve --applied`, and added `"postinstall": "prisma generate"` to `backend/package.json` so the client is never stale.
+  ✅ Verified: a DB built purely from migrations (`prisma migrate deploy` on a fresh file) now has all columns + the 3 previously-missing tables.
+  Correction: the migration history was **not** "only `migration_lock.toml`" — the 4 folders existed; the drift was missing columns (`bonificacao_mensal/meses`, `taeg`, `last_price_eur`) **and** 3 whole tables (`password_reset_tokens`, `bank_connections`, `classification_rules`) + `pending`/`source`/`day_of_month` on incomes/expenses. All now in the one catch-up migration.
+- [x] **F10** 🟡 Fixed the `:3001`→`:4000` + Render→Vercel doc drift. Only `CLAUDE.md` was affected (line 29 port comment + line 23 deploy row); `docs/STATE.md` was already clean.
+  → `CLAUDE.md`
+- [ ] **S6** 🟠 Rotate the Neon DB password (shared in plaintext across old handoff files), update `DATABASE_URL` in Vercel, confirm no secret is committed. **(External console action — still open.)**
   → Vercel env vars · also `docs/STATE.md` next-step #5
-- [ ] **F4 / FX1 (minimum)** 🔴 Make imported income *visible* on Visão geral so it doesn't show `0 €`. Quick win even before the full planned-vs-actuals refactor (full version is FX1 in Phase 3).
-  → `frontend/src/components/overview/HeroKpis.tsx`, `frontend/src/hooks/useBudget.ts`, `backend/src/routes/budget.ts`
+- [x] **F4 / FX1 (minimum)** 🔴 Imported income no longer shows a false `0 €`/deficit on Visão geral. Added a presentation-only guard: when income is 0 but lines are pending, the SALDO/RECEITAS cards show a neutral "Classifica N importações" / "N por classificar" state instead of a red deficit. Frontend-only (no KPI/DB change); full planned-vs-actuals split remains FX1 in Phase 3.
+  ✅ Verified in the live UI both ways (pending → neutral; classified → real green numbers return).
+  → `frontend/src/components/overview/HeroKpis.tsx`, `frontend/src/pages/Overview.tsx`
 
 ---
 

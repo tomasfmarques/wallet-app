@@ -20,13 +20,13 @@ This file loads automatically every session — so you never paste a handoff aga
 | Backend | Node + Express (**CommonJS**, ts-node-dev), Prisma ORM |
 | DB | SQLite dev (`backend/prisma/dev.db`) · Neon Postgres prod |
 | Auth | email/password (bcryptjs + express-session) + Google Sign In (wired, inactive) |
-| Deploy | Render (live) · Vercel (config committed, not deployed) · CI: GitHub Actions → Render hook |
+| Deploy | Vercel (live — serverless API + static SPA at wallet360.pt; auto-deploys on push to `main`). Render retired. |
 
 ## Commands
 
 ```bash
 npm install
-npm run dev          # backend :3001 + frontend :5173 (concurrently)
+npm run dev          # backend :4000 + frontend :5173 (concurrently)
 npm run build        # build both workspaces
 npm run db:migrate -w backend -- --name <name>   # dev migration (SQLite)
 npm run db:studio    # Prisma Studio
