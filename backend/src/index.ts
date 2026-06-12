@@ -1,11 +1,14 @@
 import 'dotenv/config'
 import path from 'path'
-import express from 'express'
+import { randomBytes } from 'crypto'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
 import session from 'express-session'
 import rateLimit from 'express-rate-limit'
 import pgSession from 'connect-pg-simple'
 import helmet from 'helmet'
+
+import { initObservability, captureError } from './lib/observability'
 
 import authRouter from './routes/auth'
 import authGoogleRouter from './routes/authGoogle'
@@ -22,6 +25,10 @@ import simulateRouter from './routes/simulate'
 const app = express()
 const PORT = process.env.PORT ?? 4000
 const IS_PROD = process.env.NODE_ENV === 'production'
+
+// ── Observability ──────────────────────────────────────────────────
+// Inert unless SENTRY_DSN is set. Safe to call before anything else.
+initObservability()
 
 // ── Startup guard ──────────────────────────────────────────────────
 // Refuse to boot in production without a real session secret so we can
@@ -93,11 +100,17 @@ app.use(session({
   secret: SESSION_SECRET ?? 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
+  // rolling: refresh the cookie's expiry on every response so an active user is
+  // never silently logged out. Per-login the handler overrides maxAge based on the
+  // "Lembrar-me" choice (30 days vs 1 day) — see routes/auth.ts.
+  rolling: true,
   cookie: {
     httpOnly: true,
     secure: IS_PROD,
-    sameSite: 'strict',
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    // 'lax' (not 'strict') keeps CSRF protection for our flows while staying
+    // compatible with the future mobile/TWA wrapper (launch-plan P3).
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days default
   },
 }))
 
@@ -152,6 +165,21 @@ if (IS_PROD && !IS_VERCEL) {
     res.sendFile(path.join(distPath, 'index.html'))
   })
 }
+
+// ── Error handler (last) ───────────────────────────────────────────
+// Safety net for anything that reaches Express as an error (synchronous throws,
+// next(err)). Per-route handlers still return their own 500s; this guarantees an
+// error reaching here gets a traceable requestId, a console log, and — when a
+// SENTRY_DSN is set — a captured exception. The eslint-style 4-arg signature is
+// what marks it as an error-handling middleware.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  const requestId = randomBytes(6).toString('hex')
+  captureError(err, { requestId, path: req.path, method: req.method })
+  console.error(`[${requestId}] Unhandled error on ${req.method} ${req.path}:`, err)
+  if (res.headersSent) return
+  res.status(500).json({ error: 'Erro interno do servidor', requestId })
+})
 
 // ── Start ──────────────────────────────────────────────────────────
 if (!IS_VERCEL) {

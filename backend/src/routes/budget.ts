@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
+import { stripFormulaPrefix } from '../lib/sanitize'
 
 const router = Router()
 router.use(requireAuth)
@@ -9,10 +10,16 @@ router.use(requireAuth)
 // ── Validation helpers ───────────────────────────────────────────
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
+const MAX_AMOUNT = 10_000_000   // 10 M € ceiling per budget line (defence in depth)
+
 function asPositiveNumber(v: unknown, field: string, errors: Record<string, string>): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n) || n <= 0) {
     errors[field] = `${field} deve ser > 0`
+    return 0
+  }
+  if (n > MAX_AMOUNT) {
+    errors[field] = `${field} fora do intervalo`
     return 0
   }
   return n
@@ -23,7 +30,11 @@ function asName(v: unknown, field: string, errors: Record<string, string>): stri
     errors[field] = `${field} obrigatório (1-80 caracteres)`
     return ''
   }
-  return v.trim()
+  // Neutralise CSV/formula-injection prefixes at the write boundary (F5). Also
+  // guards the statement-import path, where names are attacker-controllable.
+  const clean = stripFormulaPrefix(v)
+  if (clean.length === 0) { errors[field] = `${field} inválido`; return '' }
+  return clean
 }
 
 function asOptionalString(v: unknown, max = 200): string | null {

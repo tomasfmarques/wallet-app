@@ -29,24 +29,26 @@ _Done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/p
 
 ## Phase 1 — Make it safe to be public (1–2 weeks)
 
-- [ ] **S1 / F2** 🔴 Wire an error monitor (Sentry or Logtail) into the Express error path + frontend. Capture stack + request id; alert on 500-rate. Today every failure is `console.error` + a generic pt string — ephemeral on serverless.
-  → `backend/src/index.ts` (error middleware), `backend/src/routes/*`, frontend bootstrap
-- [ ] **S2 / F6** 🟠 Replace in-memory counters with a shared store (Upstash Redis). Move rate-limiting + the change-password lockout (`cpAttempts` Map) off per-instance memory.
+_Pragmatic slice done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/plans/crispy-jumping-fairy.md`). Account/schema-coupled items (S2, S3) deferred to their own PRs._
+
+- [x] **S1 / F2** 🔴 Sentry error monitor + a real Express error handler. New `backend/src/lib/observability.ts` (inert unless `SENTRY_DSN` set, mirrors the SMTP-optional pattern); final error middleware in `index.ts` stamps every unhandled error with a `requestId`, console-logs it, and captures to Sentry when configured. ✅ Verified: boots clean with no DSN; malformed-JSON request returns `{error, requestId}`.
+  Deferred: frontend Sentry (behind `VITE_SENTRY_DSN`) — skipped to keep the bundle lean (the >500 kB `pdfStatementParser` chunk is already a concern). Add when wanted.
+- [ ] **S2 / F6** 🟠 Replace in-memory counters with a shared store (Upstash Redis). Move rate-limiting + the change-password lockout (`cpAttempts` Map) off per-instance memory. **(Deferred — needs Upstash account; do behind `REDIS_URL` with in-memory fallback.)**
   → `backend/src/routes/auth.ts`, rate-limiter middleware in `backend/src/index.ts`
-- [ ] **S3 / F7** 🟠 Email verification on signup — reuse the password-reset token plumbing; gate sensitive actions until verified.
+- [ ] **S3 / F7** 🟠 Email verification on signup — reuse the password-reset token plumbing; gate sensitive actions until verified. **(Deferred — touches BOTH Prisma schemas + a migration + export/import + signup gating; warrants a focused PR. `lib/email.ts` console-fallback pattern is ready to reuse.)**
   → `backend/src/routes/auth.ts`
-- [ ] **S4 / F5** 🟠 Sanitise the import boundary — strip leading `= + - @` from merchant/names, enforce length, before persist. Pre-empts CSV formula injection ahead of any export-to-CSV feature.
-  → `backend/src/routes/import.ts`, `backend/src/routes/budget.ts`
-- [ ] **S5 / F9** 🟡 Server-side API input bounds — rate ≤ 100 %, capital/amount ceilings, reject absurd values.
-  → `backend/src/routes/loan.ts`, `backend/src/routes/portfolio.ts`
+- [x] **S4 / F5** 🟠 CSV/formula-injection sanitisation. New `backend/src/lib/sanitize.ts` `stripFormulaPrefix()` strips leading `= + - @ \t \r` at the write boundary; applied to `budget.ts` `asName` (covers the statement-import path), plus loan/portfolio names. ✅ Verified: imported `=HYPERLINK(...)` stored as `HYPERLINK(...)`.
+  → `backend/src/lib/sanitize.ts`, `backend/src/routes/budget.ts`, `loan.ts`, `portfolio.ts`
+- [x] **S5 / F9** 🟡 Server-side API input bounds — rates ≤ 1.0 (100 %), capital ≤ 100 M, amount/qty/value ceilings; reject absurd values via the existing validator helpers. ✅ Verified: `tanFixa:5`→400, `capital:1e12`→400, valid loan→200.
+  → `backend/src/routes/loan.ts`, `portfolio.ts`, `budget.ts`
 - [ ] **F8** 🟠 Yahoo failover for valuation — surface a cached/fallback value when `query1.finance.yahoo.com` breaks; wire the already-present Finnhub backup into the valuation path.
   → `backend/src/lib/` (yahoo + fx engines), `backend/src/routes/quotes.ts`, `backend/src/routes/portfolio.ts`
 - [ ] **S8** 🟡 CI audit gate — `npm audit --production` (fail on high) + a secret-scan (gitleaks). Pairs with S6.
   → CI config (GitHub Actions)
-- [ ] **P1** 🟠 Sliding sessions — set `rolling: true`, raise `maxAge` to 30 days so an active user never silently re-logs (today: absolute 7-day window).
+- [x] **P1** 🟠 Sliding sessions — `rolling: true`, `maxAge` 30 days, `sameSite` `strict`→`lax` (mobile-wrapper friendly). Active users never silently re-log. ✅ Verified: 30-day cookie, expiry advances on each response.
   → `backend/src/index.ts` (session config)
-- [ ] **P2** 🟠 "Lembrar-me" + explicit lock — default 30-day rolling cookie, offer a short session for shared devices.
-  → `backend/src/routes/auth.ts`, sign-in UI in `frontend/src/pages/SignIn.tsx`
+- [x] **P2** 🟠 "Lembrar-me" — default 30-day rolling cookie; unchecking issues a 1-day session for shared devices. Checkbox on the sign-in screen (default checked). ✅ Verified both cookie lifetimes + UI renders.
+  → `backend/src/routes/auth.ts`, `frontend/src/pages/SignIn.tsx`, `frontend/src/hooks/useAuth.tsx`, `frontend/src/index.css`
 
 ---
 

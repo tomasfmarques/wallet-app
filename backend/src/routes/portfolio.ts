@@ -9,6 +9,7 @@ import {
 } from '../lib/portfolioEngine'
 import { getYahooChart } from '../lib/yahooFinance'
 import { convertPrice } from '../lib/fx'
+import { stripFormulaPrefix } from '../lib/sanitize'
 
 // Portfolio is reported in EUR. Yahoo returns prices in the native exchange
 // currency; we convert via Frankfurter before persisting.
@@ -23,21 +24,27 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 // ── Validation helpers ───────────────────────────────────────────
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
-function asNumber(v: unknown, field: string, errors: Record<string, string>, allowNeg = false): number {
+// Sanity ceilings (defence in depth — reject absurd public-API input).
+const MAX_MONEY = 1_000_000_000   // 1 B € for invested/value/monthly
+const MAX_QTY = 1_000_000_000     // 1 B shares/units
+
+function asNumber(v: unknown, field: string, errors: Record<string, string>, allowNeg = false, max = MAX_MONEY): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n) || (!allowNeg && n < 0)) {
     errors[field] = allowNeg ? `${field} inválido` : `${field} deve ser ≥ 0`
     return 0
   }
+  if (Math.abs(n) > max) { errors[field] = `${field} fora do intervalo`; return 0 }
   return n
 }
 
-function asPositiveNumber(v: unknown, field: string, errors: Record<string, string>): number {
+function asPositiveNumber(v: unknown, field: string, errors: Record<string, string>, max = MAX_QTY): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n) || n <= 0) {
     errors[field] = `${field} deve ser > 0`
     return 0
   }
+  if (n > max) { errors[field] = `${field} fora do intervalo`; return 0 }
   return n
 }
 
@@ -112,7 +119,7 @@ router.get('/', async (req, res) => {
 // ── POST /api/portfolio/assets ───────────────────────────────────
 router.post('/assets', async (req, res) => {
   const errors: Record<string, string> = {}
-  const name           = asString(req.body?.name, 'name', errors, 1, 80)
+  const name           = stripFormulaPrefix(asString(req.body?.name, 'name', errors, 1, 80))
   const ticker         = asString(req.body?.ticker, 'ticker', errors, 1, 20).toUpperCase()
   const qty            = asPositiveNumber(req.body?.qty, 'qty', errors)
   const invested       = asNumber(req.body?.invested, 'invested', errors)
@@ -145,7 +152,7 @@ router.put('/assets/:id', async (req, res) => {
 
   // Only update fields that were sent; this lets the UI patch e.g. only `monthly`
   const data: Record<string, unknown> = {}
-  if (req.body?.name !== undefined)    data.name = asString(req.body.name, 'name', errors, 1, 80)
+  if (req.body?.name !== undefined)    data.name = stripFormulaPrefix(asString(req.body.name, 'name', errors, 1, 80))
   if (req.body?.ticker !== undefined)  data.ticker = asString(req.body.ticker, 'ticker', errors, 1, 20).toUpperCase()
   if (req.body?.qty !== undefined)     data.qty = asPositiveNumber(req.body.qty, 'qty', errors)
   if (req.body?.invested !== undefined) data.invested = asNumber(req.body.invested, 'invested', errors)
