@@ -221,3 +221,48 @@ export function computeCAGRs(input: string, chart: YahooChart): CAGRReport {
     dataPoints: chart.prices.length,
   }
 }
+
+// ── Symbol search ─────────────────────────────────────────────────
+export interface SearchResult {
+  symbol: string
+  name: string
+  exchange: string
+  type: string   // EQUITY | ETF | INDEX | etc.
+}
+
+interface SearchCache { results: SearchResult[]; expiry: number }
+const searchCache = new Map<string, SearchCache>()
+const SEARCH_TTL = 5 * 60 * 1000
+
+export async function searchTickers(query: string): Promise<SearchResult[]> {
+  const key = query.toLowerCase()
+  const hit = searchCache.get(key)
+  if (hit && hit.expiry > Date.now()) return hit.results
+
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en-US&region=US&quotesCount=10&newsCount=0&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query`
+  const res = await fetch(url, { headers: { 'User-Agent': UA } })
+  if (!res.ok) return []
+
+  const json = await res.json() as {
+    quotes?: Array<{
+      symbol?: string
+      shortname?: string
+      longname?: string
+      exchange?: string
+      quoteType?: string
+    }>
+  }
+
+  const results: SearchResult[] = (json.quotes ?? [])
+    .filter((q) => q.symbol && q.quoteType !== 'CURRENCY' && q.quoteType !== 'MUTUALFUND' && q.quoteType !== 'OPTION')
+    .slice(0, 8)
+    .map((q) => ({
+      symbol:   q.symbol!,
+      name:     q.longname ?? q.shortname ?? q.symbol!,
+      exchange: q.exchange ?? '',
+      type:     q.quoteType ?? '',
+    }))
+
+  searchCache.set(key, { results, expiry: Date.now() + SEARCH_TTL })
+  return results
+}

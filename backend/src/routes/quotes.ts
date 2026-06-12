@@ -4,7 +4,7 @@ import {
   getQuoteCached, getMetricCached,
   type PublicQuote, type PublicMetric,
 } from '../lib/quotesCache'
-import { getYahooChart, computeCAGRs, getYahooHistory } from '../lib/yahooFinance'
+import { getYahooChart, computeCAGRs, getYahooHistory, searchTickers } from '../lib/yahooFinance'
 
 // Pluck a numeric metric, return null if missing/non-numeric
 function num(m: Record<string, unknown> | undefined, key: string): number | null {
@@ -114,6 +114,22 @@ router.get('/metric', async (req, res) => {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error(`Metric fetch failed for ${symbol}: ${msg}`)
     res.status(502).json({ error: 'Failed to fetch metrics' })
+  }
+})
+
+// ── GET /api/quotes/search?q=<query> ──────────────────────────────
+// Proxies Yahoo Finance symbol search — no API key needed. Returns up to 8
+// matching equities/ETFs with ticker, name, exchange, and type. Cached 5 min.
+router.get('/search', async (req, res) => {
+  const q = (req.query.q as string | undefined)?.trim()
+  if (!q || q.length < 2) { res.json({ results: [] }); return }
+  try {
+    const results = await searchTickers(q)
+    res.json({ results })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    console.error(`Ticker search failed for "${q}": ${msg}`)
+    res.json({ results: [] })
   }
 })
 

@@ -1,6 +1,27 @@
 import { useQuery } from 'react-query'
 import { api, ApiError } from '@/lib/api'
 
+export interface TickerSearchResult {
+  symbol: string
+  name: string
+  exchange: string
+  type: string
+}
+
+export function useTickerSearch(query: string) {
+  const q = query.trim()
+  return useQuery<{ results: TickerSearchResult[] }, ApiError>(
+    ['ticker-search', q],
+    () => api.get<{ results: TickerSearchResult[] }>(`/api/quotes/search?q=${encodeURIComponent(q)}`),
+    {
+      enabled: q.length >= 2,
+      staleTime: 5 * 60 * 1000,
+      retry: 0,
+      keepPreviousData: true,
+    },
+  )
+}
+
 export interface Quote {
   symbol: string
   current: number
