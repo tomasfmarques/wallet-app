@@ -24,7 +24,7 @@ const FRANKFURTER = 'https://api.frankfurter.app/latest'
  * currency, dividing the price accordingly. Returns the canonical currency
  * code and the price already converted into that currency's main unit.
  */
-export function normalizeSubunit(currency: string, price: number): { currency: string; price: number } {
+function normalizeSubunit(currency: string, price: number): { currency: string; price: number } {
   const c = currency.toUpperCase()
   if (c === 'GBP' && currency === 'GBp')   return { currency: 'GBP', price: price / 100 }
   if (currency === 'GBp' || currency === 'GBX') return { currency: 'GBP', price: price / 100 }
@@ -37,7 +37,7 @@ export function normalizeSubunit(currency: string, price: number): { currency: s
  * Get the conversion rate FROM → TO. Returns null if the FX provider can't
  * answer (e.g. unsupported currency). Returns 1 for same-currency.
  */
-export async function getFxRate(from: string, to: string): Promise<number | null> {
+async function getFxRate(from: string, to: string): Promise<number | null> {
   const f = from.toUpperCase()
   const t = to.toUpperCase()
   if (f === t) return 1

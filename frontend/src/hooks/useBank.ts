@@ -22,7 +22,7 @@ export interface BankInstitution {
   logo: string | null
 }
 
-export const BANK_KEY = ['bank'] as const
+const BANK_KEY = ['bank'] as const
 
 export function useBankStatus(enabled = true) {
   return useQuery<BankStatus, ApiError>(

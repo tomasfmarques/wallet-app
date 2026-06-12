@@ -75,9 +75,6 @@ export function resolveWatchlist(stored: string | null | undefined): Array<{ sym
   return symbols.map((symbol) => ({ symbol, name: nameForSymbol(symbol) }))
 }
 
-/** Back-compat alias — older code referenced WATCHLIST. */
-export const WATCHLIST = resolveWatchlist(null)
-
 // ── CAGR metric (Yahoo Finance, multi-period annualized returns) ─
 export interface AssetMetric {
   symbol: string
@@ -120,12 +117,6 @@ export function availableCAGRs(m?: AssetMetric | null): CagrWindow[] {
   if (m.threeYearCAGR != null) out.push({ value: m.threeYearCAGR, label: '3a',  longLabel: '3 anos' })
   if (m.oneYearCAGR   != null) out.push({ value: m.oneYearCAGR,   label: '1a',  longLabel: '1 ano' })
   return out
-}
-
-/** Pick the "best" CAGR (longest window wins) for default prefill. */
-export function bestHistoricalReturn(m?: AssetMetric | null): { value: number; label: string } | null {
-  const opts = availableCAGRs(m)
-  return opts.length > 0 ? { value: opts[0].value, label: opts[0].longLabel } : null
 }
 
 // ── Price history (per-stock progression chart) ──────────────────

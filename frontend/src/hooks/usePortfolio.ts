@@ -60,7 +60,7 @@ export interface ReforcarInputBody {
 }
 
 // ── Query key ────────────────────────────────────────────────────
-export const PORTFOLIO_KEY = ['portfolio'] as const
+const PORTFOLIO_KEY = ['portfolio'] as const
 
 // ── Query ────────────────────────────────────────────────────────
 export function usePortfolio() {

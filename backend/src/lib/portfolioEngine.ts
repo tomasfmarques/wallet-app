@@ -49,7 +49,7 @@ function contributionForYear(base: number, yearIdx: number, gInc: number, gFy: n
   return base * Math.pow(1 + gInc / 100, exponent)
 }
 
-export function projectAsset(asset: AssetInput, settings: ProjectionSettings): AssetProjection {
+function projectAsset(asset: AssetInput, settings: ProjectionSettings): AssetProjection {
   const months = settings.gH * 12
   const r = asset.expectedReturn / 12
   const rows: number[] = new Array(months)
