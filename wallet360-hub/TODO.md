@@ -69,8 +69,13 @@ _PWA shell done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~
 
 ## Phase 3 — Make it worth choosing (2–4 weeks)
 
-- [ ] **Wedge** — Amortizar vs Investir **fused engine**. The compare screen + entry point already exist; the build is fusing the credit simulator and the portfolio projection into one recommendation (juros poupados vs ganho líquido após impostos, break-even, plain-pt recommendation). This is *the* reason someone picks Wallet360. See [plan Part 5(b)](../docs/PUBLIC-LAUNCH-PLAN.md) + [`../MARKET-FEEDBACK.md`](../MARKET-FEEDBACK.md).
-  → `frontend/src/pages/Compare.tsx`, `frontend/src/hooks/useCompare.ts`, `backend/src/routes/simulate.ts`, `backend/src/lib/` (loan + portfolio engines)
+_Sprint 1 (surface the wedge) done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/plans/crispy-jumping-fairy.md`)._
+
+- [x] **Wedge — surfaced.** Discovery during planning: the fused engine + `/comparar` screen already existed (interest-saved vs net-of-tax gain, break-even, pt-PT recommendation). The gap was that it was **passive**. Added a proactive **dashboard insight card** (`frontend/src/components/overview/WedgeInsight.tsx`) that runs the existing `simulate/compare` engine for the user's largest-capital loan and shows the verdict + figures, deep-linking to `/comparar?loan=<id>`. Gated to users with a loan **and** investments. Shared smart-default helper (`frontend/src/lib/compareDefaults.ts`) keeps the card and the page identical. ✅ Verified: card numbers match the engine, deep-link preselects, gating hides the card with no investments.
+  ⚠️ **Follow-up (gFY):** the smart default reads `portfolio.settings.gFY` as the investment return %, but `gFY` is "years without increase" (an int, schema comment) — for Rita it used **2 %** instead of her **5.2 %** avg asset return, which *flips* the verdict (break-even 3.35 %). Replicated as-is for card↔page consistency; decide whether to switch the default to `avgAssetReturn` (1-line change in `compareDefaults.ts`, affects both surfaces).
+  → `frontend/src/components/overview/WedgeInsight.tsx`, `frontend/src/lib/compareDefaults.ts`, `frontend/src/pages/Overview.tsx`, `frontend/src/pages/Compare.tsx`
+- [ ] **Wedge (deeper)** — optional next: use the portfolio *projection* (not a flat return) and a recurring-amount mode, per [plan Part 5(b)](../docs/PUBLIC-LAUNCH-PLAN.md).
+  → `backend/src/routes/simulate.ts`, `backend/src/lib/` (loan + portfolio engines)
 - [ ] **FX1 (full)** 🔴→🟠 Planned vs. Actuals split — give imported one-off lines their own "realised this month" lane instead of conflating them with recurring budget items. Highest-ROI fix in the plan; permanently resolves F4.
   → `backend/src/routes/budget.ts`, `frontend/src/hooks/useBudget.ts`, `frontend/src/components/budget/`, `frontend/src/components/overview/HeroKpis.tsx`
 - [ ] **FX2** 🟠 Onboarding wizard — first-run: add first credit → add first investment → import/connect a bank. Today a new user lands on an empty Visão geral with no guidance.

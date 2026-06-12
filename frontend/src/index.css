@@ -2548,6 +2548,44 @@ body {
 .overview-header p { font-size: 14px; }
 
 /* ── Hero KPI strip ───────────────────────────────────────── */
+/* ── Dashboard wedge insight (amortizar vs investir) ─────────── */
+.wedge-insight {
+  display: block;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  box-shadow: var(--sh);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.wedge-insight:hover { box-shadow: var(--sh-m); transform: translateY(-1px); }
+.wedge-insight-investir { border-left-color: var(--green); }
+.wedge-insight-equivalente { border-left-color: var(--muted-l); }
+.wedge-insight-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.wedge-insight-icon { font-size: 18px; }
+.wedge-insight-kicker {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted);
+}
+.wedge-insight-cta {
+  margin-left: auto; font-size: 13px; font-weight: 600;
+  color: var(--accent); white-space: nowrap;
+}
+.wedge-insight-verdict { margin: 0 0 12px; font-size: 15px; line-height: 1.45; font-weight: 500; }
+.wedge-insight-figures { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.wedge-insight-fig strong { color: var(--text); margin-left: 4px; font-weight: 700; }
+.wedge-insight-skeleton {
+  height: 96px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+@media (max-width: 480px) {
+  .wedge-insight-cta { font-size: 12px; }
+  .wedge-insight-verdict { font-size: 14px; }
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

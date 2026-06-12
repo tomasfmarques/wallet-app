@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
+import { compareDefaults, type Modo } from '@/lib/compareDefaults'
 import { eur, eur2, ymToShort } from '@/lib/format'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
-
-type Modo = 'prazo' | 'prestacao'
 
 function currentYm(): string {
   const d = new Date()
@@ -25,24 +25,19 @@ export function Compare() {
   const compare = useCompare()
 
   const loans = loanData?.loans ?? []
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selectedLoan = loans.find((l) => l.loan.id === selectedId) ?? loans[0] ?? null
+  // Deep link from the dashboard wedge insight: /comparar?loan=<id> preselects it.
+  const [searchParams] = useSearchParams()
+  const loanParam = searchParams.get('loan')
+  const [selectedId, setSelectedId] = useState<string | null>(loanParam)
+  const selectedLoan =
+    loans.find((l) => l.loan.id === (selectedId ?? loanParam)) ?? loans[0] ?? null
 
-  // ── Smart defaults derived from actual user data ──────────────
-  const smartDefaults = useMemo(() => {
-    // Investment return: use portfolio settings gFY (future yield %) if available
-    const gFY = portData?.settings?.gFY
-    const avgAssetReturn = portData?.assets?.length
-      ? portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length * 100
-      : null
-    const investReturn = gFY ?? avgAssetReturn ?? 7
-
-    // Amount: use the selected loan's next installment, rounded to nearest 100
-    const nextPrestacao = selectedLoan?.kpis?.proximaPrestacao ?? 5000
-    const valor = Math.max(100, Math.round(nextPrestacao / 100) * 100)
-
-    return { valor, investReturn: Math.round(investReturn * 10) / 10, taxRate: 28, modo: 'prazo' as Modo }
-  }, [selectedLoan?.loan.id, portData])   // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Smart defaults derived from actual user data (shared with the
+  // dashboard insight card so both surfaces show identical numbers). ──
+  const smartDefaults = useMemo(
+    () => compareDefaults(selectedLoan, portData),
+    [selectedLoan?.loan.id, portData],   // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   const [valor, setValor] = useState(smartDefaults.valor)
   const [valorInput, setValorInput] = useState(String(smartDefaults.valor))

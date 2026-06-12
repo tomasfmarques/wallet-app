@@ -4,6 +4,7 @@ import { usePortfolio } from '@/hooks/usePortfolio'
 import { useBudget } from '@/hooks/useBudget'
 import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
 import { HeroKpis } from '@/components/overview/HeroKpis'
+import { WedgeInsight } from '@/components/overview/WedgeInsight'
 import { CashflowChart } from '@/components/overview/CashflowChart'
 import { ModuleSummary } from '@/components/overview/ModuleSummary'
 
@@ -59,6 +60,8 @@ export function Overview() {
             monthlyIncome={budget.data?.kpis.incomeTotal ?? null}
             pendingCount={(budget.data?.pendingIncomes.length ?? 0) + (budget.data?.pendingExpenses.length ?? 0)}
           />
+
+          <WedgeInsight loans={loanItems} portfolio={portfolio.data} />
 
           <CashflowChart
             incomes={budget.data?.incomes ?? []}
