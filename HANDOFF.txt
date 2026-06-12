@@ -1,0 +1,216 @@
+================================================================================
+  WALLET360 — PROJECT HANDOFF  (generated 2026-06-12)
+================================================================================
+
+REPO
+  GitHub  : tomasfmarques/wallet-app
+  Branch  : main  (all work committed + pushed here)
+
+TECH STACK
+  Frontend : React 18 + Vite + TypeScript  (frontend/)
+  Backend  : Node/Express + Prisma          (backend/)
+  DB dev   : SQLite  (file: backend/dev.db)
+  DB prod  : Neon PostgreSQL (pooled connection string required)
+  Deploy   : Vercel (serverless functions for API, static for frontend)
+  Auth     : Session-based + Google OAuth
+  Banking  : GoCardless (BankAccountData) — see status below
+
+--------------------------------------------------------------------------------
+WHAT IS ALREADY DONE  (recent history, newest first)
+--------------------------------------------------------------------------------
+
+[ab7b4f4] chore: remove dead code and unused dependencies
+  - Ran knip static analysis on both workspaces
+  - Removed node-fetch + @types/node-fetch from backend
+  - Removed WATCHLIST back-compat alias from useQuotes.ts
+  - Removed bestHistoricalReturn() (zero callers)
+  - Removed `export` from internal helpers that leaked unnecessarily:
+      normalizeSubunit, getFxRate  (backend/src/lib/fx.ts)
+      projectAsset                 (backend/src/lib/portfolioEngine.ts)
+      BANK_KEY                     (frontend/src/hooks/useBank.ts)
+      PORTFOLIO_KEY                (frontend/src/hooks/usePortfolio.ts)
+  - Bank integration system kept intact (user's explicit instruction)
+
+[90cae4e] feat: ticker search in add-asset modal
+  - Add-asset modal now has a live ticker search backed by Yahoo Finance
+  - Backend: searchTickers() in backend/src/lib/yahooFinance.ts
+  - Backend route: GET /api/quotes/search?q=<query>
+  - Frontend hook: useTickerSearch() in frontend/src/hooks/useQuotes.ts
+  - Frontend component: frontend/src/components/portfolio/TickerSearch.tsx
+    · Debounced 280ms, keyboard-navigable, outside-click to close
+  - AssetModal (create mode) rewired:
+    · Step 1: search for ticker → shows name, symbol, price
+    · Step 2: fill qty, invested, monthly, expectedReturn
+    · qty change auto-fills invested + valor atual from known price
+
+[bb87d56] fix: scope toggle width and donut legend overflow
+  - Analysis scope toggle now inline-flex (not full-width)
+  - Category donuts capped at 7 slices; extras fold into grey "Outras (N)"
+
+[3ac0e3b] feat: month-by-month drill-down on the Análise tab
+  - Budget.tsx: toggle "Visão geral / Mês a mês"; clicking a bar drills in
+  - MonthAnalysis.tsx: month KPI cards with deltas vs prev month,
+    category donuts scoped to that month, top-6 expenses ranked list
+  - BudgetTimeline.tsx: onMonthClick prop; hover shows pointer cursor
+
+[9e0c25f] fix: sync DB schema on Vercel build + redesign classify modal
+  - vercel-build now runs db:push:prod so schema is always in sync with code
+  - ClassifyModal groups duplicate merchants into one row (bulk save)
+  - Removed /mês suffix from classify modal rows and BudgetList amounts
+
+[1054237] chore: add deployment handoff doc
+  - HANDOFF-DEPLOY.txt — full Vercel + GoCardless setup guide (still valid)
+
+[12d3e4d] feat: expected vs actual payment tracking KPIs on loan page
+  - LoanKpis: "PREVISTO ACUMULADO" and "REAL PAGO" cards
+  - Green when fully tracked, yellow when incomplete
+
+[b0f04db] fix: KPI label changed from "pago" to "amortizado"
+
+--------------------------------------------------------------------------------
+ENVIRONMENT VARIABLES  (Vercel → Settings → Environment Variables)
+--------------------------------------------------------------------------------
+
+DATABASE_URL          Neon pooled connection string
+                      Host must end in  -pooler.REGION.aws.neon.tech
+                      Query string:  ?sslmode=require&channel_binding=require
+
+SESSION_SECRET        Random string, ≥ 32 characters
+
+GOOGLE_CLIENT_ID      From Google Cloud Console (OAuth 2.0 client)
+VITE_GOOGLE_CLIENT_ID Same value as GOOGLE_CLIENT_ID (exposed to frontend)
+
+APP_ORIGIN            Full URL of the deployed app, e.g. https://wallet360.vercel.app
+                      Used for CORS and cookie domain
+
+GOCARDLESS_SECRET_ID  (see GoCardless section below — NOT YET configured)
+GOCARDLESS_SECRET_KEY (see GoCardless section below — NOT YET configured)
+
+FINNHUB_API_KEY       Optional — used for quotes fallback. Get free key at
+                      https://finnhub.io  (Yahoo Finance is primary, no key needed)
+
+ALLOWED_ORIGINS       Leave empty if frontend and API are on same Vercel domain
+
+--------------------------------------------------------------------------------
+GOCARDLESS STATUS  (NOT DONE — pending user action)
+--------------------------------------------------------------------------------
+
+GoCardless was the only piece not completed. New signups at
+bankaccountdata.gocardless.com were temporarily disabled.
+
+Steps to complete when signups re-open:
+  1. Go to https://bankaccountdata.gocardless.com
+  2. Create a new account / log in
+  3. Navigate to  User secrets  →  Create new secret
+     Name it: wallet360-production
+  4. Copy the Secret ID and Secret Key
+  5. In Vercel → Settings → Environment Variables, add:
+       GOCARDLESS_SECRET_ID = <your secret id>
+       GOCARDLESS_SECRET_KEY = <your secret key>
+  6. Trigger a redeploy (Deployments → Redeploy latest)
+
+The integration code is fully built and committed. The bank routes live at
+  backend/src/routes/bank.ts
+The frontend flows live at
+  frontend/src/hooks/useBank.ts
+  frontend/src/components/settings/BankSection.tsx  (or similar)
+
+Once credentials are added and redeployed, the "Contas Bancárias" section
+in Settings will become live.
+
+--------------------------------------------------------------------------------
+KNOWN ISSUES / OPTIONAL IMPROVEMENTS (not blocking)
+--------------------------------------------------------------------------------
+
+1. BUNDLE SIZE WARNING
+   Vite build warns about chunks > 500 KB:
+     index-*.js        ~581 KB raw  (178 KB gzip)
+     pdfStatementParser-*.js  ~367 KB raw  (109 KB gzip)
+   The PDF parser is only needed when the user picks a PDF file. It should
+   be lazy-loaded:
+     // In the import file
+     const parsePdf = lazy(() => import('./pdfStatementParser'))
+   This would cut the initial bundle by ~30%.
+
+2. FX CONVERSION FOR TICKER PRICES
+   When a user adds a portfolio asset via ticker search, Yahoo returns the
+   price in the asset's native currency (USD for US stocks, GBX for some
+   London ETFs, etc.).  The current auto-fill uses the raw price without
+   converting to EUR.
+   The backend already has convertPrice() in backend/src/lib/fx.ts —
+   it can be wired up via a new route or in the quotes/search response.
+   Until then, users should manually correct the EUR value if needed.
+
+3. YAHOO FINANCE UNOFFICIAL API
+   The ticker search uses query1.finance.yahoo.com/v1/finance/search —
+   this is undocumented (same endpoint as yahoo.com's search bar).
+   Works well in practice. If it starts failing, Finnhub's
+   GET /api/v1/search?q=<query>&token=<key> is the backup.
+
+--------------------------------------------------------------------------------
+RUNNING LOCALLY
+--------------------------------------------------------------------------------
+
+# Install deps
+npm install
+
+# Dev mode (frontend + backend in parallel)
+npm run dev
+
+# Type-check only
+npm run typecheck       # runs tsc --noEmit in both workspaces
+
+# Build for production
+npm run build           # outputs to dist/
+
+# Database (dev)
+cd backend && npm run db:generate   # generate Prisma client
+cd backend && npm run db:push       # push schema to dev SQLite
+
+# Database (prod — run manually or triggered by Vercel build)
+cd backend && npm run db:push:prod  # push schema to Neon
+
+--------------------------------------------------------------------------------
+KEY FILES QUICK REFERENCE
+--------------------------------------------------------------------------------
+
+backend/src/
+  index.ts                    Express app setup + all route mounts
+  lib/yahooFinance.ts         Yahoo Finance quote + CAGR + search + history
+  lib/fx.ts                   FX rate via Frankfurter (ECB), 1h cache
+  lib/portfolioEngine.ts      Pure projection engine + KPI calculations
+  routes/quotes.ts            GET /api/quotes, /cagr, /search, /history
+  routes/portfolio.ts         CRUD + reforcar + refresh
+  routes/bank.ts              GoCardless integration
+  routes/budget.ts            Budget CRUD + bulk update
+  routes/loan.ts              Loan CRUD + schedule + payments
+
+frontend/src/
+  pages/Budget.tsx            Main budget page (incl. Análise tab toggle)
+  pages/Loan.tsx              Crédito page
+  pages/Portfolio.tsx         Portfolio page
+  pages/Overview.tsx          Dashboard / overview
+  components/budget/
+    MonthAnalysis.tsx         Month-by-month drill-down view
+    BudgetTimeline.tsx        Historical bar chart (clickable)
+    CategoryDonut.tsx         Donut chart (capped at 7 slices)
+    UncategorizedBanner.tsx   Classify items modal (grouped by merchant)
+  components/portfolio/
+    AssetModal.tsx            Add/edit asset modal (with ticker search)
+    TickerSearch.tsx          Ticker search dropdown component
+  components/loan/
+    LoanKpis.tsx              KPI cards including tracking KPIs
+  hooks/
+    usePortfolio.ts           Portfolio query + mutations
+    useBank.ts                Bank status/connect/sync/disconnect
+    useQuotes.ts              Quotes, CAGR, history, ticker search
+    useBudget.ts              Budget queries + bulk update
+    useLoan.ts                Loan queries + payment mutations
+
+prisma/
+  schema.prisma               Dev schema (SQLite)
+  schema.prod.prisma          Production schema (PostgreSQL)
+
+================================================================================
+END OF HANDOFF
+================================================================================
