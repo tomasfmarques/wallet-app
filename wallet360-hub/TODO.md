@@ -54,11 +54,13 @@ _Pragmatic slice done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (pl
 
 ## Phase 2 — Make it installable (1–2 weeks)
 
-- [ ] **F3** 🔴 PWA shell — add `manifest.webmanifest`, icon set (192/512 + maskable) + `apple-touch-icon`, and a service worker via `vite-plugin-pwa` (precache shell, network-first `/api`, offline fallback). `frontend/public/` is currently **empty** — this is greenfield.
-  → `frontend/public/`, `frontend/vite.config.ts`, `frontend/index.html`
+_PWA shell done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/plans/crispy-jumping-fairy.md`). TWA/Play submission scaffolded but manual — see [`PLAY-STORE.md`](PLAY-STORE.md)._
+
+- [x] **F3** 🔴 PWA shell — `vite-plugin-pwa` with manifest (`name`/`short_name`/standalone/`start_url`/theme `#2563EB`/bg `#F0F4F9`), full icon set generated from `frontend/public/favicon.svg` (64/192/512 + maskable + apple-touch + favicon.ico), and a Workbox service worker (precache shell, **`/api` NetworkOnly** so financial data is never stale, Google-Fonts CacheFirst, SPA `navigateFallback` denylisting `/api`). App is installable. ✅ Verified: manifest 200, one active SW, icons 200, build emits `sw.js`/`workbox-*`.
+  → `frontend/vite.config.ts`, `frontend/pwa-assets.config.ts`, `frontend/public/`, `frontend/index.html`
 - [ ] **F11** 🟡 Lazy-load the PDF parser (~367 KB ships in the initial chunk). `lazy(() => import('./pdfStatementParser'))` cuts initial bundle ~30 %.
   → `frontend/src/components/budget/ImportStatementModal.tsx`, `frontend/src/lib/` (pdfStatementParser)
-- [ ] **TWA** — Bubblewrap (or PWABuilder) → signed `.aab` + `.apk`; host `/.well-known/assetlinks.json` on Vercel; push to Play internal-testing track.
+- [ ] **TWA** — Bubblewrap → signed `.aab` + `.apk`; host `/.well-known/assetlinks.json` on Vercel; push to Play internal-testing track. **(Scaffolded: `assetlinks.json` placeholder + full runbook in [`PLAY-STORE.md`](PLAY-STORE.md). Manual — needs Play account €25 + Android toolchain.)**
   → new Android project + `frontend/public/.well-known/assetlinks.json`
 - [ ] **Store-gating** 🔴 Privacy policy + Data Safety declaration (financial data + bank statements), and a **public** account-deletion URL. Deletion logic already exists (`DELETE /api/me`) — just expose a web URL for it.
   → `backend/src/routes/me.ts` (exists), new public deletion page/route

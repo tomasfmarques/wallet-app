@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wallet360">
+  <defs>
+    <linearGradient id="w360-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <!-- App-icon rounded square -->
+  <rect width="512" height="512" rx="112" fill="url(#w360-bg)"/>
+  <!-- Wallet body (centered, bold line style to read at small sizes) -->
+  <rect x="128" y="168" width="256" height="176" rx="34"
+        fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round"/>
+  <!-- Fold line -->
+  <path d="M146 232 H366" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" opacity="0.5"/>
+  <!-- Snap button -->
+  <circle cx="340" cy="288" r="22" fill="#FFFFFF"/>
+  <circle cx="340" cy="288" r="8" fill="#1D4ED8"/>
+</svg>
