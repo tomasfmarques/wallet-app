@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm install)",
+      "Bash(npm run db:migrate:*)",
+      "Bash(npm run db:studio)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Read",
+      "Edit",
+      "Grep",
+      "Glob"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [
+      "Bash(npm run db:push:prod)",
+      "Read(.env)",
+      "Read(.env.*)"
+    ]
+  }
+}

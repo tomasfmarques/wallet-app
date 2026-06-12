@@ -1,0 +1,325 @@
+# Decisions — Investments / Portfolio (assets, quotes, FX, charts)
+
+_Source: split from CAVEATS-full.md._
+
+## Phase 3 — Investments
+
+### Decisions
+
+- **Default expected return is 7 % annual**
+  - **What**: `AssetModal.tsx` prefills `expectedReturn` at 7% for new assets.
+    The backend also defaults to 0.07 if not sent.
+  - **Why**: a reasonable long-run global-equities benchmark.
+  - **How to change**: edit the default in `AssetModal.tsx` (`useState('7')`)
+    and/or `POST /api/portfolio/assets` (`req.body?.expectedReturn ?? 0.07`).
+
+- **Default projection settings: gInc=3%, gFY=2, gH=20**
+  - **What**: when a user first opens `/investments` (or `/overview` with
+    investments), `ensureSettings()` creates a `PortfolioSettings` row with
+    these defaults.
+  - **Why**: matches the prototype's `DEFAULT_STATE`.
+  - **How to change**: edit `ensureSettings()` in `backend/src/routes/portfolio.ts`.
+
+- **Reforçar without `price` keeps qty unchanged**
+  - **What**: if no price-per-unit is provided, `value += amount` and
+    `qty` stays the same. With a price, qty grows by `amount/price` and value
+    is re-derived as `qty * price`.
+  - **Why**: simpler UX for the "I added cash" case; price is optional.
+  - **How to change**: if you'd prefer the no-price path to also update qty
+    using the current implied price (`value / qty`), edit the route handler in
+    `backend/src/routes/portfolio.ts`.
+
+- **Projection updates persist on every slider release (debounced 350ms)**
+  - **What**: `ProjectionPanel.tsx` writes `gInc / gFY / gH` to the server
+    after a debounce. The local state is the source of truth while dragging.
+  - **Why**: live updates feel responsive without spamming the API.
+  - **How to change**: lengthen the debounce (line `setTimeout(..., 350)`), or
+    add an explicit "Guardar" button if you'd rather not auto-persist.
+
+- **Allocation bar uses a fixed 7-colour palette**
+  - **What**: `AssetTable.tsx` cycles through `ALLOC_COLOURS` (blue, teal,
+    purple, orange, amber, green, red) by index.
+  - **Why**: deterministic colours per position, matches the design's accent
+    palette.
+  - **How to change**: edit `ALLOC_COLOURS` in `AssetTable.tsx`. For >7 assets
+    colours repeat — fine in practice for personal use.
+
+- **Delete confirmation via native `confirm()` dialog**
+  - **What**: clicking "Remover" on an asset row uses `window.confirm(...)`.
+  - **Why**: zero-effort confirmation. Native dialog is OS-themed.
+  - **How to change**: build a custom confirmation modal (reuse
+    `components/ui/Modal.tsx`).
+
+### Behavioural caveats
+
+- **Projection's "totalContributed" is over the horizon, not over the loan**:
+  it includes the full `gH` years of monthly contributions even though the
+  user might pay off the mortgage halfway through. The two engines don't
+  cross-talk yet.
+
+- **Compound math uses end-of-month contribution timing**: `value = value *
+  (1 + r/12) + contribution`. If you want contributions at month start, swap
+  the operations: `value = (value + contribution) * (1 + r/12)`. The
+  difference is small over long horizons but exists.
+
+### Deferred (Phase 3B)
+
+- ~~**Watchlist "Em alta · Nasdaq" with Finnhub proxy**~~ — done in Phase 3B.
+- **Milestone table** at the end of the projection (e.g. "valor após 10 anos",
+  "valor após 20 anos") — currently only the chart and 3 summary KPIs.
+- **Asset flows history view**: the DB records every reforço in `portfolio_flows`,
+  but there's no UI to browse them per asset.
+
+---
+
+## Phase 3B — Watchlist + live quotes
+
+### Decisions
+
+- **Hardcoded watchlist of 8 Nasdaq tickers**
+  - **What**: `frontend/src/hooks/useQuotes.ts` exports a `WATCHLIST` constant
+    with NVDA, AAPL, MSFT, GOOGL, AMZN, META, TSLA, AMD.
+  - **Why**: matches the design's "Em alta · Nasdaq" section without needing
+    a settings UI on day one.
+  - **How to change**: edit the `WATCHLIST` array, or make it a per-user
+    field on `PortfolioSettings` and expose a UI in Configurações.
+
+- **In-memory cache, 60s TTL per symbol**
+  - **What**: `backend/src/lib/quotesCache.ts` keeps a `Map<symbol, {data,
+    expiry}>` in module scope. Frontend `useQuotes` mirrors that TTL via
+    `staleTime` + `refetchInterval`.
+  - **Why**: Finnhub free tier is 60 calls/min — caching keeps us nowhere
+    near that limit no matter how often pages reload.
+  - **How to change**: edit `TTL_MS` in `quotesCache.ts`. For multi-process
+    hosting (PM2 cluster, multiple containers) swap the Map for Redis — each
+    process currently has its own cache.
+
+- **Per-symbol error isolation**
+  - **What**: `GET /api/quotes` returns one entry per requested symbol; a
+    failed fetch becomes `{ symbol, ..., error: 'Fetch failed' }` instead of
+    crashing the whole response.
+  - **Why**: one bad ticker shouldn't blank the whole watchlist.
+  - **How to change**: if you'd rather fail loudly, replace the `try/catch`
+    in `routes/quotes.ts` with a single `Promise.all` that doesn't catch.
+
+- **Watchlist prices shown in USD with EUR formatting**
+  - **What**: Finnhub returns USD prices; the UI formats them with the EUR
+    symbol because the rest of the app is in EUR.
+  - **Why**: simplest path; the modal hint says "USD" so it's not silently
+    wrong, but the trend card itself shows "€". Honest cosmetic issue.
+  - **How to change**: either add a real USD→EUR conversion (would need
+    another API like exchangerate.host) or format the trend cards with `$`
+    by adding a `usd` formatter to `format.ts`.
+
+- **Quick-add modal auto-fills invested + value from qty × price**
+  - **What**: clicking "+ Adicionar" on a trend card opens the AssetModal
+    with ticker/name prefilled; typing a qty auto-fills the empty
+    invested/value fields (qty × Finnhub price). The user can override.
+  - **Why**: removes 80% of the typing for the common case.
+  - **How to change**: remove the `useEffect` that watches `qty` in
+    `AssetModal.tsx`.
+
+- **Max 20 symbols per `/api/quotes` request**
+  - **What**: requesting more is silently truncated.
+  - **Why**: hard upper bound to keep one request from chewing through the
+    Finnhub minute quota.
+  - **How to change**: edit `MAX_SYMBOLS` in `routes/quotes.ts`.
+
+### Behavioural caveats
+
+- **First load may show "sem dados" for ~1 second**: the watchlist fires
+  the API call on mount; before it resolves, cards render skeleton state.
+  Subsequent loads are instant (react-query cache + backend cache).
+
+- **Backend restart clears the in-memory cache**: not a correctness issue,
+  but the first request after a `ts-node-dev` restart will be slower because
+  it has to hit Finnhub for all 8 tickers in parallel.
+
+- **No retry on Finnhub 5xx**: a single failed fetch results in
+  `error: 'Fetch failed'` for that symbol until the 60s react-query refetch
+  fires. If you want eager retries, wrap `fetchQuote` in a small retry
+  helper or bump react-query's `retry` from 1 to 3.
+
+---
+
+## Phase 3C — Historical-return hint
+
+### Decisions
+
+- **Backend exposes `GET /api/quotes/metric?symbol=X`** that proxies
+  Finnhub's `/stock/metric?metric=all`. Cache TTL = 1 hour per symbol
+  (in-memory `Map` in `backend/src/lib/quotesCache.ts`).
+
+- **AssetModal shows a clickable hint** with the best available historical
+  return (10y → 5y → 3y → 1y) below the "Retorno esperado anual" field. Click
+  it and the input gets filled. We deliberately do NOT auto-fill — the user
+  decides.
+
+### Behavioural caveats
+
+- **Multi-year returns may be `null`**. Finnhub's free tier reliably returns
+  `52WeekPriceReturnDaily` (1-year). 3y/5y/10y often come back null —
+  premium-gated for many symbols. If everything is null, the modal falls back
+  to the generic hint "Sugestão: 7-10%".
+
+- **1-year return ≠ expected long-term return**. The 1-year window is
+  volatile; one bad year can show a negative value for a long-term-positive
+  stock. Treat the hint as "recent performance", not "future expectation".
+
+- **Metric is fetched while the user is typing the ticker**. Each unique
+  ticker hits Finnhub at most once per hour (cache). React-query also caches,
+  so repeated keystrokes don't fire new requests.
+
+---
+
+
+## Phase 6 — Yahoo Finance + FX (accurate returns and prices)
+
+### Decisions
+
+- **Switched expected-return data from Finnhub to Yahoo Finance.** Finnhub's
+  free tier only exposes the 1-year `52WeekPriceReturnDaily` reliably, and
+  it doesn't cover non-US listings (IWDA, SXR8, Samsung). Yahoo's unofficial
+  `/v8/finance/chart` endpoint is free, no API key, returns 10y of monthly
+  closes, and covers global exchanges via suffixes.
+
+- **Multi-period CAGR instead of single 1-year return.** The AssetModal now
+  shows pills for 1/3/5/10-year CAGRs (the longest-available window first).
+  CAGR is split- and dividend-adjusted (we prefer `adjclose` over raw `close`).
+  Much more stable than a 1-year price change — a single bad year doesn't
+  poison the projection.
+
+- **Symbol resolution probes common exchange suffixes** in order: `''`, `.L`,
+  `.DE`, `.MI`, `.PA`, `.AS`, `.HE`, `.KS`, `.TO`. First match wins.
+  Plus a hand-curated `SYMBOL_OVERRIDES` map for cases where the prototype's
+  ticker doesn't match Yahoo's convention (e.g. `SMSN → 005930.KS`).
+
+- **Portfolio currency is EUR.** When refreshing values from Yahoo we convert
+  using Frankfurter (ECB-sourced, free, no key). Rates cached for 1h.
+
+- **Subunit normalization for GBp / ZAc / ILA**. UK-listed prices often
+  come back in pence (`GBp`), South Africa in cents (`ZAc`), Israel in
+  agorot (`ILA`). The `normalizeSubunit()` helper divides by 100 and remaps
+  the currency code so FX lookup uses the canonical currency.
+
+- **Refresh is destructive on the value field**. `POST /refresh-values`
+  overwrites `asset.value` with the FX-converted market value. `invested`
+  (the cost basis) is never touched. If you want to "undo", re-import the
+  backup or edit the asset.
+
+### Behavioural caveats
+
+- **Yahoo is unofficial.** It's stable and used by basically every finance
+  tool, but Yahoo could change the endpoint shape or rate-limit at any time.
+  If that happens, the `/cagr` and refresh routes will start returning empty.
+  Alternatives: Alpha Vantage (free 25 calls/day, has historical), FMP
+  (free tier), Stooq (CSV only, fiddly).
+
+- **CAGR is in the asset's native currency**, not EUR-adjusted. This is
+  the standard convention — currency cancels in the ratio. If a US stock
+  returns 20%/yr in USD but USD depreciated 5%/yr against EUR, your EUR
+  return is closer to 14%. The pill numbers don't account for that.
+
+- **The resolved symbol might surprise you.** `IWDA` → `IWDA.L` makes sense,
+  but if you accidentally type a ticker that overlaps with another exchange
+  (e.g. `BARC` exists on multiple exchanges), the suffix probe order
+  decides which one wins. Always check the "Fonte: Yahoo &lt;symbol&gt;"
+  line in the modal.
+
+- **Refresh changes value but not qty.** If a stock had a stock split and
+  Yahoo's adjusted prices reflect it but the user's qty is pre-split, the
+  refreshed value will be wrong. Edit the asset to fix `qty` if you notice
+  big unexpected changes.
+
+- **Frankfurter coverage**. ECB tracks ~30 major currencies including KRW,
+  JPY, CNY, USD, GBP, etc. Doesn't include some smaller currencies (e.g.
+  ARS, VES). If `getFxRate()` returns null, refresh-value returns a per-asset
+  error with the unsupported currency.
+
+- **The KRW conversion makes Samsung values look very different from
+  the user-entered "1138€" baseline**. The prototype's value field was
+  user-typed and reflected what they thought was true at the time. The new
+  refresh uses today's actual market price × FX, which can diverge a lot
+  for years-old data or wrong qty entries.
+
+### Untested combinations
+
+- Stock-split adjustment edge cases (Samsung had a 50:1 split in 2018; the
+  qty in old data may not match what `adjclose` assumes).
+- Tickers where Yahoo and your broker disagree about share unit (ADR vs
+  underlying, GDR vs local, etc.). You may need to manually edit qty.
+
+---
+
+## Phase 6B — Reforçar auto-market-price
+
+### Decisions
+
+- **Reforçar now defaults to "Cotação atual de mercado"**. The modal has 3
+  radio modes:
+  1. **Cotação atual de mercado** (default) — backend auto-fetches the live
+     price from Yahoo, applies FX to EUR, computes `qty += amount / priceEur`
+     and `value = qty × priceEur`.
+  2. **Preço manual** — user types an EUR price per share (existing flow).
+  3. **Só cash** — no price; `invested += amount`, `value += amount`,
+     qty unchanged.
+
+- **Cost basis (`invested`) always grows by exactly `amount`**. The mode only
+  affects how `qty` and `value` move. This is invariant: the cost basis is
+  the source of truth for "how much money did I put in".
+
+- **The `price` field accepts the string `"market"`** as an alias for
+  `useMarketPrice: true`. Either works; the explicit boolean is cleaner.
+
+### Behavioural caveats
+
+- **Preview math in the modal is approximate**. While typing the amount, the
+  modal shows `≈ X un.` using the *native-currency* price as the divisor
+  (we don't fetch FX in the frontend). The backend uses the precise
+  FX-adjusted EUR price at submit time, so the persisted qty may differ
+  slightly from the preview. This is purely cosmetic.
+
+---
+
+## Phase 6C — Per-stock price chart (Trading212-style)
+
+Clicking an asset row in "A minha carteira" now opens a modal with the stock's
+real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
+
+### Decisions
+
+- **Reuses the Yahoo Finance proxy.** New `getYahooHistory(symbol, range)` in
+  `backend/src/lib/yahooFinance.ts` resolves the symbol via the existing
+  `getYahooChart` (suffix probing + cache), then fetches the requested window.
+  Endpoint: `GET /api/quotes/history?symbol=X&range=1y` → `{ resolvedSymbol,
+  currency, currentPrice, points: [{ t, price }] }`. Cached 15 min per
+  symbol+range. range → (Yahoo range, interval): 1mo/1d, 6mo/1d, 1y/1d,
+  5y/1wk, max/1mo.
+
+- **Chart in native currency, not EUR.** The progression shows the stock's
+  quote currency (USD, etc.) from Yahoo — distinct from the portfolio's
+  EUR-converted `value`. Uses `Intl.NumberFormat`, falling back to a plain
+  number + code for subunit currencies Intl rejects (GBp, ZAc).
+
+- **`StockChartModal`** (react-chartjs-2 Line, gradient fill, green/red by
+  period change). The whole asset row is clickable (`role=button`); the
+  action buttons stop propagation so Reforçar/Editar/Remover still work.
+
+- **Adjusted closes** (split/dividend) are used for the series, consistent
+  with the CAGR feature.
+
+### Behavioural caveats
+
+- **Not real-time.** 15-min cache; this is a progression chart, not a trading
+  ticker. Intraday (1D) ranges aren't offered — Yahoo's free intraday data is
+  flaky and the budget app doesn't need tick-level detail.
+
+- **Same Yahoo-is-unofficial risk** as Phase 6 (endpoint could change/rate-
+  limit). Symbols that don't resolve show a "sem dados" message.
+
+- **Both portfolio rows and watchlist cards are wired** to open the chart
+  modal (clicking a "Em alta · Nasdaq" card opens it too; the card's "+
+  Adicionar" button stops propagation).
+
+---
+
