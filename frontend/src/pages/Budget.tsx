@@ -39,7 +39,7 @@ export function Budget() {
   )
   if (!data) return null
 
-  const { incomes, expenses, pendingIncomes, pendingExpenses, kpis } = data
+  const { incomes, expenses, actualIncomes, actualExpenses, pendingIncomes, pendingExpenses, kpis } = data
   const fixedIncomes = incomes.filter((i) => i.type === 'fixed')
   const variableIncomes = incomes.filter((i) => i.type === 'variable')
   const fixedExpenses = expenses.filter((e) => e.type === 'fixed')
@@ -164,6 +164,8 @@ export function Budget() {
                 <BudgetTimeline
                   incomes={incomes}
                   expenses={expenses}
+                  actualIncomes={actualIncomes}
+                  actualExpenses={actualExpenses}
                   months={12}
                   onMonthClick={(ym) => { setAnalysisYm(ym); setAnalysisScope('month') }}
                 />
@@ -194,6 +196,8 @@ export function Budget() {
             <MonthAnalysis
               incomes={incomes}
               expenses={expenses}
+              actualIncomes={actualIncomes}
+              actualExpenses={actualExpenses}
               ym={analysisYm}
               onChangeYm={setAnalysisYm}
             />

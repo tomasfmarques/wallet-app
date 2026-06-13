@@ -107,13 +107,20 @@ function merchantKey(name: string): string {
     .trim()
 }
 
+// An imported actual is any row carrying a `source` (set only by the import /
+// bank-sync pipeline; manual rows never have one). Everything else is the
+// recurring PLAN. The headline KPIs and the Tabelas are plan-only — see FX1.
+const isActual = (r: { source: string | null }) => !!r.source
+
 // ── KPI helper ───────────────────────────────────────────────────
 async function summarize(userId: string) {
   // Pending (imported, not yet classified) items don't count toward totals
-  // until the user assigns them fixed/variable.
+  // until the user assigns them fixed/variable. Imported actuals (source set)
+  // are one-off realised lines, NOT recurring — excluding them keeps this a
+  // stable *monthly plan* figure instead of being inflated by every import.
   const [incomes, expenses] = await Promise.all([
-    prisma.income.findMany({ where: { userId, active: true, pending: false } }),
-    prisma.expense.findMany({ where: { userId, active: true, pending: false } }),
+    prisma.income.findMany({ where: { userId, active: true, pending: false, source: null } }),
+    prisma.expense.findMany({ where: { userId, active: true, pending: false, source: null } }),
   ])
 
   const incomeTotal = incomes.reduce((s, i) => s + i.amount, 0)
@@ -136,14 +143,20 @@ async function summarize(userId: string) {
 router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
-    const [incomes, expenses, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
+    const [allIncomes, allExpenses, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
       prisma.income.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
       prisma.expense.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { type: 'asc' }, { name: 'asc' }] }),
       prisma.income.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
       prisma.expense.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
       summarize(userId),
     ])
-    res.json({ incomes, expenses, pendingIncomes, pendingExpenses, kpis })
+    // Split the two lanes (FX1): `incomes`/`expenses` are the recurring PLAN
+    // (what the Tabelas show); `actual*` are imported one-off realised lines.
+    const incomes = allIncomes.filter((r) => !isActual(r))
+    const expenses = allExpenses.filter((r) => !isActual(r))
+    const actualIncomes = allIncomes.filter(isActual)
+    const actualExpenses = allExpenses.filter(isActual)
+    res.json({ incomes, expenses, actualIncomes, actualExpenses, pendingIncomes, pendingExpenses, kpis })
   } catch (err) {
     console.error('GET /api/budget failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })

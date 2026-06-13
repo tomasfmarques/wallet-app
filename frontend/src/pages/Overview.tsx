@@ -7,6 +7,7 @@ import { HeroKpis } from '@/components/overview/HeroKpis'
 import { WedgeInsight } from '@/components/overview/WedgeInsight'
 import { CashflowChart } from '@/components/overview/CashflowChart'
 import { ModuleSummary } from '@/components/overview/ModuleSummary'
+import { ymToShort } from '@/lib/format'
 
 // Unified Overview page: hero KPI strip → cashflow chart (month/year toggle)
 // → module summary cards. No section labels — everything flows as a single
@@ -18,6 +19,28 @@ export function Overview() {
   const budget = useBudget()
 
   const loading = loan.isLoading || portfolio.isLoading || budget.isLoading
+
+  // Hero income/saldo normally reflect the recurring PLAN (FX1). But an
+  // import-only user (no manual plan, all data from statements) would otherwise
+  // see 0s once everything is classified — so when the plan is empty, nothing is
+  // pending, and actuals exist, fall back to the latest imported month's REAL
+  // figures so the dashboard shows their actual money.
+  const b = budget.data
+  const pendingCount = (b?.pendingIncomes.length ?? 0) + (b?.pendingExpenses.length ?? 0)
+  const planEmpty = !!b && b.kpis.incomeTotal === 0 && b.kpis.expensesTotal === 0
+  const actualRows = b ? [...b.actualIncomes, ...b.actualExpenses] : []
+  const useReal = planEmpty && pendingCount === 0 && actualRows.length > 0
+  let heroIncome = b?.kpis.incomeTotal ?? null
+  let heroNet = b?.kpis.netMonthly ?? null
+  let heroRealYm: string | undefined
+  if (useReal && b) {
+    const latestYm = actualRows.reduce((m, r) => (r.startYm && r.startYm > m ? r.startYm : m), '')
+    const inc = b.actualIncomes.filter((i) => i.startYm === latestYm).reduce((s, i) => s + i.amount, 0)
+    const exp = b.actualExpenses.filter((e) => e.startYm === latestYm).reduce((s, e) => s + e.amount, 0)
+    heroIncome = inc
+    heroNet = inc - exp
+    heroRealYm = latestYm ? ymToShort(latestYm) : undefined
+  }
 
   // Aggregate across all credits for the Overview's single "Crédito" summary.
   const loanItems = loan.data?.loans ?? []
@@ -56,9 +79,10 @@ export function Overview() {
           <HeroKpis
             portfolioValue={portfolio.data?.kpis.valorAtual ?? null}
             loanRemaining={loanItems.length > 0 ? loanCapitalAtual : null}
-            monthlyNet={budget.data?.kpis.netMonthly ?? null}
-            monthlyIncome={budget.data?.kpis.incomeTotal ?? null}
-            pendingCount={(budget.data?.pendingIncomes.length ?? 0) + (budget.data?.pendingExpenses.length ?? 0)}
+            monthlyNet={heroNet}
+            monthlyIncome={heroIncome}
+            pendingCount={pendingCount}
+            realYm={heroRealYm}
           />
 
           <WedgeInsight loans={loanItems} portfolio={portfolio.data} />

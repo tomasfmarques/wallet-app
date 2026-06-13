@@ -13,11 +13,13 @@ export interface BudgetKpis {
 }
 
 export interface BudgetResponse {
-  incomes: Income[]
+  incomes: Income[]           // recurring PLAN only (source = null)
   expenses: Expense[]
+  actualIncomes: Income[]     // imported one-off realised lines (source set)
+  actualExpenses: Expense[]
   pendingIncomes: Income[]    // imported, awaiting fixed/variable classification
   pendingExpenses: Expense[]
-  kpis: BudgetKpis
+  kpis: BudgetKpis            // plan-based (recurring), not inflated by imports
 }
 
 export interface IncomeInput {

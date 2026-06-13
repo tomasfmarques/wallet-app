@@ -1781,6 +1781,10 @@ body {
   background: #FEF3C7;
   color: #92400E;
 }
+.month-now-pill.is-real {
+  background: #DCFCE7;
+  color: var(--green-d);
+}
 
 /* ── Análise: top expenses ranking ─────────────────────────── */
 .top-expenses {

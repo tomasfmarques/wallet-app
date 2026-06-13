@@ -10,12 +10,15 @@ interface Props {
   // count toward the KPI totals yet, so when income is still 0 we must NOT render
   // a red "deficit" — that reads as a broken app right after a statement import.
   pendingCount?: number
+  // When set, the income/saldo figures are the latest imported REAL month (not
+  // the recurring plan) — shown for import-only users with no manual plan.
+  realYm?: string
 }
 
 // Top-of-page summary: 4 stat cards with icon chips. Each card links into its
 // module (like the module cards below). Numbers null = module not configured
 // yet — render "—" instead of crashing.
-export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyIncome, pendingCount = 0 }: Props) {
+export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyIncome, pendingCount = 0, realYm }: Props) {
   const netPositive = monthlyNet != null && monthlyNet >= 0
   // Guard: nothing classified yet but there ARE imported lines waiting. Show a
   // neutral "por classificar" prompt instead of a misleading 0 €/−€ deficit.
@@ -43,7 +46,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
           {awaitingClassification
             ? `Classifica ${pendingCount} ${pendingCount === 1 ? 'importação' : 'importações'}`
             : monthlyNet != null
-            ? (netPositive ? 'Estás a poupar' : 'A gastar mais do que ganhas')
+            ? (realYm ? `Real · ${realYm}` : netPositive ? 'Estás a poupar' : 'A gastar mais do que ganhas')
             : 'Configura orçamento'}
         </div>
       </Link>
@@ -55,7 +58,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
         </div>
         <div className="hero-value">{awaitingClassification ? '—' : monthlyIncome != null ? eur(monthlyIncome) : '—'}</div>
         <div className="hero-meta">
-          {awaitingClassification ? `${pendingCount} por classificar` : 'Receitas ativas'}
+          {awaitingClassification ? `${pendingCount} por classificar` : realYm ? `Real · ${realYm}` : 'Receitas ativas'}
         </div>
       </Link>
 
