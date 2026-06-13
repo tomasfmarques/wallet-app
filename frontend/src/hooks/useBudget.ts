@@ -139,6 +139,16 @@ export function useBulkDeleteBudget() {
   )
 }
 
+// One-off: delete rows whose names contain the replacement char (�) from the
+// old import-encoding bug, so the statement can be re-imported correctly.
+export function useCleanupEncoding() {
+  const qc = useQueryClient()
+  return useMutation<{ ok: true; deleted: number }, ApiError, void>(
+    () => api.post<{ ok: true; deleted: number }>('/api/budget/cleanup-encoding'),
+    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+  )
+}
+
 // Bulk import from a parsed bank statement
 export function useImportBudget() {
   const qc = useQueryClient()

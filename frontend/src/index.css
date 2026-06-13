@@ -2552,6 +2552,22 @@ body {
 .overview-header p { font-size: 14px; }
 
 /* ── Hero KPI strip ───────────────────────────────────────── */
+/* ── Encoding-cleanup banner (mojibake imports) ─────────────── */
+.encoding-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  border-radius: var(--r-lg);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.encoding-banner-text { flex: 1; min-width: 200px; font-size: 13px; line-height: 1.45; }
+.encoding-banner .btn { white-space: nowrap; }
+
 /* ── Reusable empty/error state block (FX3) ─────────────────── */
 .state-block {
   background: var(--surface);

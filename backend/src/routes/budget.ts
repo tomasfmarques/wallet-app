@@ -552,4 +552,23 @@ router.delete('/expenses/:id', async (req, res) => {
   }
 })
 
+// ── One-off cleanup: remove rows mangled by the old import encoding ──
+// Lines imported before the UTF-8/Windows-1252 fix may contain the Unicode
+// replacement char (�). The original bytes are unrecoverable, so we delete those
+// rows; the user then re-imports the statement (now decoded correctly).
+router.post('/cleanup-encoding', async (req, res) => {
+  const userId = req.session.userId!
+  try {
+    const where = { userId, name: { contains: '�' } }
+    const [inc, exp] = await prisma.$transaction([
+      prisma.income.deleteMany({ where }),
+      prisma.expense.deleteMany({ where }),
+    ])
+    res.json({ ok: true, deleted: inc.count + exp.count })
+  } catch (err) {
+    console.error('POST /budget/cleanup-encoding failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 export default router

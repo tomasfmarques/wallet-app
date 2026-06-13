@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useBudget, useDeleteIncome, useDeleteExpense } from '@/hooks/useBudget'
+import { useBudget, useDeleteIncome, useDeleteExpense, useCleanupEncoding } from '@/hooks/useBudget'
 import { BudgetKpis } from '@/components/budget/BudgetKpis'
 import { IncomeModal } from '@/components/budget/IncomeModal'
 import { ExpenseModal } from '@/components/budget/ExpenseModal'
@@ -22,6 +22,7 @@ export function Budget() {
   const { data, isLoading, error, refetch } = useBudget()
   const delIncome = useDeleteIncome()
   const delExpense = useDeleteExpense()
+  const cleanupEncoding = useCleanupEncoding()
 
   const [tab, setTab] = useState<Tab>('tables')
   const [analysisScope, setAnalysisScope] = useState<AnalysisScope>('overview')
@@ -41,6 +42,17 @@ export function Budget() {
   if (!data) return null
 
   const { incomes, expenses, actualIncomes, actualExpenses, pendingIncomes, pendingExpenses, kpis } = data
+
+  // Rows mangled by the old import-encoding bug (names containing �).
+  const mojibakeCount = [
+    ...incomes, ...expenses, ...actualIncomes, ...actualExpenses, ...pendingIncomes, ...pendingExpenses,
+  ].filter((r) => r.name.includes('�')).length
+
+  const handleCleanupEncoding = async () => {
+    if (!confirm(`Remover ${mojibakeCount} linha(s) com caracteres inválidos? Volta a importar o extrato a seguir — os acentos virão corretos.`)) return
+    const { deleted } = await cleanupEncoding.mutateAsync()
+    alert(`${deleted} linha(s) removida(s). Importa o extrato novamente para as recuperar com os acentos corretos.`)
+  }
   const fixedIncomes = incomes.filter((i) => i.type === 'fixed')
   const variableIncomes = incomes.filter((i) => i.type === 'variable')
   const fixedExpenses = expenses.filter((e) => e.type === 'fixed')
@@ -64,6 +76,22 @@ export function Budget() {
           </button>
         </div>
       </header>
+
+      {mojibakeCount > 0 && (
+        <div className="encoding-banner">
+          <span className="encoding-banner-text">
+            <strong>{mojibakeCount}</strong> importação(ões) antiga(s) com caracteres inválidos (�).
+            Remove-as e volta a importar o extrato para corrigir os acentos.
+          </span>
+          <button
+            type="button" className="btn btn-primary btn-sm"
+            disabled={cleanupEncoding.isLoading}
+            onClick={handleCleanupEncoding}
+          >
+            {cleanupEncoding.isLoading ? 'A remover…' : `Remover ${mojibakeCount}`}
+          </button>
+        </div>
+      )}
 
       <PendingClassifier pendingIncomes={pendingIncomes} pendingExpenses={pendingExpenses} />
 
