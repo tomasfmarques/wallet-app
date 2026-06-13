@@ -6,10 +6,11 @@ import { MonthlyContribTable } from '@/components/portfolio/MonthlyContribTable'
 import { ProjectionPanel } from '@/components/portfolio/ProjectionPanel'
 import { AssetModal, type AssetPreset } from '@/components/portfolio/AssetModal'
 import { Watchlist } from '@/components/portfolio/Watchlist'
+import { StateBlock } from '@/components/ui/StateBlock'
 import { resolveWatchlist } from '@/hooks/useQuotes'
 
 export function Portfolio() {
-  const { data, isLoading, error } = usePortfolio()
+  const { data, isLoading, error, refetch } = usePortfolio()
   const [addOpen, setAddOpen] = useState(false)
   const [preset, setPreset] = useState<AssetPreset | undefined>(undefined)
 
@@ -30,7 +31,7 @@ export function Portfolio() {
     return (
       <div className="page-stub">
         <h1>Investimentos</h1>
-        <div className="form-error">Não foi possível carregar: {error.message}</div>
+        <StateBlock variant="error" message="Não foi possível carregar a tua carteira." onRetry={() => refetch()} />
       </div>
     )
   }

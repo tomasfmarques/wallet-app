@@ -2552,6 +2552,21 @@ body {
 .overview-header p { font-size: 14px; }
 
 /* ── Hero KPI strip ───────────────────────────────────────── */
+/* ── Reusable empty/error state block (FX3) ─────────────────── */
+.state-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--sh);
+}
+.state-block-icon { font-size: 30px; line-height: 1; }
+.state-block-title { font-weight: 600; font-size: 15px; margin-top: 10px; }
+.state-block-msg { color: var(--muted); font-size: 13.5px; margin: 6px auto 0; max-width: 420px; line-height: 1.5; }
+.state-block-msg + .btn { margin-top: 16px; }
+.state-block-error { border-color: var(--accent-b); }
+
 /* ── Onboarding checklist (first-run, FX2) ──────────────────── */
 .onboarding-card {
   background: var(--surface);

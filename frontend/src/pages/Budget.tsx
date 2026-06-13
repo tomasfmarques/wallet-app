@@ -11,6 +11,7 @@ import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
+import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, currentYm } from '@/lib/format'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -18,7 +19,7 @@ type Tab = 'tables' | 'analysis'
 type AnalysisScope = 'overview' | 'month'
 
 export function Budget() {
-  const { data, isLoading, error } = useBudget()
+  const { data, isLoading, error, refetch } = useBudget()
   const delIncome = useDeleteIncome()
   const delExpense = useDeleteExpense()
 
@@ -34,7 +35,7 @@ export function Budget() {
   if (error) return (
     <div className="page-stub">
       <h1>Saldo</h1>
-      <div className="form-error">Erro: {error.message}</div>
+      <StateBlock variant="error" message="Não foi possível carregar o teu orçamento." onRetry={() => refetch()} />
     </div>
   )
   if (!data) return null

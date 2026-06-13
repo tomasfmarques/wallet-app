@@ -81,8 +81,8 @@ _Sprint 1 (surface the wedge) done 2026-06-12 on branch `docs/public-launch-plan
   _F4 now root-fixed; the Phase-0 presentation guard remains as belt-and-suspenders._
 - [x] **FX2 — Onboarding (done 2026-06-12).** Dismissible first-run checklist on the Overview (`OnboardingChecklist.tsx`): 3 steps — adicionar crédito → adicionar investimento → importar extrato — each deep-linking to its module, ticking ✓ as the account fills, auto-hiding once all 3 are done. Dismissal remembered in localStorage **per user**. ✅ Verified: empty account shows 0/3, adding a loan → 1/3 with the step done, dismiss persists across reload, fully-set-up account (Rita) never sees it.
   → `frontend/src/components/overview/OnboardingChecklist.tsx`, `frontend/src/pages/Overview.tsx`, `frontend/src/index.css`
-- [ ] **FX3** 🟠 Empty / loading / error states everywhere (Yahoo failure, import errors, no-data charts) so failures read "tenta novamente," not blank panels.
-  → `frontend/src/components/**`
+- [x] **FX3 — Empty/error states (done 2026-06-12).** New reusable `StateBlock` (`frontend/src/components/ui/StateBlock.tsx`): `empty`/`error` variants with an optional "Tentar novamente" retry. Wired the page error branches (Investimentos/Crédito/Saldo/Comparar) to render it with the react-query `refetch` instead of a dead `error.message` string; `CashflowChart` now shows an empty prompt instead of a blank axes-only chart on a fresh account. ✅ Verified live: empty cashflow block shows for a data-less account, real chart still renders for a populated one; tsc + build clean. (Error variant is the same component + retry button; the portfolio refresh/Yahoo partial-failure messages were already informative and left as-is.)
+  → `frontend/src/components/ui/StateBlock.tsx`, `frontend/src/pages/{Portfolio,Loan,Budget,Compare}.tsx`, `frontend/src/components/overview/CashflowChart.tsx`, `frontend/src/index.css`
 - [ ] **P4** 🟡 Biometric unlock (WebAuthn / `navigator.credentials`) once running as installed PWA/TWA — persistent session, Face/fingerprint on open.
   → frontend auth flow
 

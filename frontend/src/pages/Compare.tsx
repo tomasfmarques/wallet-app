@@ -4,6 +4,7 @@ import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
 import { compareDefaults, type Modo } from '@/lib/compareDefaults'
+import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, ymToShort } from '@/lib/format'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
@@ -20,7 +21,7 @@ function addMonths(ym: string, n: number): string {
 }
 
 export function Compare() {
-  const { data: loanData, isLoading: loanLoading } = useLoan()
+  const { data: loanData, isLoading: loanLoading, error: loanError, refetch: refetchLoans } = useLoan()
   const { data: portData } = usePortfolio()
   const compare = useCompare()
 
@@ -86,6 +87,15 @@ export function Compare() {
 
   if (loanLoading) {
     return <div className="auth-loading"><div className="spinner" /></div>
+  }
+
+  if (loanError) {
+    return (
+      <div className="compare-page">
+        <header className="page-header"><h1>Amortizar ou Investir?</h1></header>
+        <StateBlock variant="error" message="Não foi possível carregar os teus créditos." onRetry={() => refetchLoans()} />
+      </div>
+    )
   }
 
   if (loans.length === 0) {
