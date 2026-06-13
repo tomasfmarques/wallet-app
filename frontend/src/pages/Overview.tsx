@@ -4,6 +4,7 @@ import { usePortfolio } from '@/hooks/usePortfolio'
 import { useBudget } from '@/hooks/useBudget'
 import { UncategorizedBanner } from '@/components/budget/UncategorizedBanner'
 import { HeroKpis } from '@/components/overview/HeroKpis'
+import { OnboardingChecklist } from '@/components/overview/OnboardingChecklist'
 import { WedgeInsight } from '@/components/overview/WedgeInsight'
 import { CashflowChart } from '@/components/overview/CashflowChart'
 import { ModuleSummary } from '@/components/overview/ModuleSummary'
@@ -56,6 +57,14 @@ export function Overview() {
       }
     : null
 
+  // Onboarding step completion (FX2).
+  const hasLoan = loanItems.length > 0
+  const hasInvestment = (portfolio.data?.assets.length ?? 0) > 0
+  const hasBudget = !!b && (
+    b.incomes.length + b.expenses.length + b.actualIncomes.length +
+    b.actualExpenses.length + b.pendingIncomes.length + b.pendingExpenses.length
+  ) > 0
+
   return (
     <div className="overview-page overview-modern">
       <header className="page-header overview-header">
@@ -76,6 +85,8 @@ export function Overview() {
         <div className="card card-pad-lg muted">A carregar…</div>
       ) : (
         <>
+          <OnboardingChecklist hasLoan={hasLoan} hasInvestment={hasInvestment} hasBudget={hasBudget} />
+
           <HeroKpis
             portfolioValue={portfolio.data?.kpis.valorAtual ?? null}
             loanRemaining={loanItems.length > 0 ? loanCapitalAtual : null}
