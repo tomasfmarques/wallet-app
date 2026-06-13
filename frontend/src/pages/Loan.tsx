@@ -7,11 +7,12 @@ import { CapitalChart } from '@/components/loan/CapitalChart'
 import { AnnualTable } from '@/components/loan/AnnualTable'
 import { SimulatorPanel } from '@/components/loan/SimulatorPanel'
 import { AmortizationModal } from '@/components/loan/AmortizationModal'
+import { StateBlock } from '@/components/ui/StateBlock'
 
 type Tab = 'tracking' | 'simulacao' | 'tabela'
 
 export function Loan() {
-  const { data, isLoading, error } = useLoan()
+  const { data, isLoading, error, refetch } = useLoan()
   const del = useDeleteLoan()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('view')
@@ -25,7 +26,7 @@ export function Loan() {
     return (
       <div className="page-stub">
         <h1>Crédito</h1>
-        <div className="form-error">Não foi possível carregar os dados: {error.message}</div>
+        <StateBlock variant="error" message="Não foi possível carregar os teus créditos." onRetry={() => refetch()} />
       </div>
     )
   }

@@ -6,6 +6,16 @@ import { sendPasswordResetEmail } from '../lib/email'
 
 const router = Router()
 
+// ── Session lifetime ─────────────────────────────────────────────
+// "Lembrar-me" picks the cookie maxAge per-login: 30 days when remembered (the
+// default), 1 day for shared/public devices. Combined with rolling:true in
+// index.ts, a remembered + active user effectively never re-logs.
+const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30
+const ONE_DAY = 1000 * 60 * 60 * 24
+function sessionMaxAge(remember: unknown): number {
+  return remember === false ? ONE_DAY : THIRTY_DAYS
+}
+
 // ── Per-account lockout for change-password ──────────────────────
 // Simple in-memory store: works for single-instance and serverless cold
 // starts. Replace with a Redis counter for multi-instance deployments.
@@ -93,6 +103,7 @@ router.post('/signup', async (req, res) => {
     req.session.regenerate((err) => {
       if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
       req.session.userId = user.id
+      req.session.cookie.maxAge = sessionMaxAge(req.body?.remember)
       res.status(201).json({ user: serializeUser(user) })
     })
   } catch (err) {
@@ -136,6 +147,7 @@ router.post('/login', async (req, res) => {
     req.session.regenerate((err) => {
       if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
       req.session.userId = user.id
+      req.session.cookie.maxAge = sessionMaxAge(req.body?.remember)
       res.json({ user: serializeUser(user) })
     })
   } catch (err) {

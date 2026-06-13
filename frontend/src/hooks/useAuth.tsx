@@ -16,11 +16,14 @@ export interface SignupInput {
   email: string
   password: string
   name: string
+  remember?: boolean
 }
 
 export interface LoginInput {
   email: string
   password: string
+  // "Lembrar-me": when false, the server issues a 1-day session instead of 30.
+  remember?: boolean
 }
 
 // Errors API contract: { error: string } or { errors: Record<string,string> }

@@ -4,8 +4,8 @@ dist/
 .env.local
 *.local
 
-# Prisma
-backend/prisma/migrations/
+# Prisma — migrations ARE tracked (needed so a fresh clone can build the DB
+# from history; un-ignored 2026-06-12, finding F1). Only the dev DB stays out.
 *.db
 *.db-journal
 

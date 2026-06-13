@@ -5,8 +5,10 @@ import { eur, ymToShort, currentYm } from '@/lib/format'
 import type { Income, Expense } from '@/types'
 
 interface Props {
-  incomes: Income[]
+  incomes: Income[]              // recurring PLAN
   expenses: Expense[]
+  actualIncomes?: Income[]       // imported actuals — used where a month has them
+  actualExpenses?: Expense[]
   months?: number   // default 12 (rolling year)
   endAt?: string    // default current YM (rolling window ends here)
   futureMonths?: number  // optional months in the future to show planned
@@ -39,7 +41,8 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 // net-line overlay. Honours each row's startYm/endYm so historical months
 // reflect what was actually active back then (e.g. salary started in March).
 export function BudgetTimeline({
-  incomes, expenses, months = 12, endAt, futureMonths = 0, onMonthClick,
+  incomes, expenses, actualIncomes = [], actualExpenses = [],
+  months = 12, endAt, futureMonths = 0, onMonthClick,
 }: Props) {
   const today = endAt ?? currentYm()
   const totalMonths = months + futureMonths
@@ -57,15 +60,16 @@ export function BudgetTimeline({
       const ym = ymAddMonths(start, i)
       yms.push(ym)
       labels.push(ymToShort(ym))
-      const inc = incomes
-        .filter((x) => isActiveInMonth(x, ym))
-        .reduce((s, x) => s + x.amount, 0)
-      const fixed = expenses
-        .filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym))
-        .reduce((s, x) => s + x.amount, 0)
-      const variable = expenses
-        .filter((x) => x.type === 'variable' && isActiveInMonth(x, ym))
-        .reduce((s, x) => s + x.amount, 0)
+      // Prefer the REAL (imported) figures for any month that has actuals;
+      // fall back to the recurring PLAN for months without imports (FX1).
+      const sumAmt = (rows: Array<{ amount: number }>) => rows.reduce((s, x) => s + x.amount, 0)
+      const realInc = actualIncomes.filter((x) => x.startYm === ym)
+      const realFixed = actualExpenses.filter((x) => x.type === 'fixed' && x.startYm === ym)
+      const realVar = actualExpenses.filter((x) => x.type === 'variable' && x.startYm === ym)
+      const hasReal = realInc.length + realFixed.length + realVar.length > 0
+      const inc = hasReal ? sumAmt(realInc) : sumAmt(incomes.filter((x) => isActiveInMonth(x, ym)))
+      const fixed = hasReal ? sumAmt(realFixed) : sumAmt(expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)))
+      const variable = hasReal ? sumAmt(realVar) : sumAmt(expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)))
       incomeSeries.push(inc)
       fixedSeries.push(fixed)
       variableSeries.push(variable)
@@ -159,7 +163,7 @@ export function BudgetTimeline({
     const avg = past.length > 0 ? past.reduce((s, v) => s + v, 0) / past.length : 0
 
     return { chartData: data, chartOptions: opts, avgNet: avg }
-  }, [incomes, expenses, today, months, totalMonths, onMonthClick])
+  }, [incomes, expenses, actualIncomes, actualExpenses, today, months, totalMonths, onMonthClick])
 
   return (
     <div className="card card-pad-lg">
@@ -175,8 +179,8 @@ export function BudgetTimeline({
         <Bar data={chartData} options={chartOptions} />
       </div>
       <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-        Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês,
-        respeitando os campos <em>início</em> e <em>fim</em> de cada registo.
+        Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês.
+        Meses com extrato importado mostram valores <em>reais</em>; os restantes mostram o <em>planeado</em>.
         {onMonthClick && <> Clica num mês para o analisar em detalhe.</>}
       </p>
     </div>

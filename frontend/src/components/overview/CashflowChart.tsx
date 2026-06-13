@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
+import { StateBlock } from '@/components/ui/StateBlock'
 import type { Income, Expense } from '@/types'
 
 interface Props {
@@ -39,6 +40,7 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 // tracks the resulting net saldo.
 export function CashflowChart({ incomes, expenses }: Props) {
   const [mode, setMode] = useState<Mode>('month')
+  const isEmpty = incomes.length === 0 && expenses.length === 0
 
   const { data, options, summary } = useMemo(() => {
     const today = currentYm()
@@ -129,6 +131,17 @@ export function CashflowChart({ incomes, expenses }: Props) {
     }
     return { data: chartData, options: opts, summary: totals }
   }, [incomes, expenses, mode])
+
+  // No budget data yet → a friendly prompt instead of an empty axes-only chart.
+  if (isEmpty) {
+    return (
+      <StateBlock
+        variant="empty"
+        icon="📊"
+        message="Sem dados de orçamento ainda — importa um extrato ou adiciona receitas para veres o teu fluxo mensal."
+      />
+    )
+  }
 
   return (
     <div className="card card-pad-lg cashflow-card">

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { computeSchedule, computeKpis, type LoanInput } from '../lib/loanEngine'
+import { stripFormulaPrefix } from '../lib/sanitize'
 
 const router = Router()
 router.use(requireAuth)
@@ -9,14 +10,21 @@ router.use(requireAuth)
 // ── Validation helpers ───────────────────────────────────────────
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
-function asPositiveNumber(v: unknown, field: string, errors: Record<string, string>): number {
+// Sanity ceilings (defence in depth — reject absurd public-API input).
+const MAX_CAPITAL = 100_000_000      // 100 M €
+const MAX_RATE = 1                   // rates are fractions: 1 = 100 %
+const MAX_BONIFICACAO = 1_000_000    // monthly spread rebate ceiling
+
+function asPositiveNumber(v: unknown, field: string, errors: Record<string, string>, max?: number): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n) || n <= 0) { errors[field] = `${field} deve ser um número positivo`; return 0 }
+  if (max !== undefined && n > max) { errors[field] = `${field} máximo ${max}`; return 0 }
   return n
 }
-function asNonNegativeNumber(v: unknown, field: string, errors: Record<string, string>): number {
+function asNonNegativeNumber(v: unknown, field: string, errors: Record<string, string>, max?: number): number {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n) || n < 0) { errors[field] = `${field} deve ser ≥ 0`; return 0 }
+  if (max !== undefined && n > max) { errors[field] = `${field} máximo ${max}`; return 0 }
   return n
 }
 function asPositiveInt(v: unknown, field: string, errors: Record<string, string>, max?: number): number {
@@ -32,7 +40,9 @@ function asYm(v: unknown, field: string, errors: Record<string, string>): string
   return v
 }
 function asName(v: unknown): string {
-  if (typeof v === 'string' && v.trim().length > 0) return v.trim().slice(0, 40)
+  if (typeof v === 'string' && v.trim().length > 0) {
+    return stripFormulaPrefix(v).slice(0, 40) || 'Crédito'
+  }
   return 'Crédito'
 }
 
@@ -85,12 +95,12 @@ router.get('/', async (req, res) => {
 router.put('/', async (req, res) => {
   const errors: Record<string, string> = {}
   const name        = asName(req.body?.name)
-  const capital     = asPositiveNumber(req.body?.capital,     'capital',     errors)
+  const capital     = asPositiveNumber(req.body?.capital,     'capital',     errors, MAX_CAPITAL)
   const prazoMeses  = asPositiveInt   (req.body?.prazoMeses,  'prazoMeses',  errors, 600)
-  const tanFixa     = asNonNegativeNumber(req.body?.tanFixa,  'tanFixa',     errors)
+  const tanFixa     = asNonNegativeNumber(req.body?.tanFixa,  'tanFixa',     errors, MAX_RATE)
   const mesesFixos  = asPositiveInt   (req.body?.mesesFixos,  'mesesFixos',  errors)
-  const spread      = asNonNegativeNumber(req.body?.spread,   'spread',      errors)
-  const euribor     = asNonNegativeNumber(req.body?.euribor,  'euribor',     errors)
+  const spread      = asNonNegativeNumber(req.body?.spread,   'spread',      errors, MAX_RATE)
+  const euribor     = asNonNegativeNumber(req.body?.euribor,  'euribor',     errors, MAX_RATE)
   const dataInicio  = asYm            (req.body?.dataInicio,  'dataInicio',  errors)
 
   // Optional spread rebate (e.g. Montepio "devolução de spread")
@@ -98,7 +108,7 @@ router.put('/', async (req, res) => {
   let bonificacaoMensal: number | null = null
   if (bonRaw !== undefined && bonRaw !== null && bonRaw !== '') {
     const b = Number(bonRaw)
-    if (!Number.isFinite(b) || b < 0) errors.bonificacaoMensal = 'Valor inválido'
+    if (!Number.isFinite(b) || b < 0 || b > MAX_BONIFICACAO) errors.bonificacaoMensal = 'Valor inválido'
     else bonificacaoMensal = b > 0 ? b : null
   }
   const bonMesesRaw = req.body?.bonificacaoMeses
@@ -112,7 +122,7 @@ router.put('/', async (req, res) => {
   let taeg: number | null = null
   if (taegRaw !== undefined && taegRaw !== null && taegRaw !== '') {
     const t = Number(taegRaw)
-    if (!Number.isFinite(t) || t < 0) errors.taeg = 'Valor inválido'
+    if (!Number.isFinite(t) || t < 0 || t > MAX_RATE) errors.taeg = 'Valor inválido'
     else taeg = t > 0 ? t : null
   }
 

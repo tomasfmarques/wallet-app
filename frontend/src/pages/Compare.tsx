@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
+import { compareDefaults, type Modo } from '@/lib/compareDefaults'
+import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, ymToShort } from '@/lib/format'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
-
-type Modo = 'prazo' | 'prestacao'
 
 function currentYm(): string {
   const d = new Date()
@@ -20,29 +21,29 @@ function addMonths(ym: string, n: number): string {
 }
 
 export function Compare() {
-  const { data: loanData, isLoading: loanLoading } = useLoan()
+  const { data: loanData, isLoading: loanLoading, error: loanError, refetch: refetchLoans } = useLoan()
   const { data: portData } = usePortfolio()
   const compare = useCompare()
 
   const loans = loanData?.loans ?? []
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selectedLoan = loans.find((l) => l.loan.id === selectedId) ?? loans[0] ?? null
+  // Deep link from the dashboard wedge insight: /comparar?loan=<id> preselects it.
+  const [searchParams] = useSearchParams()
+  const loanParam = searchParams.get('loan')
+  const [selectedId, setSelectedId] = useState<string | null>(loanParam)
+  const selectedLoan =
+    loans.find((l) => l.loan.id === (selectedId ?? loanParam)) ?? loans[0] ?? null
 
-  // ── Smart defaults derived from actual user data ──────────────
-  const smartDefaults = useMemo(() => {
-    // Investment return: use portfolio settings gFY (future yield %) if available
-    const gFY = portData?.settings?.gFY
-    const avgAssetReturn = portData?.assets?.length
-      ? portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length * 100
-      : null
-    const investReturn = gFY ?? avgAssetReturn ?? 7
+  // ── Smart defaults derived from actual user data (shared with the
+  // dashboard insight card so both surfaces show identical numbers). ──
+  const smartDefaults = useMemo(
+    () => compareDefaults(selectedLoan, portData),
+    [selectedLoan?.loan.id, portData],   // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
-    // Amount: use the selected loan's next installment, rounded to nearest 100
-    const nextPrestacao = selectedLoan?.kpis?.proximaPrestacao ?? 5000
-    const valor = Math.max(100, Math.round(nextPrestacao / 100) * 100)
-
-    return { valor, investReturn: Math.round(investReturn * 10) / 10, taxRate: 28, modo: 'prazo' as Modo }
-  }, [selectedLoan?.loan.id, portData])   // eslint-disable-line react-hooks/exhaustive-deps
+  // Average of the user's per-asset expected returns (for the slider hint).
+  const avgAssetReturnPct = portData?.assets?.length
+    ? (portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length) * 100
+    : null
 
   const [valor, setValor] = useState(smartDefaults.valor)
   const [valorInput, setValorInput] = useState(String(smartDefaults.valor))
@@ -86,6 +87,15 @@ export function Compare() {
 
   if (loanLoading) {
     return <div className="auth-loading"><div className="spinner" /></div>
+  }
+
+  if (loanError) {
+    return (
+      <div className="compare-page">
+        <header className="page-header"><h1>Amortizar ou Investir?</h1></header>
+        <StateBlock variant="error" message="Não foi possível carregar os teus créditos." onRetry={() => refetchLoans()} />
+      </div>
+    )
   }
 
   if (loans.length === 0) {
@@ -238,9 +248,9 @@ export function Compare() {
               style={{ accentColor: 'var(--green)' }}
             />
             <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
-            {portData?.settings?.gFY != null && (
+            {avgAssetReturnPct != null && (
               <span className="form-hint">
-                O teu portfolio usa {portData.settings.gFY} % de rentabilidade futura.
+                Média de rentabilidade dos teus ativos: {avgAssetReturnPct.toFixed(1)} %.
               </span>
             )}
           </div>

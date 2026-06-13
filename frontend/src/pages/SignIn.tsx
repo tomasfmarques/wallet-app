@@ -16,6 +16,7 @@ export function SignIn() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [errors, setErrors] = useState<FieldErrors>({})
 
   // If we already have a session, skip the sign-in screen
@@ -37,7 +38,7 @@ export function SignIn() {
     }
 
     try {
-      await login.mutateAsync({ email: email.trim(), password })
+      await login.mutateAsync({ email: email.trim(), password, remember })
       navigate(redirectTo, { replace: true })
     } catch (err) {
       setErrors(fieldErrorsFrom(err))
@@ -95,6 +96,15 @@ export function SignIn() {
             )}
             <Link to="/forgot-password" className="field-forgot">Esqueceste a password?</Link>
           </div>
+
+          <label className="field-remember">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span>Lembrar-me neste dispositivo</span>
+          </label>
 
           <button
             type="submit"
