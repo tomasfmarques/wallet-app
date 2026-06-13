@@ -122,13 +122,22 @@ export function ImportStatementModal({ open, onClose }: Props) {
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        finish(parseStatement(String(reader.result ?? ''), file.name), file.name)
+        // Decode as UTF-8 first; if that produces replacement chars (�), the
+        // file is almost certainly Windows-1252/Latin-1 — the default for most
+        // Portuguese bank CSV/OFX exports — so re-decode with that charset so
+        // accents (ç, ã, õ…) survive.
+        const buf = reader.result as ArrayBuffer
+        let text = new TextDecoder('utf-8').decode(buf)
+        if (text.includes('�')) {
+          text = new TextDecoder('windows-1252').decode(buf)
+        }
+        finish(parseStatement(text, file.name), file.name)
       } catch {
         setParseError('Erro ao processar o ficheiro.')
       }
     }
     reader.onerror = () => setParseError('Não foi possível ler o ficheiro.')
-    reader.readAsText(file, 'utf-8')
+    reader.readAsArrayBuffer(file)
   }
 
   const patch = (id: number, p: Partial<ReviewRow>) =>

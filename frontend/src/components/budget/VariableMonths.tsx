@@ -134,6 +134,7 @@ export function VariableMonths({
     setShowEdit(false)
     setEditCategory('')
     setEditType('')
+    setChecked(new Set())   // clear the selection so the count resets after applying
   }
 
   // Category list appropriate for the current selection mix
