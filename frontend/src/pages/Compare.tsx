@@ -39,6 +39,11 @@ export function Compare() {
     [selectedLoan?.loan.id, portData],   // eslint-disable-line react-hooks/exhaustive-deps
   )
 
+  // Average of the user's per-asset expected returns (for the slider hint).
+  const avgAssetReturnPct = portData?.assets?.length
+    ? (portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length) * 100
+    : null
+
   const [valor, setValor] = useState(smartDefaults.valor)
   const [valorInput, setValorInput] = useState(String(smartDefaults.valor))
   const [modo, setModo] = useState<Modo>(smartDefaults.modo)
@@ -233,9 +238,9 @@ export function Compare() {
               style={{ accentColor: 'var(--green)' }}
             />
             <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
-            {portData?.settings?.gFY != null && (
+            {avgAssetReturnPct != null && (
               <span className="form-hint">
-                O teu portfolio usa {portData.settings.gFY} % de rentabilidade futura.
+                Média de rentabilidade dos teus ativos: {avgAssetReturnPct.toFixed(1)} %.
               </span>
             )}
           </div>
