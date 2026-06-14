@@ -23,3 +23,6 @@ Thumbs.db
 
 # Generated war-room dashboard (regenerate with: npm run hub)
 wallet360-hub/hub.html
+
+# graphify knowledge-graph output (regenerable)
+graphify-out/

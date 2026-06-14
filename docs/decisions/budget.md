@@ -428,3 +428,31 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
 
 ---
 
+## 2026-06-14 — FX1: planned vs actuals (no schema change)
+
+- **What:** the recurring **plan** and the imported **actuals** are now two lanes
+  sharing the same `Income`/`Expense` tables. Discriminator = the existing `source`
+  field: `!!source` ⇒ imported actual; `null` ⇒ recurring plan.
+- **Why:** they were being summed (month view double-counted salary+import; the
+  headline KPI counted every imported month as if recurring). A separate
+  `Transaction` table would have been cleaner but meant the two-schema trap + a
+  migration; deriving from `source` got the same result with zero schema risk.
+- **How it shows:** `GET /api/budget` returns `incomes/expenses` (plan) +
+  `actualIncomes/actualExpenses` (source set); `summarize()` KPIs are plan-only;
+  `MonthAnalysis` renders planeado vs real. **Consequence:** imported actuals are
+  no longer in the editable Tabelas/Movimentos lists — only aggregated in Análise →
+  Mês a mês. Plan line and its imported actual are NOT linked (mismatched names),
+  so the same item can look duplicated — see "plan ↔ actual matching" in STATE.
+- **How to change:** if you add a real transactions table later, retire the
+  `source`-derived split and update `summarize` + the GET split + `MonthAnalysis`.
+
+## 2026-06-14 — Statement import is Windows-1252, not UTF-8
+
+- **What:** `ImportStatementModal` reads the file as an ArrayBuffer, decodes UTF-8,
+  and **falls back to windows-1252** when the result contains `�`.
+- **Why:** PT bank CSV/OFX exports are usually Latin-1; reading them as UTF-8 turned
+  "SOLUÇÃO" into "SOLU��O". The `�` are unrecoverable once stored, so
+  `POST /api/budget/cleanup-encoding` + a Saldo banner delete those rows for re-import.
+- **How to change:** don't revert to `readAsText(file, 'utf-8')`. If a bank ships
+  true UTF-8, the fallback simply never triggers.
+

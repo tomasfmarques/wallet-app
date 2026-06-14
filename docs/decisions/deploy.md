@@ -219,6 +219,18 @@ have."
 - **2FA.** Out of scope for now but worth flagging if the app ever holds
   serious money decisions.
 
+## 2026-06-14 — Prisma migrations are tracked in git
+
+- **What:** `backend/prisma/migrations/` was in `.gitignore`, so migration history
+  never shipped. Un-ignored it, committed the existing migrations + a catch-up
+  migration, and added `postinstall: prisma generate` (backend).
+- **Why:** a fresh `git clone` had no migrations → `db:migrate` built a `dev.db`
+  missing columns → every signup/loan write 500'd. This was the real cause of the
+  long-standing "Crédito 500", not a runtime bug.
+- **How to change:** keep migrations committed. Prod still deploys via `db:push:prod`
+  (not `migrate deploy`); the tracked migrations are for the dev/fresh-clone path.
+  A column rename via `db push` is still destructive — Neon snapshot first.
+
 ## How this file is maintained
 
 When I introduce a new caveat in a future phase, I append it to this file in
