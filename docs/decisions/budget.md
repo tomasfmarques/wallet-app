@@ -439,10 +439,13 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
   migration; deriving from `source` got the same result with zero schema risk.
 - **How it shows:** `GET /api/budget` returns `incomes/expenses` (plan) +
   `actualIncomes/actualExpenses` (source set); `summarize()` KPIs are plan-only;
-  `MonthAnalysis` renders planeado vs real. **Consequence:** imported actuals are
-  no longer in the editable Tabelas/Movimentos lists — only aggregated in Análise →
-  Mês a mês. Plan line and its imported actual are NOT linked (mismatched names),
-  so the same item can look duplicated — see "plan ↔ actual matching" in STATE.
+  `MonthAnalysis` renders planeado vs real. **"Movimentos do mês" (`VariableMonths`)
+  shows the month's REAL movements** (actuals + manual), editable — so each view has
+  a deliberate lane: headline KPIs + Análise = plan/planeado-vs-real; Movimentos =
+  real. (An earlier cut accidentally hid actuals from Movimentos — fixed `82357ac`.)
+- **Still open:** plan line and its imported actual are NOT linked (mismatched
+  names like "Salário" vs "ORDENADO ACME"), so the same item can look duplicated —
+  see "plan ↔ actual matching" in STATE.
 - **How to change:** if you add a real transactions table later, retire the
   `source`-derived split and update `summarize` + the GET split + `MonthAnalysis`.
 

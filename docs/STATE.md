@@ -20,7 +20,7 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
   - **Sessions:** sliding "stay signed in" (30-day rolling, `sameSite: lax`) + a **"Lembrar-me"** checkbox (1-day for shared devices). No more constant re-login.
   - **Installable PWA** (manifest + Workbox SW with `/api` NetworkOnly; full icon set; `.well-known/assetlinks.json` + Bubblewrap runbook scaffolded).
   - **Dashboard wedge:** proactive "Amortizar vs Investir" insight card → deep-links to `/comparar` (engine already existed; now surfaced). Uses real avg portfolio return (was wrongly using `gFY`).
-  - **Budget plan-vs-actuals (FX1):** imported one-off lines are now "actuals" (derived from `source`), separate from the recurring plan; month view shows **planeado vs real** (no double-count); headline KPI is plan-only.
+  - **Budget plan-vs-actuals (FX1):** imported one-off lines are now "actuals" (derived from `source`), separate from the recurring plan; Análise → Mês a mês shows **planeado vs real** (no double-count) and the headline KPIs are plan-only. "Movimentos do mês" (Saldo → Tabelas) **lists the month's real transactions** (actuals + manual), editable/removable — fixed a regression where they'd vanished from that list after FX1.
   - **Onboarding (FX2):** dismissible first-run 3-step checklist.
   - **Empty/error states (FX3):** reusable `StateBlock` with "Tentar novamente"; no blank charts.
   - **Statement import encoding fix:** decode UTF-8 → fall back to Windows-1252 (PT banks) so accents survive; + a Saldo banner + `POST /api/budget/cleanup-encoding` to purge old mojibake rows so they can be re-imported.
@@ -47,7 +47,6 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 
 ## Open threads / deferred
 
-- **Imported actuals are no longer individually editable** — after FX1, rows with a `source` go to the actuals lane (Análise → Mês a mês, aggregate/read-only) and are excluded from the editable Tabelas/Movimentos lists. Decide whether the user should be able to view/delete individual imported transactions (the only purge path today is the mojibake-cleanup banner). Possibly add an "actuals" management view.
 - **Subsídio de férias / one-off income** — handled implicitly (shows as a positive real-vs-plan variance for that month); no first-class concept. A "one-off / 13th-month" income type would be clearer.
 - **Mortgage triple-representation** — the prestação lives in the Loan module, the budget *plan*, and the budget *actual*, unlinked. Pairs with "plan ↔ actual matching" above.
 - **Lazy-load the PDF parser** — `pdfStatementParser` (~367 KB) still in the initial chunk (Vite warns >500 KB). `lazy(() => import('./pdfStatementParser'))` cuts ~30%. (Hub TODO F11.)
@@ -63,7 +62,7 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 - **Pushing to `main` deploys to prod** and runs `db:push:prod` — destructive on a column rename. Take a Neon snapshot before any rename/drop. (This session had no schema changes.)
 - **Statement imports are NOT UTF-8** — most PT bank CSV/OFX exports are Windows-1252/Latin-1. `ImportStatementModal` reads as ArrayBuffer, tries UTF-8, falls back to windows-1252 when it sees `�`. Don't revert to `readAsText(file, 'utf-8')` (that's what produced "SOLU��O").
 - **`gFY` is "anos sem aumento"** (an int, contribution-growth delay), NOT a return %. Don't use it as the investment return — the wedge default uses the avg per-asset `expectedReturn` (`frontend/src/lib/compareDefaults.ts`).
-- **Plan vs actual is derived from `source`** (`!!source` ⇒ imported actual; `null` ⇒ recurring plan). The budget headline KPIs + Tabelas are plan-only; actuals show in Análise → Mês a mês. Changing where `source` is set will move rows between lanes.
+- **Plan vs actual is derived from `source`** (`!!source` ⇒ imported actual; `null` ⇒ recurring plan). Changing where `source` is set moves rows between lanes. **But note the deliberate split across views:** the headline KPIs (Início + top of Saldo) and Análise are plan-based / planeado-vs-real, while **"Movimentos do mês" (`VariableMonths`) intentionally shows the month's *real* movements** (actuals + manual) with a real summary. Don't "unify" them by making Movimentos plan-only — that's the regression we just fixed.
 - **Dev uses in-memory sessions** — restarting the local backend logs everyone out (re-login in the browser). Prod uses the Postgres session store, so it persists across deploys.
 - **Yahoo ticker search is an unofficial endpoint** (`query1.finance.yahoo.com/v1/finance/search`). Finnhub search is the backup.
 - **Merchant normalization** in `frontend/src/lib/merchant.ts` must match the backend normalizer or learned classification rules break.
@@ -72,6 +71,8 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 
 ## Recent work (newest first)
 
+- `7e050cb` portfolio — move "Adicionar ativo" button into the "A minha carteira" section header (below watchlist + summary cards).
+- `82357ac` budget — "Movimentos do mês" shows the month's real movements (actuals + manual); fixed the FX1 regression where imported transactions vanished from that list.
 - `bc5c199` War Room HTML dashboard generator (`wallet360-hub/build-hub.mjs`, `npm run hub`).
 - `12007f8` one-off mojibake cleanup (`POST /api/budget/cleanup-encoding` + Saldo banner).
 - `7817ef1` statement import encoding (UTF-8 → windows-1252) + clear bulk-edit selection.
