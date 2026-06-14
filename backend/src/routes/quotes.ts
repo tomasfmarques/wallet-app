@@ -5,6 +5,7 @@ import {
   type PublicQuote, type PublicMetric,
 } from '../lib/quotesCache'
 import { getYahooChart, computeCAGRs, getYahooHistory, searchTickers } from '../lib/yahooFinance'
+import { convertPrice } from '../lib/fx'
 
 // Pluck a numeric metric, return null if missing/non-numeric
 function num(m: Record<string, unknown> | undefined, key: string): number | null {
@@ -150,14 +151,25 @@ router.get('/cagr', async (req, res) => {
     if (!chart) {
       res.json({
         symbol, resolvedSymbol: null,
-        currentPrice: null, previousClose: null, currency: null,
+        currentPrice: null, previousClose: null, currency: null, priceEur: null,
         oneYearCAGR: null, threeYearCAGR: null,
         fiveYearCAGR: null, tenYearCAGR: null,
         dataPoints: 0, error: 'No data',
       })
       return
     }
-    res.json(computeCAGRs(symbol, chart))
+    const report = computeCAGRs(symbol, chart)
+    // Convert the native-currency spot price into EUR so the AssetModal can
+    // auto-fill "Investido (€)" / "Valor (€)" correctly for non-EUR listings.
+    // Falls back to null if the FX lookup fails (UI then uses the native price).
+    let priceEur: number | null = null
+    if (report.currency.toUpperCase() === 'EUR') {
+      priceEur = report.currentPrice
+    } else {
+      const conv = await convertPrice(report.currentPrice, report.currency, 'EUR')
+      if (conv) priceEur = Math.round(conv.price * 100) / 100
+    }
+    res.json({ ...report, priceEur })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error(`CAGR fetch failed for ${symbol}: ${msg}`)

@@ -25,6 +25,7 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
   - **Empty/error states (FX3):** reusable `StateBlock` with "Tentar novamente"; no blank charts.
   - **Statement import encoding fix:** decode UTF-8 → fall back to Windows-1252 (PT banks) so accents survive; + a Saldo banner + `POST /api/budget/cleanup-encoding` to purge old mojibake rows so they can be re-imported.
   - **Hardening:** numeric input bounds, CSV/formula-injection sanitisation, Sentry-ready error handler + request ids (inert until `SENTRY_DSN` set).
+- **Investments — currency-aware "Adicionar ativo" (this session, uncommitted):** the ticker-search dropdown now shows a **currency badge** (EUR/USD/KRW…), a type chip, and a readable exchange name, with larger rows + loading/empty states. Crucially, **prices are now FX-converted to EUR** before auto-fill: `/api/quotes/cagr` returns a new `priceEur` field (via `convertPrice()` + Frankfurter), so "Investido (€)/Valor (€)" are correct for non-EUR listings instead of treating a USD/KRW price as euros. Resolves the old "FX conversion for ticker prices" thread + next-step #2.
 - **Schema sync:** `vercel-build` runs `db:push:prod` on every deploy. **Prisma migrations are now tracked in git** (were gitignored — fixed in Phase 0 so a fresh clone can build the DB; this also resolved the old "Crédito 500").
 - **Branch:** `main` — all work committed/pushed; old `docs/public-launch-plan-and-hub` and `fix/...` branches merged & deleted. **Pushing to `main` = prod deploy** (Vercel). `gh` CLI is installed locally but **not authenticated** (interactive login needed); deploys work via plain `git push` either way.
 - **War room dashboard:** `npm run hub` → open `wallet360-hub/hub.html` (self-contained HTML rendering every project `.md` + phase progress; gitignored artifact).
@@ -49,9 +50,9 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 
 - **Subsídio de férias / one-off income** — handled implicitly (shows as a positive real-vs-plan variance for that month); no first-class concept. A "one-off / 13th-month" income type would be clearer.
 - **Mortgage triple-representation** — the prestação lives in the Loan module, the budget *plan*, and the budget *actual*, unlinked. Pairs with "plan ↔ actual matching" above.
-- **Lazy-load the PDF parser** — `pdfStatementParser` (~367 KB) still in the initial chunk (Vite warns >500 KB). `lazy(() => import('./pdfStatementParser'))` cuts ~30%. (Hub TODO F11.)
 - **Deferred Phase-1 items:** Redis shared store for rate-limit + change-password lockout (S2/F6, needs Upstash); email verification on signup (S3/F7, two-schema + migration); frontend Sentry (`VITE_SENTRY_DSN`).
-- **FX conversion for ticker prices** — ticker-search auto-fill uses Yahoo's raw native-currency price; `convertPrice()` in `backend/src/lib/fx.ts` just needs wiring in.
+- **Search currency is best-effort** — derived from the symbol suffix / exchange code (`SUFFIX_CCY` + `EXCHANGE_CCY` in `backend/src/lib/yahooFinance.ts`), since Yahoo's search endpoint returns no currency. Ambiguous venues (Cboe Europe `CXE`, London `IOB` GDRs) deliberately return `null` → a "—" badge rather than a wrong guess. Extend the maps as gaps surface.
+- **Initial `index` chunk is ~591 KB** (Vite >500 KB warning). NOT the PDF parser (that's already a lazy `pdfStatementParser-*.js` chunk) — it's Chart.js / react-query / app code. If initial-load size matters, split vendors via `manualChunks` or lazy-load heavy routes. (F11 was a false alarm — closed.)
 - **Yahoo failover (F8)** — surface a cached/fallback valuation when Yahoo breaks; wire in the Finnhub backup.
 - Asset flows history view (`portfolio_flows`, no UI); loan milestone table; email-change flow; drag-to-reorder watchlist; non-monthly cadences.
 
@@ -64,13 +65,16 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 - **`gFY` is "anos sem aumento"** (an int, contribution-growth delay), NOT a return %. Don't use it as the investment return — the wedge default uses the avg per-asset `expectedReturn` (`frontend/src/lib/compareDefaults.ts`).
 - **Plan vs actual is derived from `source`** (`!!source` ⇒ imported actual; `null` ⇒ recurring plan). Changing where `source` is set moves rows between lanes. **But note the deliberate split across views:** the headline KPIs (Início + top of Saldo) and Análise are plan-based / planeado-vs-real, while **"Movimentos do mês" (`VariableMonths`) intentionally shows the month's *real* movements** (actuals + manual) with a real summary. Don't "unify" them by making Movimentos plan-only — that's the regression we just fixed.
 - **Dev uses in-memory sessions** — restarting the local backend logs everyone out (re-login in the browser). Prod uses the Postgres session store, so it persists across deploys.
-- **Yahoo ticker search is an unofficial endpoint** (`query1.finance.yahoo.com/v1/finance/search`). Finnhub search is the backup.
+- **Yahoo ticker search is an unofficial endpoint** (`query1.finance.yahoo.com/v1/finance/search`). Finnhub search is the backup. It returns **no currency** — currency is derived backend-side from the symbol suffix/exchange (`currencyForResult`); it's a hint, not authoritative.
+- **EUR auto-fill is EUR-only.** AssetModal's `fillPrice` uses `priceEur` (or the native price *only* when it's already EUR). If the FX lookup fails for a non-EUR listing, the amount fields stay empty on purpose — **don't reintroduce a `?? nativePrice` fallback** into the "(€)" fields, or you'll fill a USD/KRW number labelled "auto-preenchido".
+- **GBp (pence) vs GBP.** LSE listings show a "GBP" badge but Yahoo reports prices in `GBp` (pence). `normalizeSubunit` in `fx.ts` divides by 100 before converting, so `priceEur` is correct — don't "fix" this by treating `GBp` as pounds in the conversion.
 - **Merchant normalization** in `frontend/src/lib/merchant.ts` must match the backend normalizer or learned classification rules break.
 - **Backend is CommonJS**, not ESM.
 - Manual Neon schema push (from `backend/`): `DATABASE_URL="…" npx prisma db push --schema prisma/schema.prod.prisma`.
 
 ## Recent work (newest first)
 
+- **(uncommitted)** portfolio — EUR-convert ticker prices (`priceEur` via `convertPrice` in `/api/quotes/cagr`) so auto-fill is correct for non-EUR listings + currency-aware search dropdown (currency badge, type chip, readable exchange name, larger rows, loading/empty states). Docs: closed false-alarm F11 (PDF parser already lazy-loaded).
 - `7e050cb` portfolio — move "Adicionar ativo" button into the "A minha carteira" section header (below watchlist + summary cards).
 - `82357ac` budget — "Movimentos do mês" shows the month's real movements (actuals + manual); fixed the FX1 regression where imported transactions vanished from that list.
 - `bc5c199` War Room HTML dashboard generator (`wallet360-hub/build-hub.mjs`, `npm run hub`).

@@ -79,25 +79,39 @@ export function TickerSearch({ onSelect }: Props) {
         />
         {isFetching && <span className="ticker-search-spinner" aria-hidden />}
       </div>
-      {open && results.length > 0 && (
+      {open && query.length >= 2 && (
         <ul className="ticker-search-dropdown" role="listbox">
-          {results.map((r, i) => (
-            <li
-              key={r.symbol}
-              role="option"
-              aria-selected={i === active}
-              className={`ticker-search-row ${i === active ? 'is-active' : ''}`}
-              onMouseDown={() => choose(r)}
-              onMouseEnter={() => setActive(i)}
-            >
-              <span className="ticker-search-symbol">{r.symbol}</span>
-              <span className="ticker-search-name">{r.name}</span>
-              <span className="ticker-search-meta">
-                {r.exchange}
-                {r.type && <> · {TYPE_LABEL[r.type] ?? r.type}</>}
-              </span>
-            </li>
-          ))}
+          {results.length > 0 ? (
+            results.map((r, i) => (
+              <li
+                key={r.symbol}
+                role="option"
+                aria-selected={i === active}
+                className={`ticker-search-row ${i === active ? 'is-active' : ''}`}
+                onMouseDown={() => choose(r)}
+                onMouseEnter={() => setActive(i)}
+              >
+                <span
+                  className={`ticker-ccy ${r.currency ? '' : 'is-unknown'}`}
+                  title={r.currency ? `Cotado em ${r.currency}` : 'Moeda desconhecida'}
+                >
+                  {r.currency ?? '—'}
+                </span>
+                <div className="ticker-search-text">
+                  <div className="ticker-search-line">
+                    <span className="ticker-search-symbol">{r.symbol}</span>
+                    {r.type && <span className="ticker-search-type">{TYPE_LABEL[r.type] ?? r.type}</span>}
+                  </div>
+                  <span className="ticker-search-name">{r.name}</span>
+                </div>
+                <span className="ticker-search-meta">{r.exchangeName || r.exchange}</span>
+              </li>
+            ))
+          ) : !isFetching ? (
+            <li role="presentation" className="ticker-search-empty">Sem resultados para “{query}”.</li>
+          ) : (
+            <li role="presentation" className="ticker-search-empty">A procurar…</li>
+          )}
         </ul>
       )}
     </div>

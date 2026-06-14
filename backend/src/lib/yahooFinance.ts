@@ -226,8 +226,76 @@ export function computeCAGRs(input: string, chart: YahooChart): CAGRReport {
 export interface SearchResult {
   symbol: string
   name: string
-  exchange: string
-  type: string   // EQUITY | ETF | INDEX | etc.
+  exchange: string          // raw Yahoo code (KSC, NMS, …) — kept for compat
+  exchangeName: string      // human label (exchDisp): "NASDAQ", "Korea", …
+  type: string              // EQUITY | ETF | INDEX | etc.
+  currency: string | null   // best-effort ISO code (EUR | USD | KRW…), null if unknown
+}
+
+// Currency by Yahoo symbol suffix (the text after the last dot). This is the
+// most reliable signal — the suffix encodes the listing exchange.
+const SUFFIX_CCY: Record<string, string> = {
+  KS: 'KRW', KQ: 'KRW',
+  HK: 'HKD',
+  L: 'GBP',
+  DE: 'EUR', F: 'EUR', BE: 'EUR', MU: 'EUR', SG: 'EUR', DU: 'EUR', HM: 'EUR', HA: 'EUR',
+  PA: 'EUR', AS: 'EUR', BR: 'EUR', MI: 'EUR', LS: 'EUR', MC: 'EUR', VI: 'EUR', IR: 'EUR',
+  HE: 'EUR', AT: 'EUR',
+  SW: 'CHF', VX: 'CHF',
+  TO: 'CAD', V: 'CAD', NE: 'CAD', CN: 'CAD',
+  T: 'JPY',
+  MX: 'MXN',
+  ST: 'SEK', OL: 'NOK', CO: 'DKK',
+  AX: 'AUD', NZ: 'NZD',
+  NS: 'INR', BO: 'INR',
+  SA: 'BRL',
+  JO: 'ZAR',
+  TA: 'ILS',
+  SS: 'CNY', SZ: 'CNY',
+  TW: 'TWD', TWO: 'TWD',
+  SI: 'SGD',
+}
+
+// Currency by Yahoo exchange code — fallback, mainly for US tickers (no suffix).
+const EXCHANGE_CCY: Record<string, string> = {
+  NMS: 'USD', NGM: 'USD', NCM: 'USD', NYQ: 'USD', PCX: 'USD', ASE: 'USD',
+  NIM: 'USD', PNK: 'USD', BTS: 'USD', NAS: 'USD',
+  KSC: 'KRW', KOE: 'KRW',
+  HKG: 'HKD',
+  LSE: 'GBP',
+  MEX: 'MXN',
+  GER: 'EUR', FRA: 'EUR', BER: 'EUR', STU: 'EUR', MUN: 'EUR', DUS: 'EUR', HAM: 'EUR',
+  EUX: 'EUR', PAR: 'EUR', AMS: 'EUR', BRU: 'EUR', MIL: 'EUR', LIS: 'EUR', MCE: 'EUR',
+  VIE: 'EUR', HEL: 'EUR', ISE: 'EUR',
+  TOR: 'CAD', VAN: 'CAD',
+  JPX: 'JPY', TYO: 'JPY',
+  SWX: 'CHF', EBS: 'CHF', VTX: 'CHF',
+  STO: 'SEK', OSL: 'NOK', CPH: 'DKK',
+  ASX: 'AUD',
+  NSI: 'INR', BSE: 'INR',
+  SAO: 'BRL',
+  JNB: 'ZAR',
+  TLV: 'ILS',
+  SHH: 'CNY', SHZ: 'CNY',
+  TAI: 'TWD',
+  SES: 'SGD',
+}
+
+/**
+ * Best-effort currency for a search result. Prefers the symbol suffix (most
+ * reliable), falls back to the exchange code, defaults unsuffixed tickers to
+ * USD (typical US listing). Returns null when we genuinely can't tell — the UI
+ * just omits the currency badge rather than showing a wrong one.
+ */
+function currencyForResult(symbol: string, exchange: string): string | null {
+  const ex = exchange.toUpperCase()
+  const dot = symbol.lastIndexOf('.')
+  if (dot >= 0) {
+    const suffix = symbol.slice(dot + 1).toUpperCase()
+    return SUFFIX_CCY[suffix] ?? EXCHANGE_CCY[ex] ?? null
+  }
+  // No suffix ⇒ almost always a US listing.
+  return EXCHANGE_CCY[ex] ?? 'USD'
 }
 
 interface SearchCache { results: SearchResult[]; expiry: number }
@@ -249,6 +317,7 @@ export async function searchTickers(query: string): Promise<SearchResult[]> {
       shortname?: string
       longname?: string
       exchange?: string
+      exchDisp?: string
       quoteType?: string
     }>
   }
@@ -257,10 +326,12 @@ export async function searchTickers(query: string): Promise<SearchResult[]> {
     .filter((q) => q.symbol && q.quoteType !== 'CURRENCY' && q.quoteType !== 'MUTUALFUND' && q.quoteType !== 'OPTION')
     .slice(0, 8)
     .map((q) => ({
-      symbol:   q.symbol!,
-      name:     q.longname ?? q.shortname ?? q.symbol!,
-      exchange: q.exchange ?? '',
-      type:     q.quoteType ?? '',
+      symbol:       q.symbol!,
+      name:         q.longname ?? q.shortname ?? q.symbol!,
+      exchange:     q.exchange ?? '',
+      exchangeName: q.exchDisp ?? q.exchange ?? '',
+      type:         q.quoteType ?? '',
+      currency:     currencyForResult(q.symbol!, q.exchange ?? ''),
     }))
 
   searchCache.set(key, { results, expiry: Date.now() + SEARCH_TTL })

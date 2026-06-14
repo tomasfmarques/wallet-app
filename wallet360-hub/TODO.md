@@ -58,8 +58,8 @@ _PWA shell done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~
 
 - [x] **F3** 🔴 PWA shell — `vite-plugin-pwa` with manifest (`name`/`short_name`/standalone/`start_url`/theme `#2563EB`/bg `#F0F4F9`), full icon set generated from `frontend/public/favicon.svg` (64/192/512 + maskable + apple-touch + favicon.ico), and a Workbox service worker (precache shell, **`/api` NetworkOnly** so financial data is never stale, Google-Fonts CacheFirst, SPA `navigateFallback` denylisting `/api`). App is installable. ✅ Verified: manifest 200, one active SW, icons 200, build emits `sw.js`/`workbox-*`.
   → `frontend/vite.config.ts`, `frontend/pwa-assets.config.ts`, `frontend/public/`, `frontend/index.html`
-- [ ] **F11** 🟡 Lazy-load the PDF parser (~367 KB ships in the initial chunk). `lazy(() => import('./pdfStatementParser'))` cuts initial bundle ~30 %.
-  → `frontend/src/components/budget/ImportStatementModal.tsx`, `frontend/src/lib/` (pdfStatementParser)
+- [x] **F11** 🟡 Lazy-load the PDF parser — **already done**: `ImportStatementModal` reaches it only via `await import('@/lib/pdfStatementParser')`, so Vite emits it as its own on-demand chunk (`pdfStatementParser-*.js`, ~367 KB) outside the initial `index` bundle. The remaining 591 KB `index` warning is unrelated (Chart.js / react-query / app code), not the parser.
+  → `frontend/src/components/budget/ImportStatementModal.tsx:112`
 - [ ] **TWA** — Bubblewrap → signed `.aab` + `.apk`; host `/.well-known/assetlinks.json` on Vercel; push to Play internal-testing track. **(Scaffolded: `assetlinks.json` placeholder + full runbook in [`PLAY-STORE.md`](PLAY-STORE.md). Manual — needs Play account €25 + Android toolchain.)**
   → new Android project + `frontend/public/.well-known/assetlinks.json`
 - [ ] **Store-gating** 🔴 Privacy policy + Data Safety declaration (financial data + bank statements), and a **public** account-deletion URL. Deletion logic already exists (`DELETE /api/me`) — just expose a web URL for it.

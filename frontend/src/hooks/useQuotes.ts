@@ -5,7 +5,9 @@ export interface TickerSearchResult {
   symbol: string
   name: string
   exchange: string
+  exchangeName: string
   type: string
+  currency: string | null
 }
 
 export function useTickerSearch(query: string) {
@@ -82,6 +84,7 @@ export interface AssetMetric {
   currentPrice: number | null
   previousClose: number | null
   currency: string | null
+  priceEur: number | null
   oneYearCAGR: number | null
   threeYearCAGR: number | null
   fiveYearCAGR: number | null

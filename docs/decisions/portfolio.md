@@ -323,3 +323,38 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 
 ---
 
+## Phase 6D — Currency-aware search + EUR-converted auto-fill
+
+### Decisions
+
+- **Search-result currency is derived, not fetched**
+  - **What**: Yahoo's `/v1/finance/search` returns no currency. `currencyForResult()`
+    in `backend/src/lib/yahooFinance.ts` infers it from the symbol suffix
+    (`SUFFIX_CCY`: `.KS`→KRW, `.SW`→CHF, `.DE`→EUR…), falling back to an
+    exchange-code map (`EXCHANGE_CCY`), then defaulting unsuffixed tickers to USD.
+  - **Why**: the alternative — a per-symbol quote lookup to read the real
+    currency — means up to 8 extra Yahoo calls per debounced keystroke, and the
+    v7 quote endpoint now needs a crumb/cookie (flaky). The suffix encodes the
+    listing venue reliably for the vast majority of results.
+  - **Caveat**: it's a hint. Ambiguous venues (Cboe Europe `CXE`, London `IOB`
+    GDRs) deliberately return `null` → the UI shows a "—" badge rather than a
+    wrong currency. Extend the maps as real gaps appear.
+
+- **Prices are FX-converted to EUR before auto-fill (`priceEur`)**
+  - **What**: `/api/quotes/cagr` now returns `priceEur` = `convertPrice(currentPrice,
+    currency, 'EUR')` (Frankfurter, in `backend/src/lib/fx.ts`). `AssetModal` uses
+    it to prefill "Investido (€)/Valor (€)".
+  - **Why**: the form fields are EUR; previously a USD/KRW spot price was filled
+    as if it were euros (≈10 % error for USD, orders of magnitude for KRW).
+
+- **EUR auto-fill has NO native-price fallback**
+  - **What**: `fillPrice = priceEur ?? (nativeCurrency === 'EUR' ? nativePrice : null)`.
+    If FX fails for a non-EUR listing, the amount fields stay empty.
+  - **Why**: an empty field the user fills in is safer than a confidently
+    wrong number labelled "auto-preenchido". Don't reintroduce `?? nativePrice`.
+  - **GBp note**: LSE prices come back as `GBp` (pence); `normalizeSubunit` in
+    `fx.ts` divides by 100 before converting, so `priceEur` is right even though
+    the search badge says "GBP".
+
+---
+

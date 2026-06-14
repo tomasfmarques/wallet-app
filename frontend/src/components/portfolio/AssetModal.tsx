@@ -38,7 +38,15 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
 
   const { data: metric } = useAssetMetric(open && ticker ? ticker : undefined)
   const cagrs = availableCAGRs(metric)
-  const knownPrice = metric?.currentPrice ?? preset?.currentPrice ?? null
+  const nativePrice = metric?.currentPrice ?? preset?.currentPrice ?? null
+  const nativeCurrency = metric?.currency ?? null
+  const priceEur = metric?.priceEur ?? null
+  // Price used to auto-fill the EUR amount fields — must be EUR-denominated.
+  // Use the FX-converted price, or the native price only when it's already EUR.
+  // If we don't have a true EUR figure (e.g. FX lookup failed for a USD/KRW
+  // listing), leave the field empty rather than fill a wrong "€" amount.
+  const fillPrice =
+    priceEur ?? (nativeCurrency?.toUpperCase() === 'EUR' ? nativePrice : null)
 
   useEffect(() => {
     if (!open) return
@@ -59,14 +67,14 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
   }, [open, asset, preset])
 
   useEffect(() => {
-    if (isEdit || !knownPrice) return
+    if (isEdit || !fillPrice) return
     const q = Number(qty)
     if (!Number.isFinite(q) || q <= 0) return
-    const calc = (q * knownPrice).toFixed(2)
+    const calc = (q * fillPrice).toFixed(2)
     setInvested((prev) => (prev === '' ? calc : prev))
     setValue((prev) => (prev === '' ? calc : prev))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qty, knownPrice])
+  }, [qty, fillPrice])
 
   const handleSearchSelect = (result: { symbol: string; name: string }) => {
     setTicker(result.symbol)
@@ -125,9 +133,12 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
                 <div className="ticker-selected-main">
                   <span className="ticker-selected-symbol">{ticker}</span>
                   <span className="ticker-selected-name">{name}</span>
-                  {knownPrice != null && (
+                  {nativePrice != null && (
                     <span className="ticker-selected-price muted">
-                      cotação: {knownPrice.toFixed(2)} {metric?.currency ?? ''}
+                      cotação: {nativePrice.toFixed(2)} {nativeCurrency ?? ''}
+                      {priceEur != null && nativeCurrency && nativeCurrency.toUpperCase() !== 'EUR' && (
+                        <> · ≈ {priceEur.toFixed(2)} €</>
+                      )}
                     </span>
                   )}
                 </div>
@@ -170,7 +181,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
             <div className="field">
               <label htmlFor="a-invested">
                 Investido (€)
-                {!isEdit && knownPrice != null && qty && (
+                {!isEdit && fillPrice != null && qty && (
                   <span className="field-hint" style={{ float: 'right' }}>auto-preenchido</span>
                 )}
               </label>
@@ -183,7 +194,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
             <div className="field">
               <label htmlFor="a-value">
                 Valor atual (€)
-                {!isEdit && knownPrice != null && qty && (
+                {!isEdit && fillPrice != null && qty && (
                   <span className="field-hint" style={{ float: 'right' }}>auto-preenchido</span>
                 )}
               </label>
