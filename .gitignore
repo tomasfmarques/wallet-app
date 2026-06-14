@@ -20,3 +20,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Generated war-room dashboard (regenerate with: npm run hub)
+wallet360-hub/hub.html

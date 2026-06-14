@@ -4,6 +4,11 @@
 > else (to-dos, gotchas, the app manual, decisions) hangs off the index below.
 > Structure/notes are in English; app screen names stay in **pt-PT** because the
 > app is Portuguese.
+>
+> 📊 **Visual dashboard:** run `npm run hub` then open
+> [`wallet360-hub/hub.html`](hub.html) — one self-contained page that renders every
+> doc here + in `docs/` with phase progress, open items, and quick links. Re-run
+> `npm run hub` to refresh after editing any `.md`.
 
 ---
 
