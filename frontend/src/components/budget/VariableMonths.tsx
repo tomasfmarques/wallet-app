@@ -6,10 +6,13 @@ import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 interface Props {
+  // Manual variable budget lines (recurring plan), source = null.
   variableIncomes: Income[]
   variableExpenses: Expense[]
-  fixedIncomeTotal: number
-  fixedExpenseTotal: number
+  // Imported actuals (source set). "Movimentos do mês" shows the real
+  // transactions for the month, so these are merged into the list.
+  actualIncomes?: Income[]
+  actualExpenses?: Expense[]
   onEditIncome: (i: Income) => void
   onEditExpense: (e: Expense) => void
   onAddIncome: (ym: string) => void
@@ -28,19 +31,23 @@ interface MerchantGroup {
 }
 
 export function VariableMonths({
-  variableIncomes, variableExpenses, fixedIncomeTotal, fixedExpenseTotal,
+  variableIncomes, variableExpenses, actualIncomes = [], actualExpenses = [],
   onEditIncome, onEditExpense, onAddIncome, onAddExpense,
 }: Props) {
   const cur = currentYm()
   const del = useBulkDeleteBudget()
   const bulkEdit = useBulkUpdateBudget()
 
+  // Every real movement = manual variable lines + imported actuals.
+  const allIncomes = useMemo(() => [...variableIncomes, ...actualIncomes], [variableIncomes, actualIncomes])
+  const allExpenses = useMemo(() => [...variableExpenses, ...actualExpenses], [variableExpenses, actualExpenses])
+
   const months = useMemo(() => {
     const set = new Set<string>([cur])
-    for (const i of variableIncomes) set.add(monthOf(i))
-    for (const e of variableExpenses) set.add(monthOf(e))
+    for (const i of allIncomes) set.add(monthOf(i))
+    for (const e of allExpenses) set.add(monthOf(e))
     return [...set].sort((a, b) => b.localeCompare(a))
-  }, [variableIncomes, variableExpenses, cur])
+  }, [allIncomes, allExpenses, cur])
 
   const [selected, setSelected] = useState(cur)
   useEffect(() => {
@@ -58,8 +65,8 @@ export function VariableMonths({
 
   useEffect(() => { if (checked.size === 0) setShowEdit(false) }, [checked.size])
 
-  const incs = variableIncomes.filter((i) => monthOf(i) === selected)
-  const exps = variableExpenses.filter((e) => monthOf(e) === selected)
+  const incs = allIncomes.filter((i) => monthOf(i) === selected)
+  const exps = allExpenses.filter((e) => monthOf(e) === selected)
 
   const groups = useMemo<MerchantGroup[]>(() => {
     const map = new Map<string, Txn[]>()
@@ -85,7 +92,7 @@ export function VariableMonths({
 
   const incTotal = sumActive(incs)
   const expTotal = sumActive(exps)
-  const saldo = fixedIncomeTotal - fixedExpenseTotal + incTotal - expTotal
+  const saldo = incTotal - expTotal   // real movements this month
 
   const idOf = (t: Txn) => `${t.kind}:${t.item.id}`
   const toggleTxn = (t: Txn) => {
@@ -165,20 +172,20 @@ export function VariableMonths({
         ))}
       </div>
 
-      {/* Saldo do mês */}
+      {/* Saldo do mês (movimentos reais) */}
       <div className="month-summary">
         <div className="month-summary-cell">
-          <span className="kpi-label">RECEITAS VAR.</span>
+          <span className="kpi-label">RECEITAS</span>
           <strong className="gain-positive">{eur2(incTotal)}</strong>
         </div>
         <div className="month-summary-cell">
-          <span className="kpi-label">DESPESAS VAR.</span>
+          <span className="kpi-label">DESPESAS</span>
           <strong className="gain-negative">{eur2(expTotal)}</strong>
         </div>
         <div className="month-summary-cell month-summary-net">
           <span className="kpi-label">SALDO DO MÊS</span>
           <strong className={saldo >= 0 ? 'gain-positive' : 'gain-negative'}>{eurSigned(saldo)}</strong>
-          <span className="muted" style={{ fontSize: 11 }}>inclui fixas recorrentes</span>
+          <span className="muted" style={{ fontSize: 11 }}>movimentos reais do mês</span>
         </div>
       </div>
 
@@ -255,7 +262,7 @@ export function VariableMonths({
 
       {/* Merchant-grouped list */}
       {groups.length === 0 ? (
-        <div className="card card-pad-lg muted">Sem movimentos variáveis neste mês. Importa um extrato ou adiciona manualmente.</div>
+        <div className="card card-pad-lg muted">Sem movimentos neste mês. Importa um extrato ou adiciona manualmente.</div>
       ) : (
         <div className="card merchant-list">
           {groups.map((g) => {

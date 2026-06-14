@@ -157,8 +157,8 @@ export function Budget() {
           <VariableMonths
             variableIncomes={variableIncomes}
             variableExpenses={variableExpenses}
-            fixedIncomeTotal={sumActive(fixedIncomes)}
-            fixedExpenseTotal={kpis.fixedTotal}
+            actualIncomes={actualIncomes}
+            actualExpenses={actualExpenses}
             onEditIncome={(i) => setIncomeModal({ open: true, type: 'variable', income: i })}
             onEditExpense={(e) => setExpenseModal({ open: true, type: 'variable', expense: e })}
             onAddIncome={(ym) => setIncomeModal({ open: true, type: 'variable', defaultStartYm: ym })}
