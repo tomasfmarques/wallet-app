@@ -44,11 +44,6 @@ export function Portfolio() {
     <div className="portfolio-page">
       <header className="page-header">
         <h1>Investimentos</h1>
-        <div className="page-header-actions">
-          <button type="button" className="btn btn-primary" onClick={() => openAdd()}>
-            + Adicionar ativo
-          </button>
-        </div>
       </header>
 
       <section>
@@ -62,7 +57,12 @@ export function Portfolio() {
       {hasAssets && <PortfolioKpis kpis={kpis} horizonYears={settings.gH} />}
 
       <section>
-        <h2 className="section-label">A MINHA CARTEIRA</h2>
+        <div className="budget-section-head">
+          <h2 className="section-label" style={{ margin: 0 }}>A MINHA CARTEIRA</h2>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => openAdd()}>
+            + Adicionar ativo
+          </button>
+        </div>
         <AssetTable assets={assets} />
       </section>
 
