@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { useQuotes, type Quote } from '@/hooks/useQuotes'
 import { eur2, pctSigned } from '@/lib/format'
 import { StockChartModal } from './StockChartModal'
@@ -13,6 +14,7 @@ interface Props {
 // "Em alta · Nasdaq" — grid of trend cards with live prices and a quick-add
 // button that opens the AssetModal with the ticker / name / price prefilled.
 export function Watchlist({ items, onAdd }: Props) {
+  const { t } = useTranslation('portfolio')
   const symbols = items.map((w) => w.symbol)
   const { data, isLoading, error } = useQuotes(symbols)
   const [charting, setCharting] = useState<{ symbol: string; name: string } | null>(null)
@@ -20,7 +22,7 @@ export function Watchlist({ items, onAdd }: Props) {
   if (items.length === 0) {
     return (
       <div className="card card-pad-lg muted">
-        Watchlist vazia. Adiciona tickers em <strong>Configurações → Watchlist</strong>.
+        <Trans i18nKey="watchlist.empty" ns="portfolio" components={{ 1: <strong /> }} />
       </div>
     )
   }
@@ -38,8 +40,8 @@ export function Watchlist({ items, onAdd }: Props) {
     return (
       <div className="card card-pad-lg muted">
         {isUnconfigured
-          ? 'Para mostrar cotações ao vivo, define FINNHUB_API_KEY no backend (.env).'
-          : `Erro a obter cotações: ${error.message}`}
+          ? t('watchlist.unconfigured')
+          : t('watchlist.error', { message: error.message })}
       </div>
     )
   }
@@ -83,6 +85,7 @@ interface CardProps {
 }
 
 function TrendCard({ symbol, name, quote, onOpenChart, onAdd }: CardProps) {
+  const { t } = useTranslation('portfolio')
   const positive = (quote?.percentChange ?? 0) >= 0
   // Coerce to boolean — quote.error is a string when present
   const unavailable = !quote || !!quote.error || !quote.current
@@ -93,7 +96,7 @@ function TrendCard({ symbol, name, quote, onOpenChart, onAdd }: CardProps) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChart() } }}
-      title="Ver evolução do preço"
+      title={t('watchlist.viewChart')}
     >
       <div className="trend-header">
         <div>
@@ -108,22 +111,23 @@ function TrendCard({ symbol, name, quote, onOpenChart, onAdd }: CardProps) {
         )}
       </div>
       <div className="trend-price">
-        {unavailable ? <span className="muted">sem dados</span> : eur2(quote!.current)}
+        {unavailable ? <span className="muted">{t('watchlist.noData')}</span> : eur2(quote!.current)}
       </div>
       <button
         type="button"
         className="btn btn-ghost btn-sm trend-add"
         onClick={(e) => { e.stopPropagation(); onAdd() }}
         disabled={unavailable}
-        aria-label={`Adicionar ${symbol} à carteira`}
+        aria-label={t('watchlist.addAria', { symbol })}
       >
-        + Adicionar
+        + {t('actions.add', { ns: 'common' })}
       </button>
     </div>
   )
 }
 
 function TrendCardSkeleton({ symbol, name }: { symbol: string; name: string }) {
+  const { t } = useTranslation('common')
   return (
     <div className="trend-card is-loading">
       <div className="trend-header">
@@ -133,7 +137,7 @@ function TrendCardSkeleton({ symbol, name }: { symbol: string; name: string }) {
         </div>
       </div>
       <div className="trend-price muted">…</div>
-      <button type="button" className="btn btn-ghost btn-sm trend-add" disabled>+ Adicionar</button>
+      <button type="button" className="btn btn-ghost btn-sm trend-add" disabled>+ {t('actions.add')}</button>
     </div>
   )
 }

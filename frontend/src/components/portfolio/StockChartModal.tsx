@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Line } from 'react-chartjs-2'
+import { useTranslation, Trans } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { Modal } from '@/components/ui/Modal'
 import { useStockHistory, type HistoryRange } from '@/hooks/useQuotes'
-import { pctSigned } from '@/lib/format'
+import { pctSigned, localeTag } from '@/lib/format'
 
 interface Props {
   open: boolean
@@ -12,13 +13,13 @@ interface Props {
   name: string
 }
 
-const RANGES: { key: HistoryRange; label: string }[] = [
-  { key: '1mo', label: '1M' },
-  { key: '6mo', label: '6M' },
-  { key: '1y', label: '1A' },
-  { key: '5y', label: '5A' },
-  { key: 'max', label: 'Máx' },
-]
+const RANGE_KEYS = [
+  { key: '1mo', labelKey: 'chart.range1m' },
+  { key: '6mo', labelKey: 'chart.range6m' },
+  { key: '1y', labelKey: 'chart.range1y' },
+  { key: '5y', labelKey: 'chart.range5y' },
+  { key: 'max', labelKey: 'chart.rangeMax' },
+] as const
 
 const GREEN = '#059669'
 const RED = '#DC2626'
@@ -26,21 +27,22 @@ const RED = '#DC2626'
 function money(v: number, currency: string | null): string {
   const cur = currency || 'EUR'
   try {
-    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: cur }).format(v)
+    return new Intl.NumberFormat(localeTag(), { style: 'currency', currency: cur }).format(v)
   } catch {
     // Yahoo sometimes returns subunit codes (GBp, ZAc) Intl rejects
-    return `${v.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`
+    return `${v.toLocaleString(localeTag(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur}`
   }
 }
 
-function labelFor(t: number, range: HistoryRange): string {
-  const d = new Date(t * 1000)
-  if (range === '1mo' || range === '6mo') return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
-  if (range === '1y') return d.toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' })
-  return d.toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' })
+function labelFor(ts: number, range: HistoryRange): string {
+  const d = new Date(ts * 1000)
+  if (range === '1mo' || range === '6mo') return d.toLocaleDateString(localeTag(), { day: '2-digit', month: 'short' })
+  if (range === '1y') return d.toLocaleDateString(localeTag(), { month: 'short', year: '2-digit' })
+  return d.toLocaleDateString(localeTag(), { month: 'short', year: 'numeric' })
 }
 
 export function StockChartModal({ open, onClose, symbol, name }: Props) {
+  const { t } = useTranslation('portfolio')
   const [range, setRange] = useState<HistoryRange>('1y')
   const { data, isLoading, isError } = useStockHistory(open ? symbol : undefined, range)
 
@@ -117,7 +119,7 @@ export function StockChartModal({ open, onClose, symbol, name }: Props) {
             <div className="stock-chart-price">{money(data!.currentPrice ?? last, data!.currency)}</div>
             <div className={`stock-chart-change ${up ? 'gain-positive' : 'gain-negative'}`}>
               {up ? '▲' : '▼'} {money(Math.abs(change), data!.currency)} ({pctSigned(changePct)})
-              <span className="muted"> · {RANGES.find((r) => r.key === range)?.label}</span>
+              <span className="muted"> · {t(RANGE_KEYS.find((r) => r.key === range)?.labelKey ?? 'chart.range1y')}</span>
             </div>
           </div>
         )}
@@ -126,15 +128,15 @@ export function StockChartModal({ open, onClose, symbol, name }: Props) {
           {isLoading && <div className="stock-chart-state"><div className="spinner" /></div>}
           {!isLoading && (isError || !hasData) && (
             <div className="stock-chart-state muted">
-              Sem dados de cotação para <strong>{symbol.toUpperCase()}</strong>.
-              {data?.resolvedSymbol === null && ' O símbolo pode não existir na Yahoo Finance.'}
+              <Trans i18nKey="chart.noData" ns="portfolio" values={{ symbol: symbol.toUpperCase() }} components={{ 1: <strong /> }} />
+              {data?.resolvedSymbol === null && t('chart.symbolMaybeMissing')}
             </div>
           )}
           {!isLoading && hasData && <Line data={chartData} options={chartOptions} />}
         </div>
 
         <div className="stock-chart-ranges" role="tablist">
-          {RANGES.map((r) => (
+          {RANGE_KEYS.map((r) => (
             <button
               key={r.key}
               type="button"
@@ -143,14 +145,14 @@ export function StockChartModal({ open, onClose, symbol, name }: Props) {
               className={`stock-range-btn ${range === r.key ? 'is-active' : ''}`}
               onClick={() => setRange(r.key)}
             >
-              {r.label}
+              {t(r.labelKey)}
             </button>
           ))}
         </div>
 
         {data?.resolvedSymbol && data.resolvedSymbol !== symbol.toUpperCase() && (
           <p className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>
-            Fonte: Yahoo Finance · {data.resolvedSymbol}
+            {t('chart.source', { symbol: data.resolvedSymbol })}
           </p>
         )}
       </div>

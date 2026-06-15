@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { eur, eurSigned, pctSigned } from '@/lib/format'
+import { useTranslation, Trans } from 'react-i18next'
+import { eur, eurSigned, pctSigned, num } from '@/lib/format'
 import {
   useDeleteAsset, useRefreshAssetValue, useRefreshAllValues,
   type AssetWithFlows,
@@ -16,6 +17,7 @@ interface Props {
 // "A minha carteira" — line-per-asset list with totals row at the top,
 // allocation bar, and per-row Reforçar / editar / remover actions.
 export function AssetTable({ assets }: Props) {
+  const { t } = useTranslation('portfolio')
   const del = useDeleteAsset()
   const refreshAll = useRefreshAllValues()
   const [editing, setEditing] = useState<PortfolioAsset | null>(null)
@@ -30,12 +32,12 @@ export function AssetTable({ assets }: Props) {
       const failed = r.results.filter((x) => !x.ok).map((x) => x.ticker)
       setRefreshMsg(
         failed.length === 0
-          ? `✓ ${r.summary.updated} ativos atualizados`
-          : `✓ ${r.summary.updated} atualizados · ${failed.length} sem cotação (${failed.join(', ')})`,
+          ? t('table.updated', { count: r.summary.updated })
+          : t('table.updatedPartial', { updated: r.summary.updated, failedCount: failed.length, failed: failed.join(', ') }),
       )
       setTimeout(() => setRefreshMsg(null), 6000)
     } catch (e) {
-      setRefreshMsg('Erro ao atualizar')
+      setRefreshMsg(t('table.updateError'))
       setTimeout(() => setRefreshMsg(null), 4000)
     }
   }
@@ -43,7 +45,7 @@ export function AssetTable({ assets }: Props) {
   if (assets.length === 0) {
     return (
       <div className="card card-pad-lg muted">
-        Sem ativos. Carrega em <strong>Adicionar ativo</strong> para começar.
+        <Trans i18nKey="table.empty" ns="portfolio" components={{ 1: <strong /> }} />
       </div>
     )
   }
@@ -58,11 +60,11 @@ export function AssetTable({ assets }: Props) {
       <div className="card asset-table">
         <div className="asset-totals">
           <div>
-            <div className="kpi-label">VALOR ATUAL</div>
+            <div className="kpi-label">{t('table.valueLabel')}</div>
             <div className="asset-totals-value">{eur(totalValue)}</div>
           </div>
           <div className={totalDelta >= 0 ? 'gain-positive' : 'gain-negative'}>
-            <div className="kpi-label">GANHO / PERDA</div>
+            <div className="kpi-label">{t('table.gainLabel')}</div>
             <div className="asset-totals-value">{eurSigned(totalDelta)}</div>
             <div className="kpi-meta">{pctSigned(totalDeltaPct)}</div>
           </div>
@@ -73,9 +75,9 @@ export function AssetTable({ assets }: Props) {
               className="btn btn-ghost btn-sm"
               onClick={handleRefreshAll}
               disabled={refreshAll.isLoading}
-              title="Atualizar todos os valores com a cotação atual (Yahoo Finance)"
+              title={t('table.refreshAllTitle')}
             >
-              {refreshAll.isLoading ? 'A atualizar…' : '↻ Atualizar valores'}
+              {refreshAll.isLoading ? t('table.refreshing') : t('table.refreshAll')}
             </button>
             {refreshMsg && (
               <span className="refresh-toast">{refreshMsg}</span>
@@ -84,7 +86,7 @@ export function AssetTable({ assets }: Props) {
         </div>
 
         {/* Allocation bar */}
-        <div className="alloc-bar" aria-label="Distribuição da carteira">
+        <div className="alloc-bar" aria-label={t('table.allocAria')}>
           {assets.map((a, i) => {
             const pct = totalValue > 0 ? (a.value / totalValue) * 100 : 0
             return (
@@ -111,14 +113,13 @@ export function AssetTable({ assets }: Props) {
               onEdit={() => setEditing(a)}
               onReforcar={() => setReforcando(a)}
               onDelete={() => {
-                if (confirm(`Remover ${a.name}?`)) del.mutate(a.id)
+                if (confirm(t('table.removeConfirm', { name: a.name }))) del.mutate(a.id)
               }}
             />
           ))}
         </ul>
         <p className="muted asset-table-footer">
-          Dica: clica numa linha para ver a <strong>evolução do preço</strong>, ou em
-          <strong> ↻ Atualizar valores</strong> para buscar a cotação atual (Yahoo Finance).
+          <Trans i18nKey="table.footer" ns="portfolio" components={{ 1: <strong />, 2: <strong /> }} />
         </p>
       </div>
 
@@ -154,6 +155,7 @@ interface RowProps {
 }
 
 function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: RowProps) {
+  const { t } = useTranslation('portfolio')
   const refresh = useRefreshAssetValue()
   const [refreshErr, setRefreshErr] = useState<string | null>(null)
   const delta = asset.value - asset.invested
@@ -164,7 +166,7 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
     try {
       await refresh.mutateAsync(asset.id)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Sem cotação'
+      const msg = e instanceof Error ? e.message : t('table.noQuote')
       setRefreshErr(msg)
       setTimeout(() => setRefreshErr(null), 4000)
     }
@@ -177,7 +179,7 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChart() } }}
-      title="Ver evolução do preço"
+      title={t('table.viewChart')}
     >
       <div className="hold-badge" style={{ background: colour }} aria-hidden>
         {asset.ticker.slice(0, 2)}
@@ -185,7 +187,7 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
       <div className="hold-main">
         <div className="hold-name">{asset.name}<span className="hold-chart-hint" aria-hidden>📈</span></div>
         <div className="hold-sub">
-          {asset.ticker} · {asset.qty.toLocaleString('pt-PT', { maximumFractionDigits: 4 })} un.
+          {asset.ticker} · {t('table.units', { qty: num(asset.qty, 4) })}
           {refreshErr && <span className="gain-negative"> · {refreshErr}</span>}
         </div>
       </div>
@@ -201,19 +203,19 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
           className="btn btn-ghost btn-sm hold-refresh"
           onClick={handleRefresh}
           disabled={refresh.isLoading}
-          title="Atualizar valor com cotação atual (Yahoo)"
-          aria-label="Atualizar"
+          title={t('table.rowRefreshTitle')}
+          aria-label={t('table.refreshAria')}
         >
           {refresh.isLoading ? '…' : '↻'}
         </button>
         <button type="button" className="btn btn-primary btn-sm" onClick={onReforcar}>
-          Reforçar
+          {t('table.reforcar')}
         </button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onEdit}>
-          Editar
+          {t('actions.edit', { ns: 'common' })}
         </button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onDelete}>
-          Remover
+          {t('actions.remove', { ns: 'common' })}
         </button>
       </div>
     </li>

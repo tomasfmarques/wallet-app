@@ -107,18 +107,17 @@ export function useAssetMetric(symbol: string | undefined) {
 
 export interface CagrWindow {
   value: number
-  label: string  // "10a", "5a", "3a", "1a"
-  longLabel: string
+  years: number  // 10 | 5 | 3 | 1 — the UI localizes the label from this
 }
 
 /** Returns every available CAGR window as buttons can offer the user. */
 export function availableCAGRs(m?: AssetMetric | null): CagrWindow[] {
   if (!m) return []
   const out: CagrWindow[] = []
-  if (m.tenYearCAGR   != null) out.push({ value: m.tenYearCAGR,   label: '10a', longLabel: '10 anos' })
-  if (m.fiveYearCAGR  != null) out.push({ value: m.fiveYearCAGR,  label: '5a',  longLabel: '5 anos' })
-  if (m.threeYearCAGR != null) out.push({ value: m.threeYearCAGR, label: '3a',  longLabel: '3 anos' })
-  if (m.oneYearCAGR   != null) out.push({ value: m.oneYearCAGR,   label: '1a',  longLabel: '1 ano' })
+  if (m.tenYearCAGR   != null) out.push({ value: m.tenYearCAGR,   years: 10 })
+  if (m.fiveYearCAGR  != null) out.push({ value: m.fiveYearCAGR,  years: 5 })
+  if (m.threeYearCAGR != null) out.push({ value: m.threeYearCAGR, years: 3 })
+  if (m.oneYearCAGR   != null) out.push({ value: m.oneYearCAGR,   years: 1 })
   return out
 }
 

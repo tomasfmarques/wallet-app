@@ -61,6 +61,14 @@ export const eur = (n: number) => eurFmt().format(n)
 export const eur2 = (n: number) => eur2Fmt().format(n)
 export const pct = (n: number) => pctFmt().format(n)
 
+/** The active Intl locale tag ('en-IE' | 'pt-PT') — for ad-hoc Intl callers. */
+export const localeTag = (): string => getLocale()
+
+/** Locale-aware plain number (e.g. share quantities). */
+export function num(n: number, maxFractionDigits = 4): string {
+  return new Intl.NumberFormat(getLocale(), { maximumFractionDigits: maxFractionDigits }).format(n)
+}
+
 export function pctSigned(n: number): string {
   const sign = n > 0 ? '+' : n < 0 ? '−' : ''
   const abs = pctFmt().format(Math.abs(n))

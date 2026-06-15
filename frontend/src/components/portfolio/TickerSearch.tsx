@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTickerSearch, type TickerSearchResult } from '@/hooks/useQuotes'
 
 interface Props {
   onSelect: (result: TickerSearchResult) => void
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  EQUITY: 'Ação',
-  ETF: 'ETF',
-  INDEX: 'Índice',
-  CRYPTOCURRENCY: 'Cripto',
-  FUTURE: 'Futuro',
+// Yahoo quoteType → translation key (literal union so the type-safe t() accepts it).
+type TypeKey =
+  | 'search.types.EQUITY' | 'search.types.ETF' | 'search.types.INDEX'
+  | 'search.types.CRYPTOCURRENCY' | 'search.types.FUTURE'
+const TYPE_KEYS: Record<string, TypeKey> = {
+  EQUITY: 'search.types.EQUITY',
+  ETF: 'search.types.ETF',
+  INDEX: 'search.types.INDEX',
+  CRYPTOCURRENCY: 'search.types.CRYPTOCURRENCY',
+  FUTURE: 'search.types.FUTURE',
 }
 
 // Debounced ticker/name search backed by Yahoo Finance. User types, a
 // dropdown appears, clicking a row calls onSelect with the chosen result.
 export function TickerSearch({ onSelect }: Props) {
+  const { t } = useTranslation('portfolio')
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -69,7 +75,7 @@ export function TickerSearch({ onSelect }: Props) {
         <input
           type="text"
           className="ticker-search-input"
-          placeholder="Pesquisar por nome ou ticker… ex: NVIDIA, IWDA, EDP"
+          placeholder={t('search.placeholder')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onFocus={() => { if (results.length > 0) setOpen(true) }}
@@ -93,14 +99,14 @@ export function TickerSearch({ onSelect }: Props) {
               >
                 <span
                   className={`ticker-ccy ${r.currency ? '' : 'is-unknown'}`}
-                  title={r.currency ? `Cotado em ${r.currency}` : 'Moeda desconhecida'}
+                  title={r.currency ? t('search.currencyTitle', { currency: r.currency }) : t('search.currencyUnknown')}
                 >
                   {r.currency ?? '—'}
                 </span>
                 <div className="ticker-search-text">
                   <div className="ticker-search-line">
                     <span className="ticker-search-symbol">{r.symbol}</span>
-                    {r.type && <span className="ticker-search-type">{TYPE_LABEL[r.type] ?? r.type}</span>}
+                    {r.type && <span className="ticker-search-type">{TYPE_KEYS[r.type] ? t(TYPE_KEYS[r.type]) : r.type}</span>}
                   </div>
                   <span className="ticker-search-name">{r.name}</span>
                 </div>
@@ -108,9 +114,9 @@ export function TickerSearch({ onSelect }: Props) {
               </li>
             ))
           ) : !isFetching ? (
-            <li role="presentation" className="ticker-search-empty">Sem resultados para “{query}”.</li>
+            <li role="presentation" className="ticker-search-empty">{t('search.noResults', { query })}</li>
           ) : (
-            <li role="presentation" className="ticker-search-empty">A procurar…</li>
+            <li role="presentation" className="ticker-search-empty">{t('search.searching')}</li>
           )}
         </ul>
       )}

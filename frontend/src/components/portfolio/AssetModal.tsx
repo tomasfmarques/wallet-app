@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import { useAddAsset, useUpdateAsset, type AssetInputBody } from '@/hooks/usePortfolio'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function AssetModal({ open, onClose, asset, preset }: Props) {
+  const { t } = useTranslation('portfolio')
   const add = useAddAsset()
   const update = useUpdateAsset()
   const isEdit = !!asset
@@ -88,18 +90,18 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
     e.preventDefault()
     setErrors({})
     const clientErrors: FieldErrors = {}
-    if (!name.trim())   clientErrors.name   = 'Obrigatório'
-    if (!ticker.trim()) clientErrors.ticker = 'Obrigatório'
+    if (!name.trim())   clientErrors.name   = t('asset.errRequired')
+    if (!ticker.trim()) clientErrors.ticker = t('asset.errRequired')
     const q = Number(qty)
-    if (!Number.isFinite(q) || q <= 0) clientErrors.qty = '> 0'
+    if (!Number.isFinite(q) || q <= 0) clientErrors.qty = t('asset.errGt0')
     const iv = Number(invested)
-    if (!Number.isFinite(iv) || iv < 0) clientErrors.invested = '≥ 0'
+    if (!Number.isFinite(iv) || iv < 0) clientErrors.invested = t('asset.errGte0')
     const v = Number(value)
-    if (!Number.isFinite(v) || v < 0) clientErrors.value = '≥ 0'
+    if (!Number.isFinite(v) || v < 0) clientErrors.value = t('asset.errGte0')
     const m = Number(monthly)
-    if (!Number.isFinite(m) || m < 0) clientErrors.monthly = '≥ 0'
+    if (!Number.isFinite(m) || m < 0) clientErrors.monthly = t('asset.errGte0')
     const r = Number(expectedReturn)
-    if (!Number.isFinite(r) || r < 0) clientErrors.expectedReturn = '%'
+    if (!Number.isFinite(r) || r < 0) clientErrors.expectedReturn = t('asset.errPct')
     if (Object.keys(clientErrors).length > 0) { setErrors(clientErrors); return }
 
     const body: AssetInputBody = {
@@ -116,7 +118,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
   const busy = add.isLoading || update.isLoading
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar ativo' : 'Adicionar ativo'} maxWidth={560}>
+    <Modal open={open} onClose={onClose} title={isEdit ? t('asset.editTitle') : t('asset.addTitle')} maxWidth={560}>
       <form onSubmit={submit} className="asset-form" noValidate>
         {errors._form && <div className="form-error">{errors._form}</div>}
 
@@ -124,9 +126,9 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
           <div className="field" style={{ marginBottom: 12 }}>
             {!ticker ? (
               <>
-                <label>Pesquisar ativo</label>
+                <label>{t('asset.searchLabel')}</label>
                 <TickerSearch onSelect={handleSearchSelect} />
-                <span className="field-hint">Pesquisa por nome ou ticker — ex: NVIDIA, IWDA, EDP</span>
+                <span className="field-hint">{t('asset.searchHint')}</span>
               </>
             ) : (
               <div className="ticker-selected">
@@ -135,9 +137,9 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
                   <span className="ticker-selected-name">{name}</span>
                   {nativePrice != null && (
                     <span className="ticker-selected-price muted">
-                      cotação: {nativePrice.toFixed(2)} {nativeCurrency ?? ''}
+                      {t('asset.quote', { price: nativePrice.toFixed(2), currency: nativeCurrency ?? '' })}
                       {priceEur != null && nativeCurrency && nativeCurrency.toUpperCase() !== 'EUR' && (
-                        <> · ≈ {priceEur.toFixed(2)} €</>
+                        <>{t('asset.quoteEur', { eur: priceEur.toFixed(2) })}</>
                       )}
                     </span>
                   )}
@@ -146,7 +148,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
                   type="button" className="btn btn-ghost btn-sm"
                   onClick={() => { setTicker(''); setName(''); setInvested(''); setValue('') }}
                 >
-                  Alterar
+                  {t('asset.change')}
                 </button>
               </div>
             )}
@@ -156,12 +158,12 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
         {isEdit && (
           <div className="field-grid" style={{ marginBottom: 0 }}>
             <div className="field">
-              <label htmlFor="a-name">Nome</label>
+              <label htmlFor="a-name">{t('asset.nameLabel')}</label>
               <input id="a-name" value={name} onChange={(e) => setName(e.target.value)} />
               {errors.name && <span className="field-error">{errors.name}</span>}
             </div>
             <div className="field">
-              <label htmlFor="a-ticker">Ticker</label>
+              <label htmlFor="a-ticker">{t('asset.tickerLabel')}</label>
               <input id="a-ticker" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
               {errors.ticker && <span className="field-error">{errors.ticker}</span>}
             </div>
@@ -171,7 +173,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
         {(isEdit || !!ticker) && (
           <div className="field-grid">
             <div className="field">
-              <label htmlFor="a-qty">Quantidade</label>
+              <label htmlFor="a-qty">{t('asset.qtyLabel')}</label>
               <input
                 id="a-qty" type="number" inputMode="decimal" step="any" min="0"
                 value={qty} onChange={(e) => setQty(e.target.value)} autoFocus={!isEdit}
@@ -180,9 +182,9 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
             </div>
             <div className="field">
               <label htmlFor="a-invested">
-                Investido (€)
+                {t('asset.investedLabel')}
                 {!isEdit && fillPrice != null && qty && (
-                  <span className="field-hint" style={{ float: 'right' }}>auto-preenchido</span>
+                  <span className="field-hint" style={{ float: 'right' }}>{t('asset.autoFilled')}</span>
                 )}
               </label>
               <input
@@ -193,9 +195,9 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
             </div>
             <div className="field">
               <label htmlFor="a-value">
-                Valor atual (€)
+                {t('asset.valueLabel')}
                 {!isEdit && fillPrice != null && qty && (
-                  <span className="field-hint" style={{ float: 'right' }}>auto-preenchido</span>
+                  <span className="field-hint" style={{ float: 'right' }}>{t('asset.autoFilled')}</span>
                 )}
               </label>
               <input
@@ -205,7 +207,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
               {errors.value && <span className="field-error">{errors.value}</span>}
             </div>
             <div className="field">
-              <label htmlFor="a-monthly">Reforço mensal (€)</label>
+              <label htmlFor="a-monthly">{t('asset.monthlyLabel')}</label>
               <input
                 id="a-monthly" type="number" inputMode="decimal" step="any" min="0"
                 value={monthly} onChange={(e) => setMonthly(e.target.value)}
@@ -213,7 +215,7 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
               {errors.monthly && <span className="field-error">{errors.monthly}</span>}
             </div>
             <div className="field">
-              <label htmlFor="a-ret">Retorno esperado anual (%)</label>
+              <label htmlFor="a-ret">{t('asset.returnLabel')}</label>
               <input
                 id="a-ret" type="number" inputMode="decimal" step="any" min="0"
                 value={expectedReturn} onChange={(e) => setExpectedReturn(e.target.value)}
@@ -222,38 +224,43 @@ export function AssetModal({ open, onClose, asset, preset }: Props) {
                 <span className="field-error">{errors.expectedReturn}</span>
               ) : cagrs.length > 0 ? (
                 <div className="cagr-hints">
-                  <span className="cagr-hints-label">CAGR histórico — clica para usar:</span>
+                  <span className="cagr-hints-label">{t('asset.cagrLabel')}</span>
                   <div className="cagr-pill-row">
-                    {cagrs.map((c) => (
-                      <button
-                        key={c.label} type="button"
-                        className={`cagr-pill ${c.value >= 0 ? 'is-positive' : 'is-negative'}`}
-                        onClick={() => setExpectedReturn(c.value.toFixed(1))}
-                        title={`${c.longLabel} (anualizado, ajustado para dividendos e splits)`}
-                      >
-                        <span className="cagr-pill-window">{c.label}</span>
-                        <strong>{pctSigned(c.value / 100)}</strong>
-                      </button>
-                    ))}
+                    {cagrs.map((c) => {
+                      const period = c.years === 1
+                        ? t('asset.cagrLongOne', { years: c.years })
+                        : t('asset.cagrLongMany', { years: c.years })
+                      return (
+                        <button
+                          key={c.years} type="button"
+                          className={`cagr-pill ${c.value >= 0 ? 'is-positive' : 'is-negative'}`}
+                          onClick={() => setExpectedReturn(c.value.toFixed(1))}
+                          title={t('asset.cagrTitle', { period })}
+                        >
+                          <span className="cagr-pill-window">{t('asset.cagrShort', { years: c.years })}</span>
+                          <strong>{pctSigned(c.value / 100)}</strong>
+                        </button>
+                      )
+                    })}
                   </div>
                   {metric?.resolvedSymbol && metric.resolvedSymbol !== metric.symbol && (
                     <span className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
-                      Fonte: Yahoo {metric.resolvedSymbol}
+                      {t('asset.source', { symbol: metric.resolvedSymbol })}
                     </span>
                   )}
                 </div>
               ) : (
-                <span className="field-hint">Sugestão: 7-10% para projeções conservadoras.</span>
+                <span className="field-hint">{t('asset.returnHint')}</span>
               )}
             </div>
           </div>
         )}
 
         <div className="form-actions">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('actions.cancel', { ns: 'common' })}</button>
           {(isEdit || !!ticker) && (
             <button type="submit" className="btn btn-primary" disabled={busy}>
-              {busy ? 'A guardar…' : (isEdit ? 'Guardar' : 'Adicionar ativo')}
+              {busy ? t('states.saving', { ns: 'common' }) : (isEdit ? t('actions.save', { ns: 'common' }) : t('asset.addTitle'))}
             </button>
           )}
         </div>

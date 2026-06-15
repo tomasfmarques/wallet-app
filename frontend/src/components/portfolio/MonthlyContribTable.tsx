@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { eur } from '@/lib/format'
 import { useUpdateAsset, type AssetWithFlows } from '@/hooks/usePortfolio'
 
@@ -9,8 +10,9 @@ interface Props {
 // "Reforço mensal por ativo" — editable list. Each row shows the asset and a
 // €/month input. Updates persist on blur.
 export function MonthlyContribTable({ assets }: Props) {
+  const { t } = useTranslation('portfolio')
   if (assets.length === 0) {
-    return <div className="card card-pad-lg muted">Adiciona ativos para configurar reforços.</div>
+    return <div className="card card-pad-lg muted">{t('monthly.empty')}</div>
   }
   const total = assets.reduce((s, a) => s + a.monthly, 0)
 
@@ -22,7 +24,7 @@ export function MonthlyContribTable({ assets }: Props) {
         ))}
       </ul>
       <div className="mp-total">
-        <span>Total mensal</span>
+        <span>{t('monthly.total')}</span>
         <strong>{eur(total)}</strong>
       </div>
     </div>
@@ -30,6 +32,7 @@ export function MonthlyContribTable({ assets }: Props) {
 }
 
 function MonthlyRow({ asset }: { asset: AssetWithFlows }) {
+  const { t } = useTranslation('portfolio')
   const update = useUpdateAsset()
   const [val, setVal] = useState(asset.monthly.toString())
 
@@ -57,7 +60,7 @@ function MonthlyRow({ asset }: { asset: AssetWithFlows }) {
           onBlur={onBlur}
           disabled={update.isLoading}
         />
-        <span className="mp-suffix">€/mês</span>
+        <span className="mp-suffix">{t('monthly.suffix')}</span>
       </div>
     </li>
   )

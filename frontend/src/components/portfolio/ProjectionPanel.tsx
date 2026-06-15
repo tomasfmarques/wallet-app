@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Line } from 'react-chartjs-2'
+import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, eurCompact } from '@/lib/format'
 import { useUpdateSettings, type PortfolioProjectionData } from '@/hooks/usePortfolio'
@@ -13,6 +14,7 @@ interface Props {
 // "Parâmetros da projeção" — three sliders that update the persisted settings
 // (debounced) and a chart showing the aggregate compound-growth curve.
 export function ProjectionPanel({ projection, settings }: Props) {
+  const { t } = useTranslation('portfolio')
   const update = useUpdateSettings()
   const [gInc, setGInc] = useState(settings.gInc)
   const [gFY, setGFY]   = useState(settings.gFY)
@@ -43,10 +45,10 @@ export function ProjectionPanel({ projection, settings }: Props) {
       }
     }
     const data: ChartData<'line'> = {
-      labels: yearly.map((p) => `+${p.year}a`),
+      labels: yearly.map((p) => t('projection.yearAxis', { year: p.year })),
       datasets: [
         {
-          label: 'Valor projetado',
+          label: t('projection.chartLabel'),
           data: yearly.map((p) => p.value),
           borderColor: '#2563EB',
           backgroundColor: '#2563EB22',
@@ -77,16 +79,16 @@ export function ProjectionPanel({ projection, settings }: Props) {
       },
     }
     return { chartData: data, chartOptions: opts }
-  }, [projection, settings.gH])
+  }, [projection, settings.gH, t])
 
   return (
     <div className="proj-panel">
       <div className="card card-pad-lg sim-controls">
-        <h3 className="section-label" style={{ marginTop: 0 }}>PARÂMETROS</h3>
+        <h3 className="section-label" style={{ marginTop: 0 }}>{t('projection.paramsLabel')}</h3>
 
         <div className="slider-row">
           <label>
-            <span>Aumento anual dos reforços</span>
+            <span>{t('projection.increaseLabel')}</span>
             <strong>{gInc} %</strong>
           </label>
           <input type="range" min={0} max={15} step={1} value={gInc}
@@ -96,7 +98,7 @@ export function ProjectionPanel({ projection, settings }: Props) {
 
         <div className="slider-row">
           <label>
-            <span>Anos sem aumento</span>
+            <span>{t('projection.yearsNoIncrease')}</span>
             <strong>{gFY}</strong>
           </label>
           <input type="range" min={0} max={10} step={1} value={gFY}
@@ -106,8 +108,8 @@ export function ProjectionPanel({ projection, settings }: Props) {
 
         <div className="slider-row">
           <label>
-            <span>Horizonte</span>
-            <strong>{gH} anos</strong>
+            <span>{t('projection.horizon')}</span>
+            <strong>{t('projection.horizonValue', { years: gH })}</strong>
           </label>
           <input type="range" min={5} max={40} step={1} value={gH}
             onChange={(e) => setGH(Number(e.target.value))} />
@@ -117,24 +119,24 @@ export function ProjectionPanel({ projection, settings }: Props) {
 
       <div className="kpi-grid">
         <div className="kpi">
-          <div className="kpi-label">VALOR FINAL</div>
+          <div className="kpi-label">{t('projection.finalLabel')}</div>
           <div className="kpi-value">{eurCompact(projection.finalTotal)}</div>
-          <div className="kpi-meta">após {settings.gH} anos</div>
+          <div className="kpi-meta">{t('projection.finalMeta', { years: settings.gH })}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">TOTAL REFORÇADO</div>
+          <div className="kpi-label">{t('projection.contributedLabel')}</div>
           <div className="kpi-value">{eurCompact(projection.totalContributed)}</div>
-          <div className="kpi-meta">contribuições acumuladas</div>
+          <div className="kpi-meta">{t('projection.contributedMeta')}</div>
         </div>
         <div className="kpi kpi-accent-green">
-          <div className="kpi-label">RETORNO PROJETADO</div>
+          <div className="kpi-label">{t('projection.returnLabel')}</div>
           <div className="kpi-value">{eurCompact(projection.totalReturn)}</div>
-          <div className="kpi-meta">ganhos compostos</div>
+          <div className="kpi-meta">{t('projection.returnMeta')}</div>
         </div>
       </div>
 
       <div className="card card-pad-lg">
-        <h3 className="section-label" style={{ marginTop: 0 }}>EVOLUÇÃO DA CARTEIRA</h3>
+        <h3 className="section-label" style={{ marginTop: 0 }}>{t('projection.evolutionLabel')}</h3>
         <div className="chart-wrap" style={{ height: 280 }}>
           <Line data={chartData} options={chartOptions} />
         </div>

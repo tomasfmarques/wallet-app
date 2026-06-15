@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { PortfolioKpis } from '@/components/portfolio/PortfolioKpis'
 import { AssetTable } from '@/components/portfolio/AssetTable'
@@ -10,6 +11,7 @@ import { StateBlock } from '@/components/ui/StateBlock'
 import { resolveWatchlist } from '@/hooks/useQuotes'
 
 export function Portfolio() {
+  const { t } = useTranslation('portfolio')
   const { data, isLoading, error, refetch } = usePortfolio()
   const [addOpen, setAddOpen] = useState(false)
   const [preset, setPreset] = useState<AssetPreset | undefined>(undefined)
@@ -30,8 +32,8 @@ export function Portfolio() {
   if (error) {
     return (
       <div className="page-stub">
-        <h1>Investimentos</h1>
-        <StateBlock variant="error" message="Não foi possível carregar a tua carteira." onRetry={() => refetch()} />
+        <h1>{t('title')}</h1>
+        <StateBlock variant="error" message={t('loadError')} onRetry={() => refetch()} />
       </div>
     )
   }
@@ -43,11 +45,11 @@ export function Portfolio() {
   return (
     <div className="portfolio-page">
       <header className="page-header">
-        <h1>Investimentos</h1>
+        <h1>{t('title')}</h1>
       </header>
 
       <section>
-        <h2 className="section-label">EM ALTA · NASDAQ</h2>
+        <h2 className="section-label">{t('trendingLabel')}</h2>
         <Watchlist
           items={resolveWatchlist((settings as { watchlistSymbols?: string | null }).watchlistSymbols ?? null)}
           onAdd={openAdd}
@@ -58,9 +60,9 @@ export function Portfolio() {
 
       <section>
         <div className="budget-section-head">
-          <h2 className="section-label" style={{ margin: 0 }}>A MINHA CARTEIRA</h2>
+          <h2 className="section-label" style={{ margin: 0 }}>{t('myPortfolioLabel')}</h2>
           <button type="button" className="btn btn-primary btn-sm" onClick={() => openAdd()}>
-            + Adicionar ativo
+            + {t('asset.addTitle')}
           </button>
         </div>
         <AssetTable assets={assets} />
@@ -68,14 +70,14 @@ export function Portfolio() {
 
       {hasAssets && (
         <section>
-          <h2 className="section-label">REFORÇO MENSAL POR ATIVO</h2>
+          <h2 className="section-label">{t('monthlyContribLabel')}</h2>
           <MonthlyContribTable assets={assets} />
         </section>
       )}
 
       {hasAssets && (
         <section>
-          <h2 className="section-label">PROJEÇÃO</h2>
+          <h2 className="section-label">{t('projectionSection')}</h2>
           <ProjectionPanel projection={projection} settings={settings} />
         </section>
       )}

@@ -15,11 +15,13 @@ import ptNav from './locales/pt/nav.json'
 import ptAuth from './locales/pt/auth.json'
 import ptSettings from './locales/pt/settings.json'
 import ptOverview from './locales/pt/overview.json'
+import ptPortfolio from './locales/pt/portfolio.json'
 import enCommon from './locales/en/common.json'
 import enNav from './locales/en/nav.json'
 import enAuth from './locales/en/auth.json'
 import enSettings from './locales/en/settings.json'
 import enOverview from './locales/en/overview.json'
+import enPortfolio from './locales/en/portfolio.json'
 
 export const SUPPORTED_LANGUAGES = ['pt', 'en'] as const
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number]
@@ -29,11 +31,11 @@ export const LANGUAGE_LABELS: Record<AppLanguage, string> = {
   en: 'English',
 }
 
-export const NAMESPACES = ['common', 'nav', 'auth', 'settings', 'overview'] as const
+export const NAMESPACES = ['common', 'nav', 'auth', 'settings', 'overview', 'portfolio'] as const
 
 export const resources = {
-  pt: { common: ptCommon, nav: ptNav, auth: ptAuth, settings: ptSettings, overview: ptOverview },
-  en: { common: enCommon, nav: enNav, auth: enAuth, settings: enSettings, overview: enOverview },
+  pt: { common: ptCommon, nav: ptNav, auth: ptAuth, settings: ptSettings, overview: ptOverview, portfolio: ptPortfolio },
+  en: { common: enCommon, nav: enNav, auth: enAuth, settings: enSettings, overview: enOverview, portfolio: enPortfolio },
 } as const
 
 /** Narrow any i18next language string to a supported app language. */
