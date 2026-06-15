@@ -45,7 +45,12 @@ npm run db:studio    # Prisma Studio
 2. **Prod uses `db push`, not migrate** — destructive on column rename. Take a Neon snapshot first.
 3. **`merchant.ts` parity.** `frontend/src/lib/merchant.ts` normalization must match the backend normalizer, or learned classification rules break.
 4. **Backend is CommonJS**, not ESM.
-5. **Portuguese (pt-PT) for all UI strings**; English for code/comments.
+5. **Bilingual UI via i18n (pt + en)**; English for code/comments. All
+   user-facing strings go through `react-i18next` — never hardcode UI text. Add
+   keys to BOTH `frontend/src/i18n/locales/pt/<ns>.json` and `…/en/<ns>.json`
+   (keep them in parity); use `useTranslation('<ns>')` + `t('key')`, `<Trans>`
+   for embedded markup. Portuguese (pt-PT) is the fallback language. See
+   [`docs/decisions/i18n.md`](docs/decisions/i18n.md).
 6. Before committing, update [`docs/STATE.md`](docs/STATE.md) (run `/handoff`) and log any non-obvious decision (run `/caveat`).
 
 ## How this workspace is set up (so you stay lean & avoid hand-offs)
@@ -54,7 +59,7 @@ npm run db:studio    # Prisma Studio
 - **Subagents** in `.claude/agents/` do focused work in their OWN context window — delegate to them instead of bloating the main chat:
   - `code-reviewer` — review a diff before commit.
   - `db-prisma` — schema/migration changes (handles the two-schema trap).
-  - `frontend` — React/Vite/TS UI work in pt-PT.
+  - `frontend` — React/Vite/TS UI work (bilingual pt+en via i18n).
 - **Slash commands** in `.claude/commands/`:
   - `/catchup` — load current state at the start of a session.
   - `/handoff` — update `docs/STATE.md` before ending a session.

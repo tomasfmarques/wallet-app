@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { API_URL } from '@/lib/api'
 
 export function ExportSection() {
+  const { t } = useTranslation('settings')
   const { user } = useAuth()
   const hasPassword = user?.hasPassword ?? true
 
@@ -13,7 +15,7 @@ export function ExportSection() {
 
   const download = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (hasPassword && !password) { setFieldErr('Introduz a tua password para exportar'); return }
+    if (hasPassword && !password) { setFieldErr(t('export.errPassword')); return }
     setBusy(true)
     setErr(null)
     setFieldErr(null)
@@ -27,7 +29,7 @@ export function ExportSection() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        const msg = data?.errors?.currentPassword ?? data?.error ?? `Erro ${res.status}`
+        const msg = data?.errors?.currentPassword ?? data?.error ?? t('export.errStatus', { status: res.status })
         if (data?.errors?.currentPassword) { setFieldErr(msg) } else { setErr(msg) }
         return
       }
@@ -47,7 +49,7 @@ export function ExportSection() {
       URL.revokeObjectURL(url)
       setPassword('')
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Falha no download')
+      setErr(e instanceof Error ? e.message : t('export.errDownload'))
     } finally {
       setBusy(false)
     }
@@ -56,19 +58,17 @@ export function ExportSection() {
   return (
     <div className="card card-pad-lg">
       <p className="muted modal-intro">
-        Exporta tudo o que está guardado para um ficheiro JSON: dados do empréstimo,
-        pagamentos, amortizações, carteira, reforços e definições. Útil como backup
-        ou para inspecionares os teus dados.
+        {t('export.intro')}
       </p>
       <form onSubmit={download} noValidate>
         {hasPassword && (
           <div className="field" style={{ marginBottom: 12 }}>
-            <label htmlFor="export-pw">Confirma a tua password</label>
+            <label htmlFor="export-pw">{t('export.passwordLabel')}</label>
             <input
               id="export-pw"
               type="password"
               autoComplete="current-password"
-              placeholder="Password atual"
+              placeholder={t('export.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={!!fieldErr}
@@ -79,13 +79,12 @@ export function ExportSection() {
         {err && <div className="form-error">{err}</div>}
         <div className="account-actions">
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'A preparar…' : 'Descarregar backup (JSON)'}
+            {busy ? t('export.preparing') : t('export.submit')}
           </button>
         </div>
       </form>
       <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>
-        O ficheiro <strong>não</strong> contém a tua password. Mantém-no em segurança
-        — inclui detalhes financeiros pessoais.
+        <Trans i18nKey="export.footer" ns="settings" components={{ 1: <strong /> }} />
       </p>
     </div>
   )

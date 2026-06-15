@@ -410,6 +410,22 @@ router.put('/settings', async (req, res) => {
 
   const watchlistSymbols = normalizeWatchlist(req.body?.watchlistSymbols)
 
+  // Validate language: accept 'pt' | 'en'; silently skip anything else.
+  // undefined = caller didn't send → don't touch the stored value.
+  // null = explicit clear.
+  const VALID_LANGUAGES = ['pt', 'en'] as const
+  type Language = typeof VALID_LANGUAGES[number]
+  let language: Language | null | undefined = undefined
+  if (req.body?.language !== undefined) {
+    const raw = req.body.language
+    if (raw === null) {
+      language = null
+    } else if (VALID_LANGUAGES.includes(raw as Language)) {
+      language = raw as Language
+    }
+    // invalid string → leave language as undefined (skip, don't error)
+  }
+
   try {
     const settings = await prisma.portfolioSettings.upsert({
       where: { userId: req.session.userId! },
@@ -419,12 +435,14 @@ router.put('/settings', async (req, res) => {
         gFY:  gFY  ?? 2,
         gH:   gH   ?? 20,
         watchlistSymbols: watchlistSymbols ?? null,
+        language: language ?? null,
       },
       update: {
         ...(gInc !== undefined ? { gInc: Math.round(gInc) } : {}),
         ...(gFY  !== undefined ? { gFY:  Math.round(gFY)  } : {}),
         ...(gH   !== undefined ? { gH:   Math.round(gH)   } : {}),
         ...(watchlistSymbols !== undefined ? { watchlistSymbols } : {}),
+        ...(language !== undefined ? { language } : {}),
       },
     })
     res.json({ settings })

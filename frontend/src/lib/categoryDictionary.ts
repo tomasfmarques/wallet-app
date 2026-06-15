@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 // ── Category inference dictionary ────────────────────────────────
 // Maps Portuguese keywords (common service names, brands, household terms)
 // to a curated category. Used by the budget modals to auto-suggest a
@@ -35,6 +37,15 @@ export const EXPENSE_CATEGORIES = [
   'Transferências',
   'Outros',
 ] as const
+
+// Categories are STORED in the DB as their canonical Portuguese string
+// (e.g. "Habitação"). For display we translate via the `common:categories.*`
+// keys, keyed by that canonical string. The stored value never changes — only
+// the label shown to the user. Falls back to the canonical string if no
+// translation exists (e.g. a custom category).
+export function categoryLabel(canonical: string): string {
+  return i18n.t(`categories.${canonical}`, { ns: 'common', defaultValue: canonical })
+}
 
 const DICTIONARY: Record<string, string> = {
   // ── Income ──────────────────────────────────────────────

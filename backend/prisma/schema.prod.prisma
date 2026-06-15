@@ -230,6 +230,8 @@ model PortfolioSettings {
   gFY    Int    @default(2)
   gH     Int    @default(20)
   watchlistSymbols String? @map("watchlist_symbols")
+  // UI language preference: 'pt' | 'en'. Null = follow browser/device locale.
+  language         String? @map("language")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

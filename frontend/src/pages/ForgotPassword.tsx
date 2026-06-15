@@ -1,8 +1,10 @@
 import { FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '@/lib/api'
 
 export function ForgotPassword() {
+  const { t } = useTranslation('auth')
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -10,14 +12,14 @@ export function ForgotPassword() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) { setError('Introduz o teu email'); return }
+    if (!email.trim()) { setError(t('forgot.errEmailRequired')); return }
     setLoading(true)
     setError(null)
     try {
       await api.post('/api/auth/forgot-password', { email: email.trim() })
       setSent(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro inesperado')
+      setError(err instanceof ApiError ? err.message : t('forgot.errUnexpected'))
     } finally {
       setLoading(false)
     }
@@ -31,31 +33,31 @@ export function ForgotPassword() {
           <span className="brand-text">Wallet<span className="brand-360">360</span></span>
         </div>
 
-        <h1 className="auth-title">Recuperar password</h1>
+        <h1 className="auth-title">{t('forgot.title')}</h1>
 
         {sent ? (
           <>
             <div className="form-success" role="status">
-              Email enviado! Se esse endereço estiver associado a uma conta, receberás um link de recuperação em breve. Verifica também a pasta de spam.
+              {t('forgot.sent')}
             </div>
             <p className="auth-footer">
-              <Link to="/signin">← Voltar ao login</Link>
+              <Link to="/signin">{t('forgot.backToLogin')}</Link>
             </p>
           </>
         ) : (
           <>
             <p className="auth-subtitle">
-              Introduz o teu email e enviaremos um link para definires uma nova password.
+              {t('forgot.subtitle')}
             </p>
             {error && <div className="form-error" role="alert">{error}</div>}
             <form onSubmit={handleSubmit} noValidate>
               <div className="field">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="email">{t('forgot.emailLabel')}</label>
                 <input
                   id="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="o.teu@email.com"
+                  placeholder={t('forgot.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   aria-invalid={!!error}
@@ -66,11 +68,11 @@ export function ForgotPassword() {
                 className="btn btn-primary btn-block"
                 disabled={loading}
               >
-                {loading ? 'A enviar…' : 'Enviar link de recuperação'}
+                {loading ? t('forgot.submitting') : t('forgot.submit')}
               </button>
             </form>
             <p className="auth-footer">
-              Lembras-te da password? <Link to="/signin">Entrar</Link>
+              {t('forgot.remember')} <Link to="/signin">{t('forgot.signInLink')}</Link>
             </p>
           </>
         )}

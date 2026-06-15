@@ -72,6 +72,7 @@ export interface PortfolioSettings {
   gFY: number   // years without increase
   gH: number    // horizon in years
   watchlistSymbols: string | null  // comma-separated tickers; null = use default
+  language: string | null          // 'pt' | 'en'; null = follow device/browser
 }
 
 export interface Income {

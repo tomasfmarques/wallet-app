@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   useAuth, useUpdateProfile, useChangePassword, useLogout,
   fieldErrorsFrom, type FieldErrors,
@@ -6,6 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 export function AccountSection() {
+  const { t } = useTranslation('settings')
   const { user } = useAuth()
   const updateProfile = useUpdateProfile()
   const changePassword = useChangePassword()
@@ -22,7 +24,7 @@ export function AccountSection() {
     setNameErrors({})
     setNameSaved(false)
     if (name.trim().length < 2) {
-      setNameErrors({ name: 'Mínimo 2 caracteres' })
+      setNameErrors({ name: t('account.errNameShort') })
       return
     }
     try {
@@ -46,9 +48,9 @@ export function AccountSection() {
     setPwErrors({})
     setPwSaved(false)
     const errs: FieldErrors = {}
-    if (!currentPassword) errs.currentPassword = 'Obrigatório'
-    if (newPassword.length < 8) errs.newPassword = 'Mínimo 8 caracteres'
-    if (newPassword !== confirmPassword) errs.confirmPassword = 'Não coincidem'
+    if (!currentPassword) errs.currentPassword = t('account.errRequired')
+    if (newPassword.length < 8) errs.newPassword = t('account.errPasswordShort')
+    if (newPassword !== confirmPassword) errs.confirmPassword = t('account.errMismatch')
     if (Object.keys(errs).length > 0) { setPwErrors(errs); return }
     try {
       await changePassword.mutateAsync({ currentPassword, newPassword })
@@ -74,7 +76,7 @@ export function AccountSection() {
       <form onSubmit={saveProfile} className="account-form">
         <div className="field-grid">
           <div className="field">
-            <label htmlFor="acc-name">Nome</label>
+            <label htmlFor="acc-name">{t('account.nameLabel')}</label>
             <input
               id="acc-name" type="text"
               value={name}
@@ -84,18 +86,18 @@ export function AccountSection() {
             {nameErrors.name && <span className="field-error">{nameErrors.name}</span>}
           </div>
           <div className="field">
-            <label htmlFor="acc-email">Email</label>
+            <label htmlFor="acc-email">{t('account.emailLabel')}</label>
             <input
               id="acc-email" type="email" readOnly disabled
               value={user?.email ?? ''}
             />
-            <span className="field-hint">Para alterar o email, contacta-nos.</span>
+            <span className="field-hint">{t('account.emailHint')}</span>
           </div>
         </div>
         <div className="account-actions">
-          {nameSaved && <span className="save-confirm">✓ Guardado</span>}
+          {nameSaved && <span className="save-confirm">{t('account.saved')}</span>}
           <button type="submit" className="btn btn-primary" disabled={updateProfile.isLoading}>
-            {updateProfile.isLoading ? 'A guardar…' : 'Guardar nome'}
+            {updateProfile.isLoading ? t('account.saving') : t('account.saveName')}
           </button>
         </div>
       </form>
@@ -103,11 +105,11 @@ export function AccountSection() {
       <hr className="divider" />
 
       <form onSubmit={savePassword} className="account-form" noValidate>
-        <h3 className="settings-subhead">Mudar password</h3>
+        <h3 className="settings-subhead">{t('account.changePassword')}</h3>
         {pwErrors._form && <div className="form-error">{pwErrors._form}</div>}
         <div className="field-grid">
           <div className="field">
-            <label htmlFor="pw-current">Password atual</label>
+            <label htmlFor="pw-current">{t('account.currentPassword')}</label>
             <input
               id="pw-current" type="password" autoComplete="current-password"
               value={currentPassword}
@@ -117,7 +119,7 @@ export function AccountSection() {
             {pwErrors.currentPassword && <span className="field-error">{pwErrors.currentPassword}</span>}
           </div>
           <div className="field">
-            <label htmlFor="pw-new">Nova password</label>
+            <label htmlFor="pw-new">{t('account.newPassword')}</label>
             <input
               id="pw-new" type="password" autoComplete="new-password"
               value={newPassword}
@@ -127,11 +129,11 @@ export function AccountSection() {
             {pwErrors.newPassword ? (
               <span className="field-error">{pwErrors.newPassword}</span>
             ) : (
-              <span className="field-hint">Mínimo 8 caracteres.</span>
+              <span className="field-hint">{t('account.passwordHint')}</span>
             )}
           </div>
           <div className="field">
-            <label htmlFor="pw-confirm">Confirmar nova password</label>
+            <label htmlFor="pw-confirm">{t('account.confirmNewPassword')}</label>
             <input
               id="pw-confirm" type="password" autoComplete="new-password"
               value={confirmPassword}
@@ -142,9 +144,9 @@ export function AccountSection() {
           </div>
         </div>
         <div className="account-actions">
-          {pwSaved && <span className="save-confirm">✓ Password atualizada</span>}
+          {pwSaved && <span className="save-confirm">{t('account.passwordSaved')}</span>}
           <button type="submit" className="btn btn-primary" disabled={changePassword.isLoading}>
-            {changePassword.isLoading ? 'A atualizar…' : 'Mudar password'}
+            {changePassword.isLoading ? t('account.updating') : t('account.changePassword')}
           </button>
         </div>
       </form>
@@ -153,8 +155,8 @@ export function AccountSection() {
 
       <div className="signout-row">
         <div>
-          <h3 className="settings-subhead" style={{ margin: 0 }}>Terminar sessão</h3>
-          <p className="muted">Tens de iniciar sessão de novo para voltar a aceder.</p>
+          <h3 className="settings-subhead" style={{ margin: 0 }}>{t('account.signOutHead')}</h3>
+          <p className="muted">{t('account.signOutDesc')}</p>
         </div>
         <button
           type="button"
@@ -162,7 +164,7 @@ export function AccountSection() {
           onClick={handleSignOut}
           disabled={logout.isLoading}
         >
-          {logout.isLoading ? 'A terminar…' : 'Terminar sessão'}
+          {logout.isLoading ? t('account.signingOut') : t('account.signOutHead')}
         </button>
       </div>
     </div>

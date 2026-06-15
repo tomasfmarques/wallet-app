@@ -242,6 +242,8 @@ model PortfolioSettings {
   // Comma-separated list of watchlist tickers, e.g. "NVDA,AAPL,MSFT".
   // Null/empty = use the app default. Length is enforced by the route.
   watchlistSymbols String? @map("watchlist_symbols")
+  // UI language preference: 'pt' | 'en'. Null = follow browser/device locale.
+  language         String? @map("language")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

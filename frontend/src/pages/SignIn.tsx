@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth, useLogin, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 
@@ -8,6 +9,7 @@ interface LocationState {
 }
 
 export function SignIn() {
+  const { t } = useTranslation('auth')
   const { isAuthenticated, isLoading } = useAuth()
   const login = useLogin()
   const navigate = useNavigate()
@@ -30,8 +32,8 @@ export function SignIn() {
 
     // Cheap client-side validation
     const clientErrors: FieldErrors = {}
-    if (!email.trim()) clientErrors.email = 'Email obrigatório'
-    if (!password) clientErrors.password = 'Password obrigatória'
+    if (!email.trim()) clientErrors.email = t('signIn.errEmailRequired')
+    if (!password) clientErrors.password = t('signIn.errPasswordRequired')
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors)
       return
@@ -53,8 +55,8 @@ export function SignIn() {
           <span className="brand-text">Wallet<span className="brand-360">360</span></span>
         </div>
 
-        <h1 className="auth-title">Entrar</h1>
-        <p className="auth-subtitle">Acede ao teu tracker financeiro.</p>
+        <h1 className="auth-title">{t('signIn.title')}</h1>
+        <p className="auth-subtitle">{t('signIn.subtitle')}</p>
 
         {errors._form && (
           <div className="form-error" role="alert">{errors._form}</div>
@@ -65,7 +67,7 @@ export function SignIn() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('signIn.emailLabel')}</label>
             <input
               id="email"
               type="email"
@@ -81,7 +83,7 @@ export function SignIn() {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('signIn.passwordLabel')}</label>
             <input
               id="password"
               type="password"
@@ -94,7 +96,7 @@ export function SignIn() {
             {errors.password && (
               <span id="password-error" className="field-error">{errors.password}</span>
             )}
-            <Link to="/forgot-password" className="field-forgot">Esqueceste a password?</Link>
+            <Link to="/forgot-password" className="field-forgot">{t('signIn.forgot')}</Link>
           </div>
 
           <label className="field-remember">
@@ -103,7 +105,7 @@ export function SignIn() {
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
-            <span>Lembrar-me neste dispositivo</span>
+            <span>{t('signIn.remember')}</span>
           </label>
 
           <button
@@ -111,12 +113,12 @@ export function SignIn() {
             className="btn btn-primary btn-block"
             disabled={login.isLoading}
           >
-            {login.isLoading ? 'A entrar…' : 'Entrar'}
+            {login.isLoading ? t('signIn.submitting') : t('signIn.submit')}
           </button>
         </form>
 
         <p className="auth-footer">
-          Ainda não tens conta? <Link to="/signup">Criar conta</Link>
+          {t('signIn.noAccount')} <Link to="/signup">{t('signIn.createAccount')}</Link>
         </p>
       </div>
     </div>
@@ -126,11 +128,12 @@ export function SignIn() {
 // Rendered between the Google button and the email/password form, only when
 // the Google button is actually visible (controlled via VITE_GOOGLE_CLIENT_ID).
 function AuthDivider() {
+  const { t } = useTranslation('auth')
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   if (!clientId) return null
   return (
     <div className="auth-divider" aria-hidden>
-      <span>ou com email</span>
+      <span>{t('divider')}</span>
     </div>
   )
 }

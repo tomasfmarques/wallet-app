@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { useMutation, useQueryClient } from 'react-query'
+import { useTranslation, Trans } from 'react-i18next'
 import { api, ApiError } from '@/lib/api'
 import { useLoan, LOAN_KEY } from '@/hooks/useLoan'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
@@ -18,6 +19,7 @@ function usePostEuribor() {
 }
 
 export function EuriborSection() {
+  const { t } = useTranslation('settings')
   const { data, isLoading } = useLoan()
   const post = usePostEuribor()
 
@@ -27,14 +29,13 @@ export function EuriborSection() {
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null)
 
   if (isLoading) {
-    return <div className="card card-pad-lg muted">A carregar…</div>
+    return <div className="card card-pad-lg muted">{t('states.loading', { ns: 'common' })}</div>
   }
   const loans = data?.loans ?? []
   if (loans.length === 0) {
     return (
       <div className="card card-pad-lg muted">
-        Configura primeiro um crédito (separador <strong>Crédito</strong>)
-        para poderes editar o histórico da Euribor.
+        <Trans i18nKey="euribor.noLoan" ns="settings" components={{ 1: <strong /> }} />
       </div>
     )
   }
@@ -47,9 +48,9 @@ export function EuriborSection() {
     e.preventDefault()
     setErrors({})
     const errs: FieldErrors = {}
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(ym)) errs.ym = 'Formato AAAA-MM'
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(ym)) errs.ym = t('euribor.errYm')
     const v = Number(valorPct)
-    if (!Number.isFinite(v) || v < 0) errs.valor = '≥ 0'
+    if (!Number.isFinite(v) || v < 0) errs.valor = t('euribor.errValue')
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     try {
@@ -65,31 +66,35 @@ export function EuriborSection() {
     <div className="card card-pad-lg">
       {loans.length > 1 && (
         <div className="field" style={{ marginBottom: 12 }}>
-          <label htmlFor="eur-loan">Crédito</label>
+          <label htmlFor="eur-loan">{t('euribor.loanLabel')}</label>
           <select id="eur-loan" value={loan.id} onChange={(e) => setSelectedLoanId(e.target.value)}>
             {loans.map((l) => <option key={l.loan.id} value={l.loan.id}>{l.loan.name}</option>)}
           </select>
         </div>
       )}
       <p className="muted modal-intro">
-        A Euribor atual de <strong>{loan.name}</strong> é <strong>{pct(loan.euribor)}</strong>.
-        Adicionar uma nova entrada também atualiza este valor.
+        <Trans
+          i18nKey="euribor.intro"
+          ns="settings"
+          values={{ name: loan.name, value: pct(loan.euribor) }}
+          components={{ 1: <strong />, 2: <strong /> }}
+        />
       </p>
 
       <form onSubmit={submit} className="account-form" noValidate>
         {errors._form && <div className="form-error">{errors._form}</div>}
         <div className="field-grid">
           <div className="field">
-            <label htmlFor="eur-ym">Mês</label>
+            <label htmlFor="eur-ym">{t('euribor.monthLabel')}</label>
             <input
-              id="eur-ym" type="text" placeholder="AAAA-MM"
+              id="eur-ym" type="text" placeholder={t('euribor.monthPlaceholder')}
               value={ym} onChange={(e) => setYm(e.target.value)}
               aria-invalid={!!errors.ym}
             />
             {errors.ym && <span className="field-error">{errors.ym}</span>}
           </div>
           <div className="field">
-            <label htmlFor="eur-valor">Valor (%)</label>
+            <label htmlFor="eur-valor">{t('euribor.valueLabel')}</label>
             <input
               id="eur-valor" type="number" inputMode="decimal" step="any" min="0"
               value={valorPct} onChange={(e) => setValorPct(e.target.value)}
@@ -100,16 +105,16 @@ export function EuriborSection() {
         </div>
         <div className="account-actions">
           <button type="submit" className="btn btn-primary" disabled={post.isLoading}>
-            {post.isLoading ? 'A guardar…' : 'Adicionar entrada'}
+            {post.isLoading ? t('states.saving', { ns: 'common' }) : t('euribor.addEntry')}
           </button>
         </div>
       </form>
 
       <hr className="divider" />
 
-      <h3 className="settings-subhead">Histórico ({history.length})</h3>
+      <h3 className="settings-subhead">{t('euribor.historyHead', { count: history.length })}</h3>
       {history.length === 0 ? (
-        <p className="muted">Ainda sem entradas.</p>
+        <p className="muted">{t('euribor.noEntries')}</p>
       ) : (
         <ul className="euribor-list">
           {history.map((h) => (

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
+import { useTranslation } from 'react-i18next'
 
 import { AuthProvider } from '@/hooks/useAuth'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -25,38 +26,48 @@ const queryClient = new QueryClient({
   },
 })
 
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public auth routes */}
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
+      <Route
+        element={
+          <AuthGuard>
+            <Layout />
+          </AuthGuard>
+        }
+      >
+        <Route path="/overview" element={<Overview />} />
+        <Route path="/loan" element={<Loan />} />
+        <Route path="/investments" element={<Portfolio />} />
+        <Route path="/budget" element={<Budget />} />
+        <Route path="/comparar" element={<Compare />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+
+      {/* Defaults */}
+      <Route path="/" element={<Navigate to="/overview" replace />} />
+      <Route path="*" element={<Navigate to="/overview" replace />} />
+    </Routes>
+  )
+}
+
 function App() {
+  const { i18n } = useTranslation()
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public auth routes */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-
-            {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
-            <Route
-              element={
-                <AuthGuard>
-                  <Layout />
-                </AuthGuard>
-              }
-            >
-              <Route path="/overview" element={<Overview />} />
-              <Route path="/loan" element={<Loan />} />
-              <Route path="/investments" element={<Portfolio />} />
-              <Route path="/budget" element={<Budget />} />
-              <Route path="/comparar" element={<Compare />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-
-            {/* Defaults */}
-            <Route path="/" element={<Navigate to="/overview" replace />} />
-            <Route path="*" element={<Navigate to="/overview" replace />} />
-          </Routes>
+          {/* Remount the routed tree when the language flips so number/date
+              formats and any non-`t` subtree refresh instantly. Providers above
+              stay mounted (router history, query cache, auth all persist). */}
+          <AppRoutes key={i18n.language} />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

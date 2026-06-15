@@ -1,9 +1,11 @@
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth, useSignup, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 
 export function SignUp() {
+  const { t } = useTranslation('auth')
   const { isAuthenticated, isLoading } = useAuth()
   const signup = useSignup()
   const navigate = useNavigate()
@@ -23,10 +25,10 @@ export function SignUp() {
     setErrors({})
 
     const clientErrors: FieldErrors = {}
-    if (name.trim().length < 2) clientErrors.name = 'Nome demasiado curto'
-    if (!email.trim()) clientErrors.email = 'Email obrigatório'
-    if (password.length < 8) clientErrors.password = 'Mínimo 8 caracteres'
-    if (password !== confirm) clientErrors.confirm = 'As passwords não coincidem'
+    if (name.trim().length < 2) clientErrors.name = t('signUp.errNameShort')
+    if (!email.trim()) clientErrors.email = t('signUp.errEmailRequired')
+    if (password.length < 8) clientErrors.password = t('signUp.errPasswordShort')
+    if (password !== confirm) clientErrors.confirm = t('signUp.errPasswordMismatch')
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors)
       return
@@ -52,8 +54,8 @@ export function SignUp() {
           <span className="brand-text">Wallet<span className="brand-360">360</span></span>
         </div>
 
-        <h1 className="auth-title">Criar conta</h1>
-        <p className="auth-subtitle">Começa a fazer tracking em segundos.</p>
+        <h1 className="auth-title">{t('signUp.title')}</h1>
+        <p className="auth-subtitle">{t('signUp.subtitle')}</p>
 
         {errors._form && (
           <div className="form-error" role="alert">{errors._form}</div>
@@ -64,7 +66,7 @@ export function SignUp() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <label htmlFor="name">Nome</label>
+            <label htmlFor="name">{t('signUp.nameLabel')}</label>
             <input
               id="name"
               type="text"
@@ -80,7 +82,7 @@ export function SignUp() {
           </div>
 
           <div className="field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('signUp.emailLabel')}</label>
             <input
               id="email"
               type="email"
@@ -96,7 +98,7 @@ export function SignUp() {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('signUp.passwordLabel')}</label>
             <input
               id="password"
               type="password"
@@ -109,12 +111,12 @@ export function SignUp() {
             {errors.password ? (
               <span id="password-error" className="field-error">{errors.password}</span>
             ) : (
-              <span id="password-hint" className="field-hint">Mínimo 8 caracteres.</span>
+              <span id="password-hint" className="field-hint">{t('signUp.passwordHint')}</span>
             )}
           </div>
 
           <div className="field">
-            <label htmlFor="confirm">Confirmar password</label>
+            <label htmlFor="confirm">{t('signUp.confirmLabel')}</label>
             <input
               id="confirm"
               type="password"
@@ -134,12 +136,12 @@ export function SignUp() {
             className="btn btn-primary btn-block"
             disabled={signup.isLoading}
           >
-            {signup.isLoading ? 'A criar conta…' : 'Criar conta'}
+            {signup.isLoading ? t('signUp.submitting') : t('signUp.submit')}
           </button>
         </form>
 
         <p className="auth-footer">
-          Já tens conta? <Link to="/signin">Entrar</Link>
+          {t('signUp.haveAccount')} <Link to="/signin">{t('signUp.signInLink')}</Link>
         </p>
       </div>
     </div>
@@ -147,11 +149,12 @@ export function SignUp() {
 }
 
 function AuthDivider() {
+  const { t } = useTranslation('auth')
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   if (!clientId) return null
   return (
     <div className="auth-divider" aria-hidden>
-      <span>ou com email</span>
+      <span>{t('divider')}</span>
     </div>
   )
 }

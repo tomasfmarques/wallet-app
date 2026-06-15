@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 // Fixed bottom navigation for mobile (≤768px). Hidden on desktop where the
 // top navbar's nav-links take over. Four tabs: Início | Gestão | Saldo | Definições.
@@ -18,12 +19,14 @@ const COMMON = {
   strokeLinejoin: 'round' as const,
 }
 
-// Sub-items shown in the Gestão popup
+// Sub-items shown in the Gestão popup. Labels/descriptions are translation
+// keys (resolved at render via the `nav` namespace). `as const` keeps the keys
+// as literal types so the type-safe `t()` accepts them.
 const GESTAO_ITEMS = [
   {
     to: '/loan',
-    label: 'Crédito',
-    description: 'Créditos e amortizações',
+    labelKey: 'items.loan',
+    descKey: 'manage.loanDesc',
     icon: (
       <svg {...COMMON}>
         <path d="M3 21h18" />
@@ -34,8 +37,8 @@ const GESTAO_ITEMS = [
   },
   {
     to: '/investments',
-    label: 'Investimentos',
-    description: 'Carteira e projeções',
+    labelKey: 'items.investments',
+    descKey: 'manage.investmentsDesc',
     icon: (
       <svg {...COMMON}>
         <path d="M3 18l5-6 4 4 8-10" />
@@ -45,8 +48,8 @@ const GESTAO_ITEMS = [
   },
   {
     to: '/comparar',
-    label: 'Amortizar ou Investir?',
-    description: 'Simulador de decisão',
+    labelKey: 'items.compare',
+    descKey: 'manage.compareDesc',
     icon: (
       <svg {...COMMON}>
         <line x1="12" y1="3" x2="12" y2="21" />
@@ -56,7 +59,7 @@ const GESTAO_ITEMS = [
       </svg>
     ),
   },
-]
+] as const
 
 const GESTAO_ROUTES = new Set(['/loan', '/investments', '/comparar'])
 
@@ -96,6 +99,7 @@ function NavTab({ to, label, icon, isActive, onClick, end }: NavTabProps) {
 }
 
 export function BottomNav() {
+  const { t } = useTranslation('nav')
   const location = useLocation()
   const navigate = useNavigate()
   const [gestaoOpen, setGestaoOpen] = useState(false)
@@ -126,8 +130,8 @@ export function BottomNav() {
       )}
       <div ref={panelRef}>
         {gestaoOpen && (
-          <div className="gestao-panel" role="menu" aria-label="Gestão financeira">
-            <div className="gestao-panel-title">Gestão</div>
+          <div className="gestao-panel" role="menu" aria-label={t('bottom.panelAria')}>
+            <div className="gestao-panel-title">{t('bottom.panelTitle')}</div>
             {GESTAO_ITEMS.map((item) => (
               <button
                 key={item.to}
@@ -138,19 +142,19 @@ export function BottomNav() {
               >
                 <span className="gestao-panel-icon" aria-hidden>{item.icon}</span>
                 <span className="gestao-panel-text">
-                  <span className="gestao-panel-label">{item.label}</span>
-                  <span className="gestao-panel-desc">{item.description}</span>
+                  <span className="gestao-panel-label">{t(item.labelKey)}</span>
+                  <span className="gestao-panel-desc">{t(item.descKey)}</span>
                 </span>
               </button>
             ))}
           </div>
         )}
 
-        <nav className="bottom-nav" aria-label="Navegação inferior">
+        <nav className="bottom-nav" aria-label={t('bottom.navAria')}>
           {/* Início */}
           <NavTab
             to="/overview"
-            label="Início"
+            label={t('bottom.home')}
             end
             icon={
               <svg {...COMMON}>
@@ -162,7 +166,7 @@ export function BottomNav() {
 
           {/* Gestão — triggers popup */}
           <NavTab
-            label="Gestão"
+            label={t('bottom.manage')}
             isActive={isGestaoActive || gestaoOpen}
             onClick={() => setGestaoOpen((o) => !o)}
             icon={
@@ -178,7 +182,7 @@ export function BottomNav() {
           {/* Saldo */}
           <NavTab
             to="/budget"
-            label="Saldo"
+            label={t('bottom.budget')}
             icon={
               <svg {...COMMON}>
                 <rect x="3" y="6" width="18" height="14" rx="2" />
@@ -191,7 +195,7 @@ export function BottomNav() {
           {/* Definições */}
           <NavTab
             to="/settings"
-            label="Definições"
+            label={t('bottom.settings')}
             icon={
               <svg {...COMMON}>
                 <circle cx="12" cy="12" r="3" />

@@ -1,9 +1,11 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 
 export function ResetPassword() {
+  const { t } = useTranslation('auth')
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
   const navigate = useNavigate()
@@ -18,9 +20,9 @@ export function ResetPassword() {
     return (
       <div className="auth-screen">
         <div className="auth-card">
-          <h1 className="auth-title">Link inválido</h1>
-          <p className="auth-subtitle">Este link de recuperação é inválido ou expirou.</p>
-          <p className="auth-footer"><Link to="/forgot-password">Pedir novo link</Link></p>
+          <h1 className="auth-title">{t('reset.invalidTitle')}</h1>
+          <p className="auth-subtitle">{t('reset.invalidSubtitle')}</p>
+          <p className="auth-footer"><Link to="/forgot-password">{t('reset.requestNew')}</Link></p>
         </div>
       </div>
     )
@@ -30,8 +32,8 @@ export function ResetPassword() {
     e.preventDefault()
     setErrors({})
     const clientErrors: FieldErrors = {}
-    if (newPassword.length < 8) clientErrors.newPassword = 'A password deve ter pelo menos 8 caracteres'
-    if (newPassword !== confirm) clientErrors.confirm = 'As passwords não coincidem'
+    if (newPassword.length < 8) clientErrors.newPassword = t('reset.errPasswordShort')
+    if (newPassword !== confirm) clientErrors.confirm = t('reset.errPasswordMismatch')
     if (Object.keys(clientErrors).length > 0) { setErrors(clientErrors); return }
 
     setLoading(true)
@@ -54,11 +56,11 @@ export function ResetPassword() {
             <span className="brand-emoji" aria-hidden>💸</span>
             <span className="brand-text">Wallet<span className="brand-360">360</span></span>
           </div>
-          <h1 className="auth-title">Password atualizada!</h1>
+          <h1 className="auth-title">{t('reset.doneTitle')}</h1>
           <div className="form-success" role="status">
-            A tua password foi alterada com sucesso. Vais ser redirecionado para o login em instantes…
+            {t('reset.doneMessage')}
           </div>
-          <p className="auth-footer"><Link to="/signin">Entrar agora</Link></p>
+          <p className="auth-footer"><Link to="/signin">{t('reset.signInNow')}</Link></p>
         </div>
       </div>
     )
@@ -72,19 +74,19 @@ export function ResetPassword() {
           <span className="brand-text">Wallet<span className="brand-360">360</span></span>
         </div>
 
-        <h1 className="auth-title">Nova password</h1>
-        <p className="auth-subtitle">Escolhe uma nova password para a tua conta.</p>
+        <h1 className="auth-title">{t('reset.title')}</h1>
+        <p className="auth-subtitle">{t('reset.subtitle')}</p>
 
         {errors._form && <div className="form-error" role="alert">{errors._form}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="field">
-            <label htmlFor="new-password">Nova password</label>
+            <label htmlFor="new-password">{t('reset.newLabel')}</label>
             <input
               id="new-password"
               type="password"
               autoComplete="new-password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('reset.newPlaceholder')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               aria-invalid={!!errors.newPassword}
@@ -92,12 +94,12 @@ export function ResetPassword() {
             {errors.newPassword && <span className="field-error">{errors.newPassword}</span>}
           </div>
           <div className="field">
-            <label htmlFor="confirm-password">Confirmar password</label>
+            <label htmlFor="confirm-password">{t('reset.confirmLabel')}</label>
             <input
               id="confirm-password"
               type="password"
               autoComplete="new-password"
-              placeholder="Repete a password"
+              placeholder={t('reset.confirmPlaceholder')}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               aria-invalid={!!errors.confirm}
@@ -109,7 +111,7 @@ export function ResetPassword() {
             className="btn btn-primary btn-block"
             disabled={loading}
           >
-            {loading ? 'A guardar…' : 'Definir nova password'}
+            {loading ? t('reset.submitting') : t('reset.submit')}
           </button>
         </form>
       </div>

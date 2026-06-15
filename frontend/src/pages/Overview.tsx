@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
@@ -14,6 +15,7 @@ import { ymToShort } from '@/lib/format'
 // → module summary cards. No section labels — everything flows as a single
 // modern dashboard. Click a module card to drill into its page.
 export function Overview() {
+  const { t } = useTranslation('overview')
   const { user } = useAuth()
   const loan = useLoan()
   const portfolio = usePortfolio()
@@ -69,8 +71,8 @@ export function Overview() {
     <div className="overview-page overview-modern">
       <header className="page-header overview-header">
         <div>
-          <h1>Olá, {user?.name?.split(' ')[0] ?? user?.name}</h1>
-          <p className="muted">O teu dinheiro num só sítio.</p>
+          <h1>{t('greeting', { name: user?.name?.split(' ')[0] ?? user?.name ?? '' })}</h1>
+          <p className="muted">{t('subtitle')}</p>
         </div>
       </header>
 
@@ -82,7 +84,7 @@ export function Overview() {
       )}
 
       {loading ? (
-        <div className="card card-pad-lg muted">A carregar…</div>
+        <div className="card card-pad-lg muted">{t('states.loading', { ns: 'common' })}</div>
       ) : (
         <>
           <OnboardingChecklist hasLoan={hasLoan} hasInvestment={hasInvestment} hasBudget={hasBudget} />

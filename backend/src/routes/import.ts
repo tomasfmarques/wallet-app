@@ -87,6 +87,7 @@ function transformPrototypeToV1(p: Record<string, unknown>): Record<string, unkn
         gFY: isNum(proto.gFY)  ? proto.gFY  : 2,
         gH:  isNum(proto.gH)   ? proto.gH   : 20,
         watchlistSymbols: null, // prototype didn't have this concept
+        language: null,         // prototype didn't have this concept
       },
     }
   }
@@ -241,6 +242,7 @@ router.post('/', async (req, res) => {
 
         if (isObj(portfolio.settings)) {
           const s = portfolio.settings as Record<string, unknown>
+          const VALID_IMPORT_LANGUAGES = ['pt', 'en']
           await tx.portfolioSettings.create({
             data: {
               userId,
@@ -248,6 +250,7 @@ router.post('/', async (req, res) => {
               gFY:  isNum(s.gFY)  ? Math.round(s.gFY)  : 2,
               gH:   isNum(s.gH)   ? Math.round(s.gH)   : 20,
               watchlistSymbols: isStr(s.watchlistSymbols) ? s.watchlistSymbols : null,
+              language: isStr(s.language) && VALID_IMPORT_LANGUAGES.includes(s.language) ? s.language : null,
             },
           })
         }

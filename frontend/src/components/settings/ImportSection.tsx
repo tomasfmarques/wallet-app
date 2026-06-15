@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from 'react-query'
+import { useTranslation, Trans } from 'react-i18next'
 import { api, ApiError } from '@/lib/api'
 
 interface ImportResult {
@@ -93,6 +94,7 @@ function summarize(json: Record<string, unknown>, format: Format): Preview['summ
 }
 
 export function ImportSection() {
+  const { t } = useTranslation('settings')
   const fileInput = useRef<HTMLInputElement>(null)
   const importMut = useImport()
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -114,7 +116,7 @@ export function ImportSection() {
       const json = JSON.parse(text) as Record<string, unknown>
       const format = detectFormat(json)
       if (!format) {
-        setErr('Ficheiro inválido — não parece ser um backup WALLET nem um export do protótipo.')
+        setErr(t('import.invalidFile'))
         return
       }
       setPreview({
@@ -125,7 +127,7 @@ export function ImportSection() {
         summary: summarize(json, format),
       })
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro a ler o ficheiro')
+      setErr(e instanceof Error ? e.message : t('import.readError'))
     }
   }
 
@@ -137,26 +139,27 @@ export function ImportSection() {
       setDone(result.summary)
       reset()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Falha no import')
+      setErr(e instanceof Error ? e.message : t('import.importFailed'))
     }
   }
 
   return (
     <div className="card card-pad-lg">
       <p className="muted modal-intro">
-        Restaura um backup JSON anterior. Tudo o que está atualmente guardado
-        (empréstimo, carteira, configurações) <strong>vai ser substituído</strong>
-        pelos dados do ficheiro. A conta (email, password) não é tocada.
-        Aceita tanto exports WALLET v1 como o JSON do protótipo Claude Design.
+        <Trans i18nKey="import.intro" ns="settings" components={{ 1: <strong /> }} />
       </p>
 
       {err && <div className="form-error">{err}</div>}
       {done && (
         <div className="form-success">
-          ✓ Importado com sucesso ({done.importedFrom === 'prototype' ? 'protótipo' : 'WALLET v1'}):
-          empréstimo {done.loan ? 'sim' : 'não'}, {done.assets} ativo(s),
-          {' '}{done.incomes} receita(s), {done.expenses} despesa(s),
-          configurações {done.settingsRestored ? 'restauradas' : '—'}.
+          {t('import.success', {
+            source: done.importedFrom === 'prototype' ? t('import.sourcePrototype') : t('import.sourceV1'),
+            loan: done.loan ? t('import.loanYes') : t('import.loanNo'),
+            assets: done.assets,
+            incomes: done.incomes,
+            expenses: done.expenses,
+            settings: done.settingsRestored ? t('import.settingsRestored') : t('import.settingsDash'),
+          })}
         </div>
       )}
 
@@ -170,34 +173,34 @@ export function ImportSection() {
 
       {preview && (
         <div className="import-preview">
-          <h3 className="settings-subhead">Pré-visualização</h3>
+          <h3 className="settings-subhead">{t('import.previewHead')}</h3>
           <ul>
-            <li>Ficheiro: <strong>{preview.name}</strong> ({preview.sizeKb} KB)</li>
-            <li>Formato: <strong>{preview.format === 'prototype' ? 'Protótipo (Claude Design)' : 'WALLET v1'}</strong></li>
-            <li>Empréstimo: {preview.summary.hasLoan ? 'presente' : 'ausente'}</li>
-            <li>Pagamentos: {preview.summary.payments}</li>
-            <li>Amortizações: {preview.summary.amortizations}</li>
-            <li>Ativos: {preview.summary.assets}</li>
-            <li>Receitas: {preview.summary.incomes}</li>
-            <li>Despesas: {preview.summary.expenses}</li>
+            <li>{t('import.fileLabel')} <strong>{preview.name}</strong> ({preview.sizeKb} KB)</li>
+            <li>{t('import.formatLabel')} <strong>{preview.format === 'prototype' ? t('import.formatPrototype') : t('import.formatV1')}</strong></li>
+            <li>{t('import.loanLabel')} {preview.summary.hasLoan ? t('import.loanPresent') : t('import.loanAbsent')}</li>
+            <li>{t('import.payments')} {preview.summary.payments}</li>
+            <li>{t('import.amortizations')} {preview.summary.amortizations}</li>
+            <li>{t('import.assets')} {preview.summary.assets}</li>
+            <li>{t('import.incomes')} {preview.summary.incomes}</li>
+            <li>{t('import.expenses')} {preview.summary.expenses}</li>
           </ul>
           <label className="checkbox" style={{ marginTop: 12 }}>
             <input
               type="checkbox" checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
             />
-            <span>Confirmo que quero substituir todos os meus dados atuais.</span>
+            <span>{t('import.confirmReplace')}</span>
           </label>
           <div className="account-actions" style={{ marginTop: 12 }}>
             <button type="button" className="btn btn-ghost" onClick={reset}>
-              Cancelar
+              {t('actions.cancel', { ns: 'common' })}
             </button>
             <button
               type="button" className="btn btn-primary"
               onClick={runImport}
               disabled={!confirmed || importMut.isLoading}
             >
-              {importMut.isLoading ? 'A importar…' : 'Importar e substituir'}
+              {importMut.isLoading ? t('import.importing') : t('import.importBtn')}
             </button>
           </div>
         </div>

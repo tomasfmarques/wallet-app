@@ -3,7 +3,7 @@
 _The single source of truth for "where things stand." Replaces manual hand-offs.
 Read at the start of a session with `/catchup`; update at the end with `/handoff`._
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-15
 
 > **Secrets policy:** never put real values (DB password, `SESSION_SECRET`, API keys)
 > in this file or anywhere in the repo — it's public. Secrets live ONLY in Vercel →
@@ -25,9 +25,10 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
   - **Empty/error states (FX3):** reusable `StateBlock` with "Tentar novamente"; no blank charts.
   - **Statement import encoding fix:** decode UTF-8 → fall back to Windows-1252 (PT banks) so accents survive; + a Saldo banner + `POST /api/budget/cleanup-encoding` to purge old mojibake rows so they can be re-imported.
   - **Hardening:** numeric input bounds, CSV/formula-injection sanitisation, Sentry-ready error handler + request ids (inert until `SENTRY_DSN` set).
-- **Investments — currency-aware "Adicionar ativo" (this session, uncommitted):** the ticker-search dropdown now shows a **currency badge** (EUR/USD/KRW…), a type chip, and a readable exchange name, with larger rows + loading/empty states. Crucially, **prices are now FX-converted to EUR** before auto-fill: `/api/quotes/cagr` returns a new `priceEur` field (via `convertPrice()` + Frankfurter), so "Investido (€)/Valor (€)" are correct for non-EUR listings instead of treating a USD/KRW price as euros. Resolves the old "FX conversion for ticker prices" thread + next-step #2.
+- **Investments — currency-aware "Adicionar ativo" (shipped `8c62cef`, on `main`):** ticker-search dropdown shows a **currency badge** (EUR/USD/KRW…), type chip, readable exchange name, larger rows + loading/empty states. **Prices FX-converted to EUR** before auto-fill: `/api/quotes/cagr` returns `priceEur` (via `convertPrice()` + Frankfurter) so "Investido/Valor (€)" are correct for non-EUR listings.
+- **i18n EN+PT — Phase 1 (branch `feat/i18n-en-pt`, NOT deployed):** full English support alongside Portuguese via `react-i18next`. Language **picker** in Settings → Idioma; **auto-detect** browser lang (fallback pt); **localStorage + DB** persistence (`PortfolioSettings.language`); **locale-aware** formatting (en-IE `€1,234.56` vs pt-PT `1.234,56 €`, EUR always). Converted so far: **nav, auth pages, all of Settings, Overview** (Portfolio/Budget/Loan/Compare still pt-only — see next steps). Build+types+key-parity green; verified live (sign-in flips en↔pt). **Owner TODO:** prod `db push` for the new nullable `language` column (Neon snapshot first). Decisions: [`docs/decisions/i18n.md`](docs/decisions/i18n.md).
 - **Schema sync:** `vercel-build` runs `db:push:prod` on every deploy. **Prisma migrations are now tracked in git** (were gitignored — fixed in Phase 0 so a fresh clone can build the DB; this also resolved the old "Crédito 500").
-- **Branch:** `main` — all work committed/pushed; old `docs/public-launch-plan-and-hub` and `fix/...` branches merged & deleted. **Pushing to `main` = prod deploy** (Vercel). `gh` CLI is installed locally but **not authenticated** (interactive login needed); deploys work via plain `git push` either way.
+- **Branch:** working on **`feat/i18n-en-pt`** (i18n Phase 1, not yet merged/deployed). `main` holds everything through `8c62cef`. **Pushing to `main` = prod deploy** (Vercel). `gh` CLI is installed locally but **not authenticated** (interactive login needed); deploys work via plain `git push` either way.
 - **War room dashboard:** `npm run hub` → open `wallet360-hub/hub.html` (self-contained HTML rendering every project `.md` + phase progress; gitignored artifact).
 - **Auth:** email/password + Google Sign In **both active**.
 - **Env vars set in Vercel:** `DATABASE_URL`, `SESSION_SECRET`, `APP_ORIGIN`, `GOOGLE_CLIENT_ID`, `VITE_GOOGLE_CLIENT_ID`. Empty/optional: `FINNHUB_API_KEY`, `GOCARDLESS_SECRET_ID`, `GOCARDLESS_SECRET_KEY`, `ALLOWED_ORIGINS`. **Not set yet:** `SENTRY_DSN` (monitoring stays inert until added).
@@ -41,10 +42,13 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 4. **Play Store**: PWA is ready — generate an APK via PWABuilder (`https://wallet360.pt` → Android) or Bubblewrap (see `wallet360-hub/PLAY-STORE.md`); needs Play account (€25) + asset-links fingerprint.
 5. **Pre-public legal layer** — privacy policy + Play data-safety + account-deletion URL (MARKET-FEEDBACK #6). Required before opening to others.
 
+6. **i18n prod `db push`** — when merging `feat/i18n-en-pt`: take a Neon snapshot, then push the new nullable `PortfolioSettings.language` column to prod (additive). Dev migration `add_settings_language` already applied.
+
 **Product / engineering (next build candidates):**
-6. **Plan ↔ actual matching** — the salary/mortgage/utility appears as both a plan row and an imported actual with mismatched names ("Salário" vs "ORDENADO ACME"); link them via learned-merchant rules so it reads as one row (planned vs real) instead of looking like a duplicate. Highest-value polish from the duplication analysis.
-7. **Activate GoCardless** — still BLOCKED externally (signups disabled at bankaccountdata.gocardless.com). When reopened: create secret `wallet360-production`, add `GOCARDLESS_SECRET_ID/KEY` to Vercel, redeploy. Code built (`backend/src/routes/bank.ts`).
-8. **Deeper wedge** — use the portfolio *projection* (not a flat return) + a recurring-amount mode in the compare engine.
+0. **Finish i18n (Phases 3–5)** — convert remaining modules to `t()` + fill their `pt`/`en` namespaces: **Portfolio** (9 cmps), **Budget** (11 cmps; exercises `categoryLabel` + plurals), **Loan + Compare**. Done so far on `feat/i18n-en-pt`: infra + nav/auth/settings (Phase 1) + Overview (Phase 2). Follow the proven pattern (`useTranslation('<ns>')`, `<Trans>` for markup, keep pt/en parity — 287 keys so far).
+7. **Plan ↔ actual matching** — the salary/mortgage/utility appears as both a plan row and an imported actual with mismatched names ("Salário" vs "ORDENADO ACME"); link them via learned-merchant rules so it reads as one row (planned vs real) instead of looking like a duplicate. Highest-value polish from the duplication analysis.
+8. **Activate GoCardless** — still BLOCKED externally (signups disabled at bankaccountdata.gocardless.com). When reopened: create secret `wallet360-production`, add `GOCARDLESS_SECRET_ID/KEY` to Vercel, redeploy. Code built (`backend/src/routes/bank.ts`).
+9. **Deeper wedge** — use the portfolio *projection* (not a flat return) + a recurring-amount mode in the compare engine.
 
 ## Open threads / deferred
 
@@ -70,11 +74,15 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 - **GBp (pence) vs GBP.** LSE listings show a "GBP" badge but Yahoo reports prices in `GBp` (pence). `normalizeSubunit` in `fx.ts` divides by 100 before converting, so `priceEur` is correct — don't "fix" this by treating `GBp` as pounds in the conversion.
 - **Merchant normalization** in `frontend/src/lib/merchant.ts` must match the backend normalizer or learned classification rules break.
 - **Backend is CommonJS**, not ESM.
+- **i18n: never hardcode UI strings** — all user-facing text goes through `react-i18next`. Add keys to BOTH `frontend/src/i18n/locales/pt/<ns>.json` AND `…/en/<ns>.json` (keep them in **parity** — there's a key-diff check + dev `missingKeyHandler`). Type-safe keys mean dynamic `t(variable)` needs the variable typed as a literal union (`as const` / explicit union), not `string`.
+- **i18n categories: translate the LABEL, not the stored value.** `Income.category`/`Expense.category` persist the **canonical pt** string (`Habitação`); `categoryLabel()` maps it to the display label. An expense saved in English mode must still store `Habitação`, not `Housing`. The parsing `DICTIONARY` stays pt.
+- **i18n `language` column needs a prod push** before the i18n branch goes live (nullable, additive; Neon snapshot first). Two-schema rule applied (both schemas + export/import).
 - Manual Neon schema push (from `backend/`): `DATABASE_URL="…" npx prisma db push --schema prisma/schema.prod.prisma`.
 
 ## Recent work (newest first)
 
-- **(uncommitted)** portfolio — EUR-convert ticker prices (`priceEur` via `convertPrice` in `/api/quotes/cagr`) so auto-fill is correct for non-EUR listings + currency-aware search dropdown (currency badge, type chip, readable exchange name, larger rows, loading/empty states). Docs: closed false-alarm F11 (PDF parser already lazy-loaded).
+- **(branch `feat/i18n-en-pt`, uncommitted)** i18n Phase 1 — `react-i18next` infra (config, type-safe keys, detector), locale-aware `format.ts` (en-IE/pt-PT, EUR always), `categoryLabel` helper, `PortfolioSettings.language` column + route + export/import, language picker in Settings, App remount-on-change; converted nav + auth pages + all of Settings to `t()`. Build/types/key-parity green; verified live.
+- `8c62cef` portfolio — EUR-convert ticker prices (`priceEur` via `convertPrice`) + currency-aware search dropdown; closed stale F11. **(now on `main`, deployed)**
 - `7e050cb` portfolio — move "Adicionar ativo" button into the "A minha carteira" section header (below watchlist + summary cards).
 - `82357ac` budget — "Movimentos do mês" shows the month's real movements (actuals + manual); fixed the FX1 regression where imported transactions vanished from that list.
 - `bc5c199` War Room HTML dashboard generator (`wallet360-hub/build-hub.mjs`, `npm run hub`).

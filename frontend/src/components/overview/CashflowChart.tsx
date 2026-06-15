@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Bar } from 'react-chartjs-2'
+import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
 import { StateBlock } from '@/components/ui/StateBlock'
@@ -39,6 +40,7 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 // Bars show income up (green) and expenses down (red + amber); a blue line
 // tracks the resulting net saldo.
 export function CashflowChart({ incomes, expenses }: Props) {
+  const { t } = useTranslation('overview')
   const [mode, setMode] = useState<Mode>('month')
   const isEmpty = incomes.length === 0 && expenses.length === 0
 
@@ -80,20 +82,20 @@ export function CashflowChart({ incomes, expenses }: Props) {
       labels,
       datasets: [
         {
-          type: 'bar', label: 'Receitas', data: incSer,
+          type: 'bar', label: t('cashflow.incomes'), data: incSer,
           backgroundColor: '#059669CC', borderRadius: 6, stack: 'inc', order: 2,
         },
         {
-          type: 'bar', label: 'Despesas fixas', data: fixSer.map((v) => -v),
+          type: 'bar', label: t('cashflow.fixedExpenses'), data: fixSer.map((v) => -v),
           backgroundColor: '#DC2626CC', borderRadius: 6, stack: 'exp', order: 2,
         },
         {
-          type: 'bar', label: 'Despesas variáveis', data: varSer.map((v) => -v),
+          type: 'bar', label: t('cashflow.variableExpenses'), data: varSer.map((v) => -v),
           backgroundColor: '#F97316CC', borderRadius: 6, stack: 'exp', order: 2,
         },
         {
           type: 'line' as unknown as 'bar',
-          label: 'Saldo',
+          label: t('cashflow.balance'),
           data: netSer,
           borderColor: '#2563EB',
           backgroundColor: '#2563EB',
@@ -130,7 +132,7 @@ export function CashflowChart({ incomes, expenses }: Props) {
       net: netSer.reduce((s, v) => s + v, 0),
     }
     return { data: chartData, options: opts, summary: totals }
-  }, [incomes, expenses, mode])
+  }, [incomes, expenses, mode, t])
 
   // No budget data yet → a friendly prompt instead of an empty axes-only chart.
   if (isEmpty) {
@@ -138,7 +140,7 @@ export function CashflowChart({ incomes, expenses }: Props) {
       <StateBlock
         variant="empty"
         icon="📊"
-        message="Sem dados de orçamento ainda — importa um extrato ou adiciona receitas para veres o teu fluxo mensal."
+        message={t('cashflow.empty')}
       />
     )
   }
@@ -147,9 +149,9 @@ export function CashflowChart({ incomes, expenses }: Props) {
     <div className="card card-pad-lg cashflow-card">
       <div className="cashflow-head">
         <div>
-          <h2 className="cashflow-title">Cashflow</h2>
+          <h2 className="cashflow-title">{t('cashflow.title')}</h2>
           <div className="muted cashflow-sub">
-            Total {mode === 'month' ? 'últimos 12 meses' : 'últimos 5 anos'}:{' '}
+            {mode === 'month' ? t('cashflow.totalMonth') : t('cashflow.totalYear')}{' '}
             <strong className={summary.net >= 0 ? 'gain-positive' : 'gain-negative'}>{eur(summary.net)}</strong>
           </div>
         </div>
@@ -158,12 +160,12 @@ export function CashflowChart({ incomes, expenses }: Props) {
             type="button" role="tab" aria-selected={mode === 'month'}
             className={`cashflow-toggle-btn ${mode === 'month' ? 'is-active' : ''}`}
             onClick={() => setMode('month')}
-          >Mês</button>
+          >{t('cashflow.month')}</button>
           <button
             type="button" role="tab" aria-selected={mode === 'year'}
             className={`cashflow-toggle-btn ${mode === 'year' ? 'is-active' : ''}`}
             onClick={() => setMode('year')}
-          >Ano</button>
+          >{t('cashflow.year')}</button>
         </div>
       </div>
       <div className="chart-wrap" style={{ height: 300 }}>

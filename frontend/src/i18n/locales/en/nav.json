@@ -1,0 +1,30 @@
+{
+  "items": {
+    "overview": "Overview",
+    "loan": "Credit",
+    "investments": "Investments",
+    "budget": "Balance",
+    "compare": "Pay off or Invest?",
+    "settings": "Settings"
+  },
+  "compareShort": "Pay off vs Invest",
+  "tagline": "Personal finance tracking",
+  "brandHome": "Wallet360 — home",
+  "mainNavAria": "Main navigation",
+  "signOut": "Sign out",
+  "signOutAria": "Sign out",
+  "bottom": {
+    "home": "Home",
+    "manage": "Manage",
+    "budget": "Balance",
+    "settings": "Settings",
+    "navAria": "Bottom navigation",
+    "panelAria": "Financial management",
+    "panelTitle": "Manage"
+  },
+  "manage": {
+    "loanDesc": "Loans and overpayments",
+    "investmentsDesc": "Portfolio and projections",
+    "compareDesc": "Decision simulator"
+  }
+}

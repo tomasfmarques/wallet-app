@@ -1,0 +1,46 @@
+{
+  "actions": {
+    "add": "Adicionar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "remove": "Remover",
+    "edit": "Editar",
+    "change": "Alterar",
+    "retry": "Tentar novamente",
+    "close": "Fechar"
+  },
+  "states": {
+    "saving": "A guardar…",
+    "removing": "A remover…",
+    "loading": "A carregar…",
+    "saved": "Guardado"
+  },
+  "validation": {
+    "required": "Obrigatório",
+    "gt0": "> 0",
+    "gte0": "≥ 0"
+  },
+  "categories": {
+    "Salário": "Salário",
+    "Freelance": "Freelance",
+    "Investimentos": "Investimentos",
+    "Aluguer": "Aluguer",
+    "Subsídios": "Subsídios",
+    "Transferências": "Transferências",
+    "Outros": "Outros",
+    "Habitação": "Habitação",
+    "Serviços": "Serviços",
+    "Subscrições": "Subscrições",
+    "Seguros": "Seguros",
+    "Saúde": "Saúde",
+    "Educação": "Educação",
+    "Alimentação": "Alimentação",
+    "Restauração": "Restauração",
+    "Transportes": "Transportes",
+    "Lazer": "Lazer",
+    "Vestuário": "Vestuário",
+    "Compras": "Compras",
+    "Viagens": "Viagens",
+    "Impostos": "Impostos"
+  }
+}

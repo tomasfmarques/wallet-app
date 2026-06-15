@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { LoanItem } from '@/hooks/useLoan'
 import type { PortfolioResponse } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
@@ -27,6 +28,7 @@ function addMonths(ym: string, n: number): string {
 // the verdict, deep-linking into the full simulator. Fail-silent: never blocks the
 // dashboard if the call is slow or errors.
 export function WedgeInsight({ loans, portfolio }: Props) {
+  const { t } = useTranslation('overview')
   const compare = useCompare()
   const [result, setResult] = useState<CompareResult | null>(null)
 
@@ -76,25 +78,25 @@ export function WedgeInsight({ loans, portfolio }: Props) {
 
   const verdict =
     rec === 'amortizar'
-      ? `Para o crédito ${name}, amortizar poupa-te ${saved} em juros — mais do que os ${gain} que renderias a investir.`
+      ? t('wedge.verdictAmortizar', { name, saved, gain })
       : rec === 'investir'
-        ? `Para o crédito ${name}, investir rende-te ${gain} líquidos — mais do que os ${saved} que poupavas a amortizar.`
-        : `Para o crédito ${name}, amortizar e investir são praticamente equivalentes.`
+        ? t('wedge.verdictInvestir', { name, saved, gain })
+        : t('wedge.verdictEqual', { name })
 
   return (
     <Link to={`/comparar?loan=${primaryLoan.loan.id}`} className={`wedge-insight wedge-insight-${rec}`}>
       <div className="wedge-insight-head">
         <span className="wedge-insight-icon" aria-hidden>💡</span>
-        <span className="wedge-insight-kicker">Amortizar ou investir?</span>
-        <span className="wedge-insight-cta">Abrir simulador →</span>
+        <span className="wedge-insight-kicker">{t('wedge.kicker')}</span>
+        <span className="wedge-insight-cta">{t('wedge.cta')}</span>
       </div>
       <p className="wedge-insight-verdict">{verdict}</p>
       <div className="wedge-insight-figures">
         <span className="wedge-insight-fig">
-          <span aria-hidden>🏠</span> Juros poupados <strong>{saved}</strong>
+          <span aria-hidden>🏠</span> {t('wedge.interestSaved')} <strong>{saved}</strong>
         </span>
         <span className="wedge-insight-fig">
-          <span aria-hidden>📈</span> Ganho líquido <strong>{gain}</strong>
+          <span aria-hidden>📈</span> {t('wedge.netGain')} <strong>{gain}</strong>
         </span>
       </div>
     </Link>

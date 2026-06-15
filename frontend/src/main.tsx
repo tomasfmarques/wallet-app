@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
+import './i18n' // initialise i18next before any component renders
 import './lib/chartSetup' // registers Chart.js scales/elements + sets defaults
 import './index.css'
 

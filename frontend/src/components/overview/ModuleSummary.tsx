@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { eur, eurCompact, pctSigned, ymToShort } from '@/lib/format'
 import type { LoanKpis as LoanKpisT } from '@/hooks/useLoan'
 import type { PortfolioKpisData } from '@/hooks/usePortfolio'
@@ -19,37 +20,38 @@ export function ModuleSummary({
   portfolioKpis, portfolioHorizon,
   budgetKpis,
 }: Props) {
+  const { t } = useTranslation('overview')
   return (
     <div className="module-grid">
       {/* ── Empréstimo ──────────────────────────────────────── */}
       <Link to="/loan" className="module-card">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>🏠</span>
-          <span className="module-card-title">Crédito</span>
+          <span className="module-card-title">{t('module.loanTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         {loanKpis && loanCapitalInicial ? (
           <>
             <div className="module-card-hero">{eur(loanKpis.capitalAtual)}</div>
             <div className="module-card-meta">
-              {(loanKpis.pctPago * 100).toFixed(1)} % pago · de {eur(loanCapitalInicial)}
+              {t('module.loanPctPaid', { pct: (loanKpis.pctPago * 100).toFixed(1), total: eur(loanCapitalInicial) })}
             </div>
             <div className="module-card-progress" aria-hidden>
               <div className="module-card-progress-fill" style={{ width: `${Math.min(100, loanKpis.pctPago * 100)}%` }} />
             </div>
             <div className="module-card-stats">
               <div>
-                <div className="module-card-stat-label">PRÓX. PRESTAÇÃO</div>
+                <div className="module-card-stat-label">{t('module.nextPayment')}</div>
                 <div className="module-card-stat-value">{eur(loanKpis.proximaPrestacao)}</div>
               </div>
               <div>
-                <div className="module-card-stat-label">CONCLUSÃO</div>
+                <div className="module-card-stat-label">{t('module.completion')}</div>
                 <div className="module-card-stat-value">{ymToShort(loanKpis.conclusaoYm).split(' ').pop()}</div>
               </div>
             </div>
           </>
         ) : (
-          <div className="module-card-empty">Adiciona o teu primeiro crédito</div>
+          <div className="module-card-empty">{t('module.loanEmpty')}</div>
         )}
       </Link>
 
@@ -57,28 +59,28 @@ export function ModuleSummary({
       <Link to="/investments" className="module-card">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>📈</span>
-          <span className="module-card-title">Investimentos</span>
+          <span className="module-card-title">{t('module.investTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         {portfolioKpis && portfolioKpis.numAtivos > 0 ? (
           <>
             <div className="module-card-hero">{eur(portfolioKpis.valorAtual)}</div>
             <div className={`module-card-meta ${portfolioKpis.ganhoPerda >= 0 ? 'gain-positive' : 'gain-negative'}`}>
-              {pctSigned(portfolioKpis.ganhoPerdaPct)} · {portfolioKpis.numAtivos} ativos
+              {t('module.investMeta', { pct: pctSigned(portfolioKpis.ganhoPerdaPct), count: portfolioKpis.numAtivos })}
             </div>
             <div className="module-card-stats">
               <div>
-                <div className="module-card-stat-label">REFORÇO/MÊS</div>
+                <div className="module-card-stat-label">{t('module.contribMonth')}</div>
                 <div className="module-card-stat-value">{eur(portfolioKpis.reforcoMensalTotal)}</div>
               </div>
               <div>
-                <div className="module-card-stat-label">PROJEÇÃO {portfolioHorizon}A</div>
+                <div className="module-card-stat-label">{t('module.projection', { years: portfolioHorizon })}</div>
                 <div className="module-card-stat-value">{eurCompact(portfolioKpis.projecaoFinal)}</div>
               </div>
             </div>
           </>
         ) : (
-          <div className="module-card-empty">Adiciona o primeiro ativo</div>
+          <div className="module-card-empty">{t('module.investEmpty')}</div>
         )}
       </Link>
 
@@ -86,7 +88,7 @@ export function ModuleSummary({
       <Link to="/budget" className="module-card">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>💰</span>
-          <span className="module-card-title">Saldo</span>
+          <span className="module-card-title">{t('module.balanceTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         {budgetKpis && (budgetKpis.incomeTotal > 0 || budgetKpis.expensesTotal > 0) ? (
@@ -95,36 +97,36 @@ export function ModuleSummary({
               {eur(budgetKpis.netMonthly)}
             </div>
             <div className="module-card-meta">
-              Saldo mensal · {eur(budgetKpis.netAnnual)}/ano
+              {t('module.balanceMeta', { annual: eur(budgetKpis.netAnnual) })}
             </div>
             <div className="module-card-stats">
               <div>
-                <div className="module-card-stat-label">RECEITAS</div>
+                <div className="module-card-stat-label">{t('module.incomes')}</div>
                 <div className="module-card-stat-value">{eur(budgetKpis.incomeTotal)}</div>
               </div>
               <div>
-                <div className="module-card-stat-label">DESPESAS</div>
+                <div className="module-card-stat-label">{t('module.expenses')}</div>
                 <div className="module-card-stat-value">{eur(budgetKpis.expensesTotal)}</div>
               </div>
             </div>
           </>
         ) : (
-          <div className="module-card-empty">Regista receitas e despesas</div>
+          <div className="module-card-empty">{t('module.balanceEmpty')}</div>
         )}
       </Link>
       {/* ── Amortizar vs Investir CTA ───────────────────────── */}
       <Link to="/comparar" className="module-card module-card-compare">
         <div className="module-card-head">
           <span className="module-card-icon" aria-hidden>⚖️</span>
-          <span className="module-card-title">Amortizar ou Investir?</span>
+          <span className="module-card-title">{t('module.compareTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
         <div className="module-card-compare-body">
           <div className="module-card-compare-headline">
-            O dinheiro extra — abater o crédito ou colocar no mercado?
+            {t('module.compareHeadline')}
           </div>
           <div className="module-card-compare-hint">
-            Simulador com juros poupados vs ganho líquido após impostos
+            {t('module.compareHint')}
           </div>
         </div>
       </Link>
