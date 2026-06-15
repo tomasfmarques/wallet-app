@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Bar } from 'react-chartjs-2'
+import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
 import type { Income, Expense } from '@/types'
@@ -44,6 +45,7 @@ export function BudgetTimeline({
   incomes, expenses, actualIncomes = [], actualExpenses = [],
   months = 12, endAt, futureMonths = 0, onMonthClick,
 }: Props) {
+  const { t } = useTranslation('budget')
   const today = endAt ?? currentYm()
   const totalMonths = months + futureMonths
 
@@ -81,7 +83,7 @@ export function BudgetTimeline({
       datasets: [
         {
           type: 'bar',
-          label: 'Receitas',
+          label: t('timeline.incomes'),
           data: incomeSeries,
           backgroundColor: '#059669CC',
           borderRadius: 4,
@@ -90,7 +92,7 @@ export function BudgetTimeline({
         },
         {
           type: 'bar',
-          label: 'Despesas fixas',
+          label: t('timeline.fixedExpenses'),
           data: fixedSeries.map((v) => -v),
           backgroundColor: '#DC2626CC',
           borderRadius: 4,
@@ -99,7 +101,7 @@ export function BudgetTimeline({
         },
         {
           type: 'bar',
-          label: 'Despesas variáveis',
+          label: t('timeline.variableExpenses'),
           data: variableSeries.map((v) => -v),
           backgroundColor: '#F97316CC',
           borderRadius: 4,
@@ -109,7 +111,7 @@ export function BudgetTimeline({
         // Net line — drawn on top
         {
           type: 'line' as unknown as 'bar',
-          label: 'Saldo',
+          label: t('timeline.balance'),
           data: netSeries,
           borderColor: '#2563EB',
           backgroundColor: 'transparent',
@@ -163,15 +165,15 @@ export function BudgetTimeline({
     const avg = past.length > 0 ? past.reduce((s, v) => s + v, 0) / past.length : 0
 
     return { chartData: data, chartOptions: opts, avgNet: avg }
-  }, [incomes, expenses, actualIncomes, actualExpenses, today, months, totalMonths, onMonthClick])
+  }, [incomes, expenses, actualIncomes, actualExpenses, today, months, totalMonths, onMonthClick, t])
 
   return (
     <div className="card card-pad-lg">
       <div className="timeline-head">
         <div>
-          <h3 className="settings-subhead" style={{ marginBottom: 2 }}>Histórico {months} meses</h3>
+          <h3 className="settings-subhead" style={{ marginBottom: 2 }}>{t('timeline.head', { months })}</h3>
           <div className="muted" style={{ fontSize: 12.5 }}>
-            Saldo médio: <strong className={avgNet >= 0 ? 'gain-positive' : 'gain-negative'}>{eur(avgNet)}/mês</strong>
+            {t('timeline.avg')} <strong className={avgNet >= 0 ? 'gain-positive' : 'gain-negative'}>{t('timeline.avgValue', { value: eur(avgNet) })}</strong>
           </div>
         </div>
       </div>
@@ -179,9 +181,8 @@ export function BudgetTimeline({
         <Bar data={chartData} options={chartOptions} />
       </div>
       <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-        Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês.
-        Meses com extrato importado mostram valores <em>reais</em>; os restantes mostram o <em>planeado</em>.
-        {onMonthClick && <> Clica num mês para o analisar em detalhe.</>}
+        {t('timeline.footer')}
+        {onMonthClick && t('timeline.footerClick')}
       </p>
     </div>
   )

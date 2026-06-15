@@ -1,9 +1,10 @@
 import { ChangeEvent, useMemo, useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import { useBudget, useImportBudget, type ImportItem } from '@/hooks/useBudget'
 import { parseStatement, dupSignature, type ParsedTransaction } from '@/lib/statementParser'
 import {
-  inferCategory, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
+  inferCategory, categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
 import { eur2 } from '@/lib/format'
 
@@ -57,6 +58,7 @@ function sourceFromFilename(filename: string): string {
 }
 
 export function ImportStatementModal({ open, onClose }: Props) {
+  const { t } = useTranslation('budget')
   const importMut = useImportBudget()
   const { data: budget } = useBudget()
   const [rows, setRows] = useState<ReviewRow[]>([])
@@ -90,7 +92,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
 
   const finish = (txns: ParsedTransaction[], name: string) => {
     if (txns.length === 0) {
-      setParseError('Não foi possível ler transações deste ficheiro. Aceita extratos PDF, CSV ou OFX.')
+      setParseError(t('import.noTransactions'))
       setRows([])
     } else {
       setRows(rowsFromTxns(txns, existingSigs))
@@ -112,7 +114,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
         const { parsePdfStatement } = await import('@/lib/pdfStatementParser')
         finish(await parsePdfStatement(file), file.name)
       } catch {
-        setParseError('Erro ao ler o PDF. Tenta exportar o extrato em CSV/OFX, se possível.')
+        setParseError(t('import.pdfError'))
       } finally {
         setParsing(false)
       }
@@ -133,10 +135,10 @@ export function ImportStatementModal({ open, onClose }: Props) {
         }
         finish(parseStatement(text, file.name), file.name)
       } catch {
-        setParseError('Erro ao processar o ficheiro.')
+        setParseError(t('import.fileError'))
       }
     }
-    reader.onerror = () => setParseError('Não foi possível ler o ficheiro.')
+    reader.onerror = () => setParseError(t('import.readError'))
     reader.readAsArrayBuffer(file)
   }
 
@@ -173,48 +175,43 @@ export function ImportStatementModal({ open, onClose }: Props) {
       setDone(res.summary)
       setRows([])
     } catch {
-      setParseError('Falha ao importar. Tenta novamente.')
+      setParseError(t('import.importError'))
     }
   }
 
   return (
-    <Modal open={open} onClose={close} title="Importar extrato bancário" maxWidth={760}>
+    <Modal open={open} onClose={close} title={t('import.title')} maxWidth={760}>
       {done ? (
         <div className="import-done">
           <p>
-            Importado com sucesso: <strong>{done.incomes}</strong> receita(s) e{' '}
-            <strong>{done.expenses}</strong> despesa(s).
-            {done.duplicates > 0 && <> {done.duplicates} duplicada(s) ignorada(s).</>}
-            {done.skipped > 0 && <> {done.skipped} linha(s) inválida(s) ignorada(s).</>}
+            <Trans i18nKey="import.doneIncomesExpenses" ns="budget" values={{ incomes: done.incomes, expenses: done.expenses }} components={{ 1: <strong />, 3: <strong /> }} />
+            {done.duplicates > 0 && t('import.doneDuplicates', { count: done.duplicates })}
+            {done.skipped > 0 && t('import.doneSkipped', { count: done.skipped })}
           </p>
           {done.autoClassified > 0 && (
             <p className="muted" style={{ fontSize: 13 }}>
-              ✨ {done.autoClassified} classificada(s) automaticamente por regras aprendidas.
+              {t('import.doneAutoClassified', { count: done.autoClassified })}
             </p>
           )}
           {(done.incomes > 0 || done.expenses > 0) && (
             <p className="muted" style={{ fontSize: 13 }}>
-              As restantes ficam em <strong>Por classificar</strong> — escolhe <b>Fixa</b> ou
-              <b> Variável</b> e a app aprende para as próximas.
+              <Trans i18nKey="import.doneRemaining" ns="budget" components={{ 1: <strong />, 3: <b />, 5: <b /> }} />
             </p>
           )}
           <div className="form-actions">
-            <button type="button" className="btn btn-primary" onClick={close}>Concluir</button>
+            <button type="button" className="btn btn-primary" onClick={close}>{t('import.finish')}</button>
           </div>
         </div>
       ) : rows.length === 0 ? (
         <div className="import-intro">
           <p className="muted" style={{ marginTop: 0 }}>
-            Seleciona o extrato do teu banco em <strong>PDF</strong>, <strong>CSV</strong> ou
-            <strong> OFX</strong>. Cada linha é lida e classificada como receita (entrada) ou
-            despesa (saída) — usamos o valor da <strong>transação</strong> (não o saldo) e
-            podes rever tudo antes de importar.
+            <Trans i18nKey="import.intro" ns="budget" components={{ 1: <strong />, 3: <strong />, 5: <strong />, 7: <strong /> }} />
           </p>
           <label
             className="btn btn-primary"
             style={{ cursor: parsing ? 'default' : 'pointer', display: 'inline-block', opacity: parsing ? 0.6 : 1 }}
           >
-            {parsing ? 'A ler…' : 'Escolher ficheiro…'}
+            {parsing ? t('import.parsing') : t('import.chooseFile')}
             <input
               type="file" accept=".pdf,.csv,.ofx,.txt,application/pdf,text/csv"
               onChange={onFile} disabled={parsing} style={{ display: 'none' }}
@@ -222,22 +219,22 @@ export function ImportStatementModal({ open, onClose }: Props) {
           </label>
           {parseError && <div className="form-error" style={{ marginTop: 12 }}>{parseError}</div>}
           <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
-            Os ficheiros são processados no teu navegador — nada é enviado até confirmares.
+            {t('import.privacy')}
           </p>
         </div>
       ) : (
         <div className="import-review">
           <div className="import-review-head">
-            <span className="muted">{filename} · {rows.length} transações</span>
+            <span className="muted">{t('import.reviewCount', { filename, count: rows.length })}</span>
             <span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAllIncluded(true)}>Tudo</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAllIncluded(false)}>Nada</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAllIncluded(true)}>{t('import.all')}</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAllIncluded(false)}>{t('import.none')}</button>
             </span>
           </div>
 
           {dupCount > 0 && (
             <div className="import-dup-hint">
-              📌 {dupCount} transação(ões) já tinham sido importadas — desmarcadas automaticamente.
+              {t('import.dupHint', { count: dupCount })}
             </div>
           )}
 
@@ -248,10 +245,10 @@ export function ImportStatementModal({ open, onClose }: Props) {
               <thead>
                 <tr>
                   <th></th>
-                  <th>Descrição</th>
-                  <th>Tipo</th>
-                  <th>Categoria</th>
-                  <th style={{ textAlign: 'right' }}>Valor</th>
+                  <th>{t('import.colDescription')}</th>
+                  <th>{t('import.colType')}</th>
+                  <th>{t('import.colCategory')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('import.colAmount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,7 +269,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
                         />
                         <span className="import-ym">
                           {r.ym && <span className="muted">{r.ym}</span>}
-                          {r.duplicate && <span className="import-dup-pill">duplicado</span>}
+                          {r.duplicate && <span className="import-dup-pill">{t('import.dupPill')}</span>}
                         </span>
                       </td>
                       <td>
@@ -280,14 +277,14 @@ export function ImportStatementModal({ open, onClose }: Props) {
                           value={r.kind}
                           onChange={(e) => patch(r.id, { kind: e.target.value as 'income' | 'expense', category: '' })}
                         >
-                          <option value="income">Receita</option>
-                          <option value="expense">Despesa</option>
+                          <option value="income">{t('import.income')}</option>
+                          <option value="expense">{t('import.expense')}</option>
                         </select>
                       </td>
                       <td>
                         <select value={r.category} onChange={(e) => patch(r.id, { category: e.target.value })}>
-                          <option value="">— por classificar —</option>
-                          {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+                          <option value="">{t('import.uncategorizedOption')}</option>
+                          {cats.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                         </select>
                       </td>
                       <td style={{ textAlign: 'right' }} className={r.kind === 'income' ? 'gain-positive' : 'gain-negative'}>
@@ -302,18 +299,18 @@ export function ImportStatementModal({ open, onClose }: Props) {
 
           <div className="import-summary">
             <span className="muted">
-              {selected.length} selecionadas · {incomeCount} receitas · {expenseCount} despesas
+              {t('import.summary', { selected: selected.length, incomes: incomeCount, expenses: expenseCount })}
             </span>
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn btn-ghost" onClick={reset}>Outro ficheiro</button>
+            <button type="button" className="btn btn-ghost" onClick={reset}>{t('import.otherFile')}</button>
             <button
               type="button" className="btn btn-primary"
               disabled={importMut.isLoading || selected.length === 0}
               onClick={submit}
             >
-              {importMut.isLoading ? 'A importar…' : `Importar ${selected.length}`}
+              {importMut.isLoading ? t('import.importing') : t('import.importN', { count: selected.length })}
             </button>
           </div>
         </div>

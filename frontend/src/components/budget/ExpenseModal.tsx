@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import {
   useAddExpense, useUpdateExpense, type ExpenseInput,
 } from '@/hooks/useBudget'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
-import { inferCategory, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
+import { inferCategory, categoryLabel, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
 import type { Expense, ExpenseType } from '@/types'
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: Props) {
+  const { t } = useTranslation('budget')
   const add = useAddExpense()
   const upd = useUpdateExpense()
   const isEdit = !!expense
@@ -70,13 +72,13 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const errs: FieldErrors = {}
-    if (!name.trim()) errs.name = 'Obrigatório'
+    if (!name.trim()) errs.name = t('expense.errRequired')
     const n = Number(amount)
-    if (!Number.isFinite(n) || n <= 0) errs.amount = '> 0'
+    if (!Number.isFinite(n) || n <= 0) errs.amount = t('expense.errGt0')
     let dayNum: number | null = null
     if (dayOfMonth.trim()) {
       const d = Number(dayOfMonth)
-      if (!Number.isInteger(d) || d < 1 || d > 31) errs.dayOfMonth = '1-31'
+      if (!Number.isInteger(d) || d < 1 || d > 31) errs.dayOfMonth = t('expense.errDay')
       else dayNum = d
     }
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
@@ -100,9 +102,10 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   }
 
   const busy = add.isLoading || upd.isLoading
-  const title = isEdit
-    ? `Editar despesa ${effectiveType === 'fixed' ? 'fixa' : 'variável'}`
-    : `Nova despesa ${effectiveType === 'fixed' ? 'fixa' : 'variável'}`
+  const title = t('expense.title', {
+    action: isEdit ? t('kind.edit') : t('kind.new'),
+    kind: effectiveType === 'fixed' ? t('kind.fixedF') : t('kind.variableF'),
+  })
 
   return (
     <Modal open={open} onClose={onClose} title={title} maxWidth={560}>
@@ -110,13 +113,13 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
         {errors._form && <div className="form-error">{errors._form}</div>}
         <div className="field-grid">
           <div className="field">
-            <label htmlFor="ex-name">Nome</label>
+            <label htmlFor="ex-name">{t('expense.nameLabel')}</label>
             <input id="ex-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus
-              placeholder={effectiveType === 'fixed' ? 'Renda, Netflix, Água…' : 'Comida, Restaurante, Uber…'} />
+              placeholder={effectiveType === 'fixed' ? t('expense.namePlaceholderFixed') : t('expense.namePlaceholderVariable')} />
             {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
           <div className="field">
-            <label htmlFor="ex-amount">Valor mensal (€)</label>
+            <label htmlFor="ex-amount">{t('expense.amountLabel')}</label>
             <input
               id="ex-amount" type="number" inputMode="decimal" step="any" min="0"
               value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -125,21 +128,21 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
           </div>
           <div className="field">
             <label htmlFor="ex-category">
-              Categoria
-              {autoSuggested && <span className="auto-pill" title="Sugerida automaticamente">✨ sugerida</span>}
+              {t('expense.categoryLabel')}
+              {autoSuggested && <span className="auto-pill" title={t('income.autoSuggestedTitle')}>{t('income.autoSuggestedPill')}</span>}
             </label>
             <select id="ex-category" value={category} onChange={(e) => onCategoryChange(e.target.value)}>
-              <option value="">— por classificar —</option>
-              {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value="">{t('income.uncategorizedOption')}</option>
+              {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
             </select>
           </div>
           {effectiveType === 'fixed' && (
             <div className="field">
-              <label htmlFor="ex-day">Dia do mês (opcional)</label>
+              <label htmlFor="ex-day">{t('expense.dayLabel')}</label>
               <input
                 id="ex-day" type="number" inputMode="numeric" min="1" max="31"
                 value={dayOfMonth} onChange={(e) => setDayOfMonth(e.target.value)}
-                placeholder="1-31"
+                placeholder={t('expense.dayPlaceholder')}
               />
               {errors.dayOfMonth && <span className="field-error">{errors.dayOfMonth}</span>}
             </div>
@@ -147,12 +150,12 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
         </div>
         <label className="checkbox" style={{ marginBottom: 12 }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-          <span>Ativa (conta para os totais)</span>
+          <span>{t('income.activeLabel')}</span>
         </label>
         <div className="form-actions">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('actions.cancel', { ns: 'common' })}</button>
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'A guardar…' : (isEdit ? 'Guardar' : 'Adicionar')}
+            {busy ? t('states.saving', { ns: 'common' }) : (isEdit ? t('actions.save', { ns: 'common' }) : t('actions.add', { ns: 'common' }))}
           </button>
         </div>
       </form>

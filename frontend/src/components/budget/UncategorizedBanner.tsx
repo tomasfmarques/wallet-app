@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Modal } from '@/components/ui/Modal'
 import { useBulkUpdateBudget } from '@/hooks/useBudget'
 import {
-  inferCategory, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
+  inferCategory, categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
 import { eur } from '@/lib/format'
-import type { Income, Expense } from '@/types'
+import type { Income, Expense, ExpenseType } from '@/types'
 
 interface Props {
   incomes: Income[]
@@ -16,6 +18,7 @@ interface Props {
 // the user triage them all in one modal — like Portugal's tax invoice
 // system asks you to classify receipts that couldn't be auto-categorized.
 export function UncategorizedBanner({ incomes, expenses }: Props) {
+  const { t } = useTranslation('budget')
   const uncatIncomes = useMemo(
     () => incomes.filter((i) => i.active && (!i.category || i.category.trim() === '')),
     [incomes],
@@ -34,11 +37,11 @@ export function UncategorizedBanner({ incomes, expenses }: Props) {
       <div className="uncat-banner" role="status">
         <span className="uncat-banner-icon" aria-hidden>📌</span>
         <div className="uncat-banner-text">
-          <strong>{total} {total === 1 ? 'item por classificar' : 'itens por classificar'}</strong>
-          <span className="muted"> · ajuda a obter um melhor breakdown da tua despesa.</span>
+          <strong>{total === 1 ? t('uncat.bannerOne', { count: total }) : t('uncat.bannerMany', { count: total })}</strong>
+          <span className="muted">{t('uncat.bannerHint')}</span>
         </div>
         <button type="button" className="btn btn-primary btn-sm" onClick={() => setOpen(true)}>
-          Classificar agora →
+          {t('uncat.classifyNow')}
         </button>
       </div>
       <ClassifyModal
@@ -68,7 +71,7 @@ interface Group {
   name: string
   ids: string[]
   total: number
-  typeLabel: string | null // 'fixa' | 'variável' | null when mixed/income
+  type: ExpenseType | null // 'fixed' | 'variable' | null when mixed/income
 }
 
 function groupItems(items: Array<Income | Expense>, kind: 'income' | 'expense'): Group[] {
@@ -77,19 +80,19 @@ function groupItems(items: Array<Income | Expense>, kind: 'income' | 'expense'):
     const name = item.name.trim()
     const key = `${kind}:${name.toLowerCase()}`
     const g = map.get(key)
-    const typeLabel = item.type === 'fixed' ? 'fixa' : 'variável'
     if (g) {
       g.ids.push(item.id)
       g.total += item.amount
-      if (g.typeLabel !== typeLabel) g.typeLabel = null
+      if (g.type !== item.type) g.type = null
     } else {
-      map.set(key, { key, kind, name, ids: [item.id], total: item.amount, typeLabel })
+      map.set(key, { key, kind, name, ids: [item.id], total: item.amount, type: item.type })
     }
   }
   return Array.from(map.values())
 }
 
 function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
+  const { t } = useTranslation('budget')
   const bulkUpdate = useBulkUpdateBudget()
   const [picks, setPicks] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
@@ -134,7 +137,7 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
       )
       onClose()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro ao guardar')
+      setErr(e instanceof Error ? e.message : t('uncat.saveError'))
     } finally {
       setSaving(false)
     }
@@ -146,11 +149,9 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
   const totalCount = incomes.length + expenses.length
 
   return (
-    <Modal open={open} onClose={onClose} title="Classificar itens" maxWidth={620}>
+    <Modal open={open} onClose={onClose} title={t('uncat.modalTitle')} maxWidth={620}>
       <p className="muted modal-intro">
-        Escolhe a categoria para cada comércio — aplica-se a todas as linhas
-        iguais de uma vez. Sugestões (<strong>✨</strong>) vêm do dicionário
-        automático. Deixa em branco para classificar depois.
+        <Trans i18nKey="uncat.modalIntro" ns="budget" components={{ 1: <strong /> }} />
       </p>
 
       {err && <div className="form-error">{err}</div>}
@@ -158,13 +159,13 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
       <div className="classify-list">
         {incomeGroups.length > 0 && (
           <>
-            <div className="classify-section-label">Receitas</div>
+            <div className="classify-section-label">{t('uncat.incomesSection')}</div>
             {incomeGroups.map((g) => (
               <ClassifyRow
                 key={g.key}
                 label={g.name}
                 count={g.ids.length}
-                meta={metaFor(g)}
+                meta={metaFor(g, t)}
                 value={picks[g.key] ?? ''}
                 wasInferred={inferCategory(g.name) === picks[g.key] && !!picks[g.key]}
                 options={INCOME_CATEGORIES as unknown as string[]}
@@ -175,13 +176,13 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
         )}
         {expenseGroups.length > 0 && (
           <>
-            <div className="classify-section-label">Despesas</div>
+            <div className="classify-section-label">{t('uncat.expensesSection')}</div>
             {expenseGroups.map((g) => (
               <ClassifyRow
                 key={g.key}
                 label={g.name}
                 count={g.ids.length}
-                meta={metaFor(g)}
+                meta={metaFor(g, t)}
                 value={picks[g.key] ?? ''}
                 wasInferred={inferCategory(g.name) === picks[g.key] && !!picks[g.key]}
                 options={EXPENSE_CATEGORIES as unknown as string[]}
@@ -194,21 +195,21 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
 
       <div className="form-actions" style={{ marginTop: 12 }}>
         <span className="muted" style={{ marginRight: 'auto', fontSize: 12.5 }}>
-          {classifiedCount}/{totalCount} classificados
+          {t('uncat.classifiedCount', { done: classifiedCount, total: totalCount })}
         </span>
-        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>{t('actions.cancel', { ns: 'common' })}</button>
         <button type="button" className="btn btn-primary" onClick={saveAll} disabled={saving}>
-          {saving ? 'A guardar…' : 'Guardar tudo'}
+          {saving ? t('states.saving', { ns: 'common' }) : t('uncat.saveAll')}
         </button>
       </div>
     </Modal>
   )
 }
 
-function metaFor(g: Group): string {
+function metaFor(g: Group, t: TFunction<'budget'>): string {
   const parts = [eur(g.total)]
-  if (g.ids.length > 1) parts.push(`${g.ids.length} linhas`)
-  if (g.kind === 'expense' && g.typeLabel) parts.push(g.typeLabel)
+  if (g.ids.length > 1) parts.push(t('uncat.linesMeta', { count: g.ids.length }))
+  if (g.kind === 'expense' && g.type) parts.push(t(g.type === 'fixed' ? 'kind.fixedF' : 'kind.variableF'))
   return parts.join(' · ')
 }
 
@@ -222,19 +223,20 @@ interface RowProps {
   onChange: (v: string) => void
 }
 function ClassifyRow({ label, count, meta, value, wasInferred, options, onChange }: RowProps) {
+  const { t } = useTranslation('budget')
   return (
     <div className="classify-row">
       <div className="classify-row-main">
         <div className="classify-row-name">
           {label}
-          {count > 1 && <span className="classify-count-badge" title={`${count} linhas iguais`}>×{count}</span>}
-          {wasInferred && <span className="auto-pill" title="Sugerida automaticamente">✨</span>}
+          {count > 1 && <span className="classify-count-badge" title={t('uncat.sameLines', { count })}>×{count}</span>}
+          {wasInferred && <span className="auto-pill" title={t('uncat.autoSuggested')}>✨</span>}
         </div>
         <div className="classify-row-meta muted">{meta}</div>
       </div>
       <select value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">— por classificar —</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value="">{t('uncat.uncategorizedOption')}</option>
+        {options.map((o) => <option key={o} value={o}>{categoryLabel(o)}</option>)}
       </select>
     </div>
   )

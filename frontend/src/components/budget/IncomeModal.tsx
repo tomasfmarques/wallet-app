@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import {
   useAddIncome, useUpdateIncome, type IncomeInput,
 } from '@/hooks/useBudget'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
-import { inferCategory, INCOME_CATEGORIES } from '@/lib/categoryDictionary'
+import { inferCategory, categoryLabel, INCOME_CATEGORIES } from '@/lib/categoryDictionary'
 import type { Income, ExpenseType } from '@/types'
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Props) {
+  const { t } = useTranslation('budget')
   const add = useAddIncome()
   const upd = useUpdateIncome()
   const isEdit = !!income
@@ -70,9 +72,9 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const errs: FieldErrors = {}
-    if (!name.trim()) errs.name = 'Obrigatório'
+    if (!name.trim()) errs.name = t('income.errRequired')
     const n = Number(amount)
-    if (!Number.isFinite(n) || n <= 0) errs.amount = '> 0'
+    if (!Number.isFinite(n) || n <= 0) errs.amount = t('income.errGt0')
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     const body: IncomeInput = {
       name: name.trim(), amount: n, type: effectiveType,
@@ -95,18 +97,18 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
   const busy = add.isLoading || upd.isLoading
 
   return (
-    <Modal open={open} onClose={onClose} title={`${isEdit ? 'Editar' : 'Nova'} receita ${effectiveType === 'fixed' ? 'fixa' : 'variável'}`} maxWidth={520}>
+    <Modal open={open} onClose={onClose} title={t('income.title', { action: isEdit ? t('kind.edit') : t('kind.new'), kind: effectiveType === 'fixed' ? t('kind.fixedF') : t('kind.variableF') })} maxWidth={520}>
       <form onSubmit={submit} className="amort-form" noValidate>
         {errors._form && <div className="form-error">{errors._form}</div>}
         <div className="field-grid">
           <div className="field">
-            <label htmlFor="in-name">Nome</label>
+            <label htmlFor="in-name">{t('income.nameLabel')}</label>
             <input id="in-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus
-              placeholder="Salário, Freelance…" />
+              placeholder={t('income.namePlaceholder')} />
             {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
           <div className="field">
-            <label htmlFor="in-amount">Valor mensal (€)</label>
+            <label htmlFor="in-amount">{t('income.amountLabel')}</label>
             <input
               id="in-amount" type="number" inputMode="decimal" step="any" min="0"
               value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -115,28 +117,28 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
           </div>
           <div className="field">
             <label htmlFor="in-category">
-              Categoria
-              {autoSuggested && <span className="auto-pill" title="Sugerida automaticamente">✨ sugerida</span>}
+              {t('income.categoryLabel')}
+              {autoSuggested && <span className="auto-pill" title={t('income.autoSuggestedTitle')}>{t('income.autoSuggestedPill')}</span>}
             </label>
             <select id="in-category" value={category} onChange={(e) => onCategoryChange(e.target.value)}>
-              <option value="">— por classificar —</option>
-              {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value="">{t('income.uncategorizedOption')}</option>
+              {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
             </select>
           </div>
           <div className="field">
-            <label htmlFor="in-start">Início (opcional)</label>
-            <input id="in-start" type="text" placeholder="AAAA-MM" value={startYm} onChange={(e) => setStartYm(e.target.value)} />
+            <label htmlFor="in-start">{t('income.startLabel')}</label>
+            <input id="in-start" type="text" placeholder={t('income.monthPlaceholder')} value={startYm} onChange={(e) => setStartYm(e.target.value)} />
             {errors.startYm && <span className="field-error">{errors.startYm}</span>}
           </div>
         </div>
         <label className="checkbox" style={{ marginBottom: 12 }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-          <span>Ativa (conta para os totais)</span>
+          <span>{t('income.activeLabel')}</span>
         </label>
         <div className="form-actions">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('actions.cancel', { ns: 'common' })}</button>
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? 'A guardar…' : (isEdit ? 'Guardar' : 'Adicionar')}
+            {busy ? t('states.saving', { ns: 'common' }) : (isEdit ? t('actions.save', { ns: 'common' }) : t('actions.add', { ns: 'common' }))}
           </button>
         </div>
       </form>

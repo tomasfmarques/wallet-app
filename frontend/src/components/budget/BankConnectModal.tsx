@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import {
   useBankStatus, useBankInstitutions, useBankConnect, useBankSync, useBankDisconnect,
@@ -28,6 +29,7 @@ function BankLogo({ src, name }: { src: string | null; name: string }) {
 }
 
 export function BankConnectModal({ open, onClose }: Props) {
+  const { t } = useTranslation('budget')
   const { data: status } = useBankStatus(open)
   const configured = status?.configured ?? false
   const { data: instData, isLoading: instLoading } = useBankInstitutions(open && configured)
@@ -63,7 +65,7 @@ export function BankConnectModal({ open, onClose }: Props) {
       // Hand the user to the bank's own consent page.
       window.location.href = link
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Falha a iniciar a ligação')
+      setErr(e instanceof Error ? e.message : t('bank.connectError'))
     }
   }
 
@@ -73,29 +75,29 @@ export function BankConnectModal({ open, onClose }: Props) {
       const r = await sync.mutateAsync()
       const total = r.summary.incomes + r.summary.expenses
       setSyncMsg(
-        `✓ ${total} novas transações` +
-        (r.summary.autoClassified > 0 ? ` (${r.summary.autoClassified} auto-classificadas)` : '') +
-        (r.summary.duplicates > 0 ? ` · ${r.summary.duplicates} já existiam` : ''),
+        t('bank.syncOk', { count: total }) +
+        (r.summary.autoClassified > 0 ? t('bank.syncAuto', { count: r.summary.autoClassified }) : '') +
+        (r.summary.duplicates > 0 ? t('bank.syncDup', { count: r.summary.duplicates }) : ''),
       )
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Falha na sincronização')
+      setErr(e instanceof Error ? e.message : t('bank.syncError'))
     }
   }
 
   const connections = status?.connections ?? []
 
   return (
-    <Modal open={open} onClose={onClose} title="Ligar banco" maxWidth={620}>
+    <Modal open={open} onClose={onClose} title={t('bank.title')} maxWidth={620}>
       {/* Security disclaimer */}
       <div className="bank-secure">
         <span className="bank-secure-icon" aria-hidden>🔒</span>
         <div>
-          <strong>Ligação segura e regulada.</strong>
+          <strong>{t('bank.secureTitle')}</strong>
           <ul className="bank-secure-list">
-            <li>Usa <strong>Open Banking (PSD2)</strong>, a norma europeia de acesso bancário, via GoCardless — uma entidade autorizada e supervisionada.</li>
-            <li>Autenticas-te <strong>no site oficial do teu banco</strong> — o Wallet360 nunca vê nem guarda as tuas credenciais.</li>
-            <li>O acesso é <strong>apenas de leitura</strong>: ninguém consegue mover dinheiro.</li>
-            <li>O consentimento dura <strong>90 dias</strong> e podes revogá-lo a qualquer momento.</li>
+            <li><Trans i18nKey="bank.secure1" ns="budget" components={{ 1: <strong /> }} /></li>
+            <li><Trans i18nKey="bank.secure2" ns="budget" components={{ 1: <strong /> }} /></li>
+            <li><Trans i18nKey="bank.secure3" ns="budget" components={{ 1: <strong /> }} /></li>
+            <li><Trans i18nKey="bank.secure4" ns="budget" components={{ 1: <strong /> }} /></li>
           </ul>
         </div>
       </div>
@@ -106,7 +108,7 @@ export function BankConnectModal({ open, onClose }: Props) {
       {/* Existing connections */}
       {connections.length > 0 && (
         <>
-          <h3 className="settings-subhead">Bancos ligados</h3>
+          <h3 className="settings-subhead">{t('bank.connectedBanks')}</h3>
           <ul className="bank-conn-list">
             {connections.map((c) => (
               <li key={c.id} className="bank-conn-row">
@@ -114,18 +116,18 @@ export function BankConnectModal({ open, onClose }: Props) {
                 <div className="bank-conn-main">
                   <span className="bank-conn-name">{c.institutionName}</span>
                   <span className={`bank-conn-status is-${c.status}`}>
-                    {c.status === 'linked' ? '● ligado' : c.status === 'expired' ? '● consentimento expirado' : '● aguarda autorização no banco'}
+                    {c.status === 'linked' ? t('bank.statusLinked') : c.status === 'expired' ? t('bank.statusExpired') : t('bank.statusPending')}
                   </span>
                 </div>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => disconnect.mutate(c.id)}>
-                  Remover
+                  {t('actions.remove', { ns: 'common' })}
                 </button>
               </li>
             ))}
           </ul>
           <div className="form-actions" style={{ marginBottom: 14 }}>
             <button type="button" className="btn btn-primary btn-sm" onClick={runSync} disabled={sync.isLoading}>
-              {sync.isLoading ? 'A sincronizar…' : '⟳ Sincronizar transações'}
+              {sync.isLoading ? t('bank.syncing') : t('bank.syncBtn')}
             </button>
           </div>
           <hr className="divider" />
@@ -133,7 +135,7 @@ export function BankConnectModal({ open, onClose }: Props) {
       )}
 
       {/* Bank picker */}
-      <h3 className="settings-subhead">Escolhe o teu banco</h3>
+      <h3 className="settings-subhead">{t('bank.chooseBank')}</h3>
       {!configured ? (
         <>
           <div className="bank-grid">
@@ -141,14 +143,12 @@ export function BankConnectModal({ open, onClose }: Props) {
               <div key={f.name} className="bank-card is-disabled">
                 <BankLogo src={f.logo} name={f.name} />
                 <span className="bank-card-name">{f.name}</span>
-                <span className="bank-card-soon">brevemente</span>
+                <span className="bank-card-soon">{t('bank.soon')}</span>
               </div>
             ))}
           </div>
           <p className="muted" style={{ fontSize: 12.5 }}>
-            A ligação direta está quase pronta — falta ativar as credenciais (gratuitas) do
-            fornecedor Open Banking no servidor. Entretanto podes continuar a usar
-            <strong> Importar extrato</strong>.
+            <Trans i18nKey="bank.notConfigured" ns="budget" components={{ 1: <strong /> }} />
           </p>
         </>
       ) : (
@@ -164,10 +164,10 @@ export function BankConnectModal({ open, onClose }: Props) {
             </div>
           )}
           <input
-            className="bank-search" type="search" placeholder="Procurar outro banco…"
+            className="bank-search" type="search" placeholder={t('bank.searchPlaceholder')}
             value={search} onChange={(e) => setSearch(e.target.value)}
           />
-          {instLoading && <div className="muted" style={{ padding: 8 }}>A carregar bancos…</div>}
+          {instLoading && <div className="muted" style={{ padding: 8 }}>{t('bank.loadingBanks')}</div>}
           {search.trim() && (
             <ul className="bank-result-list">
               {others.slice(0, 8).map((i) => (
@@ -178,13 +178,11 @@ export function BankConnectModal({ open, onClose }: Props) {
                   </button>
                 </li>
               ))}
-              {others.length === 0 && <li className="muted" style={{ padding: 8 }}>Sem resultados.</li>}
+              {others.length === 0 && <li className="muted" style={{ padding: 8 }}>{t('bank.noResults')}</li>}
             </ul>
           )}
           <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
-            Depois de autorizares no site do banco, volta aqui e carrega em
-            <strong> ⟳ Sincronizar transações</strong>. As novas entradas caem em
-            <strong> Por classificar</strong>, com as regras aprendidas aplicadas automaticamente.
+            <Trans i18nKey="bank.afterAuth" ns="budget" components={{ 1: <strong />, 3: <strong /> }} />
           </p>
         </>
       )}

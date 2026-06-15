@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation, Trans } from 'react-i18next'
 import { useBudget, useDeleteIncome, useDeleteExpense, useCleanupEncoding } from '@/hooks/useBudget'
 import { BudgetKpis } from '@/components/budget/BudgetKpis'
 import { IncomeModal } from '@/components/budget/IncomeModal'
@@ -13,12 +14,14 @@ import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, currentYm } from '@/lib/format'
+import { categoryLabel } from '@/lib/categoryDictionary'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 type Tab = 'tables' | 'analysis'
 type AnalysisScope = 'overview' | 'month'
 
 export function Budget() {
+  const { t } = useTranslation('budget')
   const { data, isLoading, error, refetch } = useBudget()
   const delIncome = useDeleteIncome()
   const delExpense = useDeleteExpense()
@@ -35,8 +38,8 @@ export function Budget() {
   if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
   if (error) return (
     <div className="page-stub">
-      <h1>Saldo</h1>
-      <StateBlock variant="error" message="Não foi possível carregar o teu orçamento." onRetry={() => refetch()} />
+      <h1>{t('title')}</h1>
+      <StateBlock variant="error" message={t('loadError')} onRetry={() => refetch()} />
     </div>
   )
   if (!data) return null
@@ -49,9 +52,9 @@ export function Budget() {
   ].filter((r) => r.name.includes('�')).length
 
   const handleCleanupEncoding = async () => {
-    if (!confirm(`Remover ${mojibakeCount} linha(s) com caracteres inválidos? Volta a importar o extrato a seguir — os acentos virão corretos.`)) return
+    if (!confirm(t('mojibake.confirm', { count: mojibakeCount }))) return
     const { deleted } = await cleanupEncoding.mutateAsync()
-    alert(`${deleted} linha(s) removida(s). Importa o extrato novamente para as recuperar com os acentos corretos.`)
+    alert(t('mojibake.alert', { deleted }))
   }
   const fixedIncomes = incomes.filter((i) => i.type === 'fixed')
   const variableIncomes = incomes.filter((i) => i.type === 'variable')
@@ -64,15 +67,15 @@ export function Budget() {
     <div className="budget-page">
       <header className="page-header">
         <div>
-          <h1>Saldo</h1>
-          <p className="muted">As tuas receitas e despesas planeadas, mês a mês.</p>
+          <h1>{t('title')}</h1>
+          <p className="muted">{t('subtitle')}</p>
         </div>
         <div className="page-header-actions">
           <button type="button" className="btn btn-ghost" onClick={() => setBankOpen(true)}>
-            🏦 Ligar banco
+            🏦 {t('connectBank')}
           </button>
           <button type="button" className="btn btn-primary" onClick={() => setImportOpen(true)}>
-            Importar extrato
+            {t('importStatement')}
           </button>
         </div>
       </header>
@@ -80,15 +83,14 @@ export function Budget() {
       {mojibakeCount > 0 && (
         <div className="encoding-banner">
           <span className="encoding-banner-text">
-            <strong>{mojibakeCount}</strong> importação(ões) antiga(s) com caracteres inválidos (�).
-            Remove-as e volta a importar o extrato para corrigir os acentos.
+            <Trans i18nKey="mojibake.banner" ns="budget" values={{ count: mojibakeCount }} components={{ 1: <strong /> }} />
           </span>
           <button
             type="button" className="btn btn-primary btn-sm"
             disabled={cleanupEncoding.isLoading}
             onClick={handleCleanupEncoding}
           >
-            {cleanupEncoding.isLoading ? 'A remover…' : `Remover ${mojibakeCount}`}
+            {cleanupEncoding.isLoading ? t('mojibake.removing') : t('mojibake.remove', { count: mojibakeCount })}
           </button>
         </div>
       )}
@@ -104,53 +106,53 @@ export function Budget() {
           type="button" role="tab" aria-selected={tab === 'tables'}
           className={`subtab ${tab === 'tables' ? 'is-active' : ''}`}
           onClick={() => setTab('tables')}
-        >Tabelas</button>
+        >{t('tabs.tables')}</button>
         <button
           type="button" role="tab" aria-selected={tab === 'analysis'}
           className={`subtab ${tab === 'analysis' ? 'is-active' : ''}`}
           onClick={() => setTab('analysis')}
-        >Análise</button>
+        >{t('tabs.analysis')}</button>
       </div>
 
       {tab === 'tables' && (
         <>
           <section>
             <div className="budget-section-head">
-              <h2 className="section-label" style={{ margin: 0 }}>RECEITAS FIXAS</h2>
+              <h2 className="section-label" style={{ margin: 0 }}>{t('labels.fixedIncome')}</h2>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => setIncomeModal({ open: true, type: 'fixed' })}>
-                + Adicionar fixa
+                + {t('addFixed')}
               </button>
             </div>
             <BudgetList
               rows={fixedIncomes.map((i) => ({
                 id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
-                meta: i.startYm ? `desde ${i.startYm}` : undefined,
+                meta: i.startYm ? t('list.sinceMeta', { ym: i.startYm }) : undefined,
                 onEdit: () => setIncomeModal({ open: true, type: 'fixed', income: i }),
-                onDelete: () => { if (confirm(`Remover "${i.name}"?`)) delIncome.mutate(i.id) },
+                onDelete: () => { if (confirm(t('list.removeConfirm', { name: i.name }))) delIncome.mutate(i.id) },
               }))}
-              totalLabel="Total receitas fixas"
+              totalLabel={t('list.totalFixedIncome')}
               total={sumActive(fixedIncomes)}
-              emptyText="Sem receitas fixas. Adiciona o salário ou outras entradas recorrentes."
+              emptyText={t('list.emptyFixedIncome')}
             />
           </section>
 
           <section>
             <div className="budget-section-head">
-              <h2 className="section-label" style={{ margin: 0 }}>DESPESAS FIXAS</h2>
+              <h2 className="section-label" style={{ margin: 0 }}>{t('labels.fixedExpenses')}</h2>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpenseModal({ open: true, type: 'fixed' })}>
-                + Adicionar fixa
+                + {t('addFixed')}
               </button>
             </div>
             <BudgetList
               rows={fixedExpenses.map((e) => ({
                 id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
-                meta: e.dayOfMonth ? `dia ${e.dayOfMonth}` : undefined,
+                meta: e.dayOfMonth ? t('list.dayMeta', { day: e.dayOfMonth }) : undefined,
                 onEdit: () => setExpenseModal({ open: true, type: 'fixed', expense: e }),
-                onDelete: () => { if (confirm(`Remover "${e.name}"?`)) delExpense.mutate(e.id) },
+                onDelete: () => { if (confirm(t('list.removeConfirm', { name: e.name }))) delExpense.mutate(e.id) },
               }))}
-              totalLabel="Total fixas"
+              totalLabel={t('list.totalFixed')}
               total={kpis.fixedTotal}
-              emptyText="Sem despesas fixas. Adiciona renda, subscrições, seguros, etc."
+              emptyText={t('list.emptyFixedExpenses')}
             />
           </section>
 
@@ -175,21 +177,21 @@ export function Budget() {
               className={`toggle-btn ${analysisScope === 'overview' ? 'toggle-btn-active' : ''}`}
               onClick={() => setAnalysisScope('overview')}
             >
-              Visão geral
+              {t('scope.overview')}
             </button>
             <button
               type="button"
               className={`toggle-btn ${analysisScope === 'month' ? 'toggle-btn-active' : ''}`}
               onClick={() => setAnalysisScope('month')}
             >
-              Mês a mês
+              {t('scope.month')}
             </button>
           </div>
 
           {analysisScope === 'overview' ? (
             <>
               <section>
-                <h2 className="section-label">HISTÓRICO</h2>
+                <h2 className="section-label">{t('labels.history')}</h2>
                 <BudgetTimeline
                   incomes={incomes}
                   expenses={expenses}
@@ -201,22 +203,22 @@ export function Budget() {
               </section>
 
               <section>
-                <h2 className="section-label">DISTRIBUIÇÃO POR CATEGORIA</h2>
+                <h2 className="section-label">{t('labels.categoryDistribution')}</h2>
                 <div className="donut-grid">
                   <CategoryDonut
                     items={fixedExpenses}
-                    title="Despesas fixas"
-                    emptyText="Adiciona despesas fixas para ver a distribuição."
+                    title={t('donutTitles.fixedExpenses')}
+                    emptyText={t('donut.emptyFixed')}
                   />
                   <CategoryDonut
                     items={variableExpenses}
-                    title="Despesas variáveis"
-                    emptyText="Adiciona despesas variáveis para ver a distribuição."
+                    title={t('donutTitles.variableExpenses')}
+                    emptyText={t('donut.emptyVariable')}
                   />
                   <CategoryDonut
                     items={incomes}
-                    title="Receitas"
-                    emptyText="Adiciona receitas para ver a distribuição."
+                    title={t('donutTitles.incomes')}
+                    emptyText={t('donut.emptyIncome')}
                   />
                 </div>
               </section>
@@ -274,6 +276,7 @@ function BudgetList({
   total: number
   emptyText: string
 }) {
+  const { t } = useTranslation('budget')
   if (rows.length === 0) {
     return <div className="card card-pad-lg muted">{emptyText}</div>
   }
@@ -285,21 +288,21 @@ function BudgetList({
             <div className="budget-row-main">
               <div className="budget-row-name">
                 {r.name}
-                {!r.active && <span className="budget-pill-paused">pausada</span>}
+                {!r.active && <span className="budget-pill-paused">{t('list.paused')}</span>}
               </div>
               {(r.category || r.meta) && (
                 <div className="budget-row-sub">
                   {r.category
-                    ? <span className="budget-row-category">{r.category}</span>
-                    : <span className="budget-pill-uncat">por classificar</span>}
+                    ? <span className="budget-row-category">{categoryLabel(r.category)}</span>
+                    : <span className="budget-pill-uncat">{t('list.uncategorized')}</span>}
                   {r.meta && <span className="muted">{r.meta}</span>}
                 </div>
               )}
             </div>
             <div className="budget-row-amount">{eur(r.amount)}</div>
             <div className="budget-row-actions">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onEdit}>Editar</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onDelete}>Remover</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onEdit}>{t('actions.edit', { ns: 'common' })}</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={r.onDelete}>{t('actions.remove', { ns: 'common' })}</button>
             </div>
           </li>
         ))}

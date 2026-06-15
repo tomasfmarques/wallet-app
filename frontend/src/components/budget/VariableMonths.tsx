@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useBulkDeleteBudget, useBulkUpdateBudget } from '@/hooks/useBudget'
 import { eur2, eurSigned, ymToShort, currentYm } from '@/lib/format'
 import { merchantKey, merchantDisplayName } from '@/lib/merchant'
-import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
+import { categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 interface Props {
@@ -34,6 +35,7 @@ export function VariableMonths({
   variableIncomes, variableExpenses, actualIncomes = [], actualExpenses = [],
   onEditIncome, onEditExpense, onAddIncome, onAddExpense,
 }: Props) {
+  const { t } = useTranslation('budget')
   const cur = currentYm()
   const del = useBulkDeleteBudget()
   const bulkEdit = useBulkUpdateBudget()
@@ -123,7 +125,7 @@ export function VariableMonths({
 
   const removeSelected = async () => {
     if (checked.size === 0) return
-    if (!confirm(`Remover ${checked.size} transação(ões)? Podes voltar a importá-las depois.`)) return
+    if (!confirm(t('variableMonths.removeConfirm', { count: checked.size }))) return
     const incomeIds = [...checked].filter((c) => c.startsWith('income:')).map((c) => c.slice(7))
     const expenseIds = [...checked].filter((c) => c.startsWith('expense:')).map((c) => c.slice(8))
     await del.mutateAsync({ incomeIds, expenseIds })
@@ -155,7 +157,7 @@ export function VariableMonths({
   return (
     <section className="var-block">
       <div className="budget-section-head">
-        <h2 className="section-label" style={{ margin: 0 }}>MOVIMENTOS DO MÊS</h2>
+        <h2 className="section-label" style={{ margin: 0 }}>{t('variableMonths.label')}</h2>
       </div>
 
       {/* Month tabs */}
@@ -167,7 +169,7 @@ export function VariableMonths({
             className={`month-tab ${ym === selected ? 'is-active' : ''} ${ym === cur ? 'is-current' : ''}`}
             onClick={() => setSelected(ym)}
           >
-            {ymToShort(ym)}{ym === cur && <span className="month-tab-now"> · atual</span>}
+            {ymToShort(ym)}{ym === cur && <span className="month-tab-now">{t('variableMonths.current')}</span>}
           </button>
         ))}
       </div>
@@ -175,37 +177,37 @@ export function VariableMonths({
       {/* Saldo do mês (movimentos reais) */}
       <div className="month-summary">
         <div className="month-summary-cell">
-          <span className="kpi-label">RECEITAS</span>
+          <span className="kpi-label">{t('variableMonths.incomes')}</span>
           <strong className="gain-positive">{eur2(incTotal)}</strong>
         </div>
         <div className="month-summary-cell">
-          <span className="kpi-label">DESPESAS</span>
+          <span className="kpi-label">{t('variableMonths.expenses')}</span>
           <strong className="gain-negative">{eur2(expTotal)}</strong>
         </div>
         <div className="month-summary-cell month-summary-net">
-          <span className="kpi-label">SALDO DO MÊS</span>
+          <span className="kpi-label">{t('variableMonths.monthBalance')}</span>
           <strong className={saldo >= 0 ? 'gain-positive' : 'gain-negative'}>{eurSigned(saldo)}</strong>
-          <span className="muted" style={{ fontSize: 11 }}>movimentos reais do mês</span>
+          <span className="muted" style={{ fontSize: 11 }}>{t('variableMonths.monthBalanceHint')}</span>
         </div>
       </div>
 
       {/* Action toolbar — lives just above the transaction list */}
       <div className="var-list-toolbar">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddIncome(selected)}>+ Receita</button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddExpense(selected)}>+ Despesa</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddIncome(selected)}>{t('variableMonths.addIncome')}</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onAddExpense(selected)}>{t('variableMonths.addExpense')}</button>
         {checked.size > 0 && (
           <>
             <button
               type="button" className="btn btn-ghost btn-sm"
               onClick={() => { setShowEdit((v) => !v); setEditCategory(''); setEditType('') }}
             >
-              Editar ({checked.size})
+              {t('variableMonths.edit', { count: checked.size })}
             </button>
             <button
               type="button" className="btn btn-danger btn-sm"
               disabled={del.isLoading} onClick={removeSelected}
             >
-              Remover ({checked.size})
+              {t('variableMonths.remove', { count: checked.size })}
             </button>
           </>
         )}
@@ -215,21 +217,21 @@ export function VariableMonths({
       {showEdit && checked.size > 0 && (
         <div className="var-edit-panel">
           <div className="var-edit-row">
-            <label className="var-edit-label">Categoria</label>
+            <label className="var-edit-label">{t('variableMonths.categoryLabel')}</label>
             <select
               className="var-edit-select"
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
             >
-              <option value="">— não alterar —</option>
-              <option value="__clear__">(remover categoria)</option>
+              <option value="">{t('variableMonths.noChange')}</option>
+              <option value="__clear__">{t('variableMonths.clearCategory')}</option>
               {categoryOptions.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{categoryLabel(c)}</option>
               ))}
             </select>
           </div>
           <div className="var-edit-row">
-            <label className="var-edit-label">Tipo</label>
+            <label className="var-edit-label">{t('variableMonths.typeLabel')}</label>
             <div className="var-edit-type">
               {(['', 'fixed', 'variable'] as const).map((v) => (
                 <button
@@ -237,7 +239,7 @@ export function VariableMonths({
                   className={`var-type-btn ${editType === v ? 'is-active' : ''}`}
                   onClick={() => setEditType(v)}
                 >
-                  {v === '' ? '— não alterar —' : v === 'fixed' ? 'Fixa' : 'Variável'}
+                  {v === '' ? t('variableMonths.noChange') : v === 'fixed' ? t('kind.fixed') : t('kind.variable')}
                 </button>
               ))}
             </div>
@@ -248,13 +250,13 @@ export function VariableMonths({
               disabled={bulkEdit.isLoading || (editCategory === '' && editType === '')}
               onClick={applyEdit}
             >
-              {bulkEdit.isLoading ? 'A guardar…' : 'Aplicar'}
+              {bulkEdit.isLoading ? t('states.saving', { ns: 'common' }) : t('variableMonths.apply')}
             </button>
             <button
               type="button" className="btn btn-ghost btn-sm"
               onClick={() => setShowEdit(false)}
             >
-              Cancelar
+              {t('actions.cancel', { ns: 'common' })}
             </button>
           </div>
         </div>
@@ -262,7 +264,7 @@ export function VariableMonths({
 
       {/* Merchant-grouped list */}
       {groups.length === 0 ? (
-        <div className="card card-pad-lg muted">Sem movimentos neste mês. Importa um extrato ou adiciona manualmente.</div>
+        <div className="card card-pad-lg muted">{t('variableMonths.empty')}</div>
       ) : (
         <div className="card merchant-list">
           {groups.map((g) => {
@@ -277,7 +279,7 @@ export function VariableMonths({
                     checked={allChecked}
                     ref={(el) => { if (el) el.indeterminate = someChecked }}
                     onChange={() => toggleGroup(g)}
-                    aria-label={`Selecionar ${g.name}`}
+                    aria-label={t('variableMonths.selectAria', { name: g.name })}
                   />
                   <button type="button" className="merchant-toggle" onClick={() => toggleOpen(g.key)} aria-expanded={isOpen}>
                     <span className="merchant-chevron" aria-hidden>{isOpen ? '▾' : '▸'}</span>
@@ -290,29 +292,29 @@ export function VariableMonths({
                 </div>
                 {isOpen && (
                   <ul className="merchant-txns">
-                    {g.txns.map((t) => {
-                      const it = t.item
+                    {g.txns.map((txn) => {
+                      const it = txn.item
                       return (
-                        <li key={idOf(t)} className={`merchant-txn ${checked.has(idOf(t)) ? 'is-selected' : ''}`}>
+                        <li key={idOf(txn)} className={`merchant-txn ${checked.has(idOf(txn)) ? 'is-selected' : ''}`}>
                           <input
                             type="checkbox" className="var-check"
-                            checked={checked.has(idOf(t))}
-                            onChange={() => toggleTxn(t)}
-                            aria-label={`Selecionar ${it.name}`}
+                            checked={checked.has(idOf(txn))}
+                            onChange={() => toggleTxn(txn)}
+                            aria-label={t('variableMonths.selectAria', { name: it.name })}
                           />
                           <div className="merchant-txn-main">
                             <span className="merchant-txn-date">
-                              {it.dayOfMonth ? `dia ${it.dayOfMonth}` : ymToShort(monthOf(it))}
+                              {it.dayOfMonth ? t('variableMonths.dayMeta', { day: it.dayOfMonth }) : ymToShort(monthOf(it))}
                             </span>
-                            <span className="merchant-txn-source">{it.source ?? 'Manual'}</span>
-                            {it.category && <span className="merchant-txn-cat">{it.category}</span>}
+                            <span className="merchant-txn-source">{it.source ?? t('variableMonths.manual')}</span>
+                            {it.category && <span className="merchant-txn-cat">{categoryLabel(it.category)}</span>}
                           </div>
-                          <span className={`merchant-txn-value ${t.kind === 'income' ? 'gain-positive' : 'gain-negative'}`}>
-                            {t.kind === 'income' ? '+' : '−'}{eur2(it.amount)}
+                          <span className={`merchant-txn-value ${txn.kind === 'income' ? 'gain-positive' : 'gain-negative'}`}>
+                            {txn.kind === 'income' ? '+' : '−'}{eur2(it.amount)}
                           </span>
                           <button
                             type="button" className="btn btn-ghost btn-sm"
-                            onClick={() => (t.kind === 'income' ? onEditIncome(it as Income) : onEditExpense(it as Expense))}
+                            onClick={() => (txn.kind === 'income' ? onEditIncome(it as Income) : onEditExpense(it as Expense))}
                           >
                             ✎
                           </button>

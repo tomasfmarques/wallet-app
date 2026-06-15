@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CategoryDonut } from './CategoryDonut'
 import { eur, eurSigned, ymToLong, currentYm, ymAddMonths } from '@/lib/format'
+import { categoryLabel } from '@/lib/categoryDictionary'
 import type { Income, Expense } from '@/types'
 
 interface Props {
@@ -55,6 +57,7 @@ function laneFrom(incomeItems: Income[], fixedItems: Expense[], variableItems: E
 // imported REAL (actuals) for the chosen month side by side — never their sum
 // (FX1). When the month has no imported actuals we fall back to the plan only.
 export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses, ym, onChangeYm }: Props) {
+  const { t } = useTranslation('budget')
   const today = currentYm()
 
   const planned = useMemo<Lane>(() => laneFrom(
@@ -86,50 +89,50 @@ export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses
   return (
     <>
       <div className="month-analysis-head">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(ymAddMonths(ym, -1))} aria-label="Mês anterior">‹</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(ymAddMonths(ym, -1))} aria-label={t('monthAnalysis.prevMonth')}>‹</button>
         <div className="month-analysis-title">
           <strong>{ymToLong(ym)}</strong>
-          {ym === today && <span className="month-now-pill">atual</span>}
-          {ym > today && <span className="month-now-pill is-future">planeado</span>}
-          {hasReal && <span className="month-now-pill is-real">real</span>}
+          {ym === today && <span className="month-now-pill">{t('monthAnalysis.current')}</span>}
+          {ym > today && <span className="month-now-pill is-future">{t('monthAnalysis.planned')}</span>}
+          {hasReal && <span className="month-now-pill is-real">{t('monthAnalysis.real')}</span>}
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(ymAddMonths(ym, 1))} aria-label="Mês seguinte">›</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(ymAddMonths(ym, 1))} aria-label={t('monthAnalysis.nextMonth')}>›</button>
         {ym !== today && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(today)}>Hoje</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChangeYm(today)}>{t('monthAnalysis.today')}</button>
         )}
       </div>
 
       {isEmpty ? (
-        <div className="card card-pad-lg muted">Sem movimentos registados em {ymToLong(ym)}.</div>
+        <div className="card card-pad-lg muted">{t('monthAnalysis.empty', { month: ymToLong(ym) })}</div>
       ) : (
         <>
           <div className="kpi-grid">
-            <PvaKpi label="RECEITAS" planned={planned.incomeTotal} real={real.incomeTotal} hasReal={hasReal} goodWhenRealHigher />
-            <PvaKpi label="DESPESAS FIXAS" planned={planned.fixedTotal} real={real.fixedTotal} hasReal={hasReal} goodWhenRealHigher={false} />
-            <PvaKpi label="DESPESAS VARIÁVEIS" planned={planned.variableTotal} real={real.variableTotal} hasReal={hasReal} goodWhenRealHigher={false} />
+            <PvaKpi label={t('monthAnalysis.incomes')} planned={planned.incomeTotal} real={real.incomeTotal} hasReal={hasReal} goodWhenRealHigher />
+            <PvaKpi label={t('monthAnalysis.fixedExpenses')} planned={planned.fixedTotal} real={real.fixedTotal} hasReal={hasReal} goodWhenRealHigher={false} />
+            <PvaKpi label={t('monthAnalysis.variableExpenses')} planned={planned.variableTotal} real={real.variableTotal} hasReal={hasReal} goodWhenRealHigher={false} />
             <div className={`kpi ${(hasReal ? real.net : planned.net) >= 0 ? 'kpi-accent-green' : 'kpi-accent-red'}`}>
-              <div className="kpi-label">SALDO DO MÊS{hasReal ? ' (REAL)' : ''}</div>
+              <div className="kpi-label">{t('monthAnalysis.monthBalance')}{hasReal ? t('monthAnalysis.realSuffix') : ''}</div>
               <div className="kpi-value">{eurSigned(hasReal ? real.net : planned.net)}</div>
               {hasReal
                 ? <VarianceMeta planned={planned.net} real={real.net} goodWhenRealHigher />
-                : <div className="kpi-meta">planeado</div>}
+                : <div className="kpi-meta">{t('monthAnalysis.plannedMeta')}</div>}
             </div>
           </div>
 
           <section>
             <h2 className="section-label">
-              CATEGORIAS DE {ymToLong(ym).toUpperCase()}{hasReal ? ' · REAL' : ' · PLANEADO'}
+              {t('monthAnalysis.categoriesOf', { month: ymToLong(ym).toUpperCase() })}{hasReal ? t('monthAnalysis.realTag') : t('monthAnalysis.plannedTag')}
             </h2>
             <div className="donut-grid">
-              <CategoryDonut items={shown.fixedItems} title="Despesas fixas" totalSuffix="" emptyText="Sem despesas fixas neste mês." />
-              <CategoryDonut items={shown.variableItems} title="Despesas variáveis" totalSuffix="" emptyText="Sem despesas variáveis neste mês." />
-              <CategoryDonut items={shown.incomeItems} title="Receitas" totalSuffix="" emptyText="Sem receitas neste mês." />
+              <CategoryDonut items={shown.fixedItems} title={t('donutTitles.fixedExpenses')} totalSuffix="" emptyText={t('monthAnalysis.emptyFixed')} />
+              <CategoryDonut items={shown.variableItems} title={t('donutTitles.variableExpenses')} totalSuffix="" emptyText={t('monthAnalysis.emptyVariable')} />
+              <CategoryDonut items={shown.incomeItems} title={t('donutTitles.incomes')} totalSuffix="" emptyText={t('monthAnalysis.emptyIncome')} />
             </div>
           </section>
 
           {topExpenses.length > 0 && (
             <section>
-              <h2 className="section-label">MAIORES DESPESAS DO MÊS</h2>
+              <h2 className="section-label">{t('monthAnalysis.topExpenses')}</h2>
               <div className="card top-expenses">
                 {topExpenses.map((e) => {
                   const share = expenseTotal > 0 ? e.amount / expenseTotal : 0
@@ -138,8 +141,8 @@ export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses
                       <div className="top-exp-main">
                         <span className="top-exp-name">{e.name}</span>
                         <span className="top-exp-meta muted">
-                          {(e.category && e.category.trim()) || 'Por classificar'}
-                          {' · '}{e.type === 'fixed' ? 'fixa' : 'variável'}
+                          {(e.category && e.category.trim()) ? categoryLabel(e.category) : t('monthAnalysis.uncategorized')}
+                          {' · '}{e.type === 'fixed' ? t('kind.fixedF') : t('kind.variableF')}
                         </span>
                         <div className="top-exp-bar">
                           <div className="top-exp-bar-fill" style={{ width: `${Math.min(100, share * 100)}%` }} />
@@ -170,28 +173,30 @@ function PvaKpi({ label, planned, real, hasReal, goodWhenRealHigher }: {
   hasReal: boolean
   goodWhenRealHigher: boolean
 }) {
+  const { t } = useTranslation('budget')
   return (
     <div className="kpi">
-      <div className="kpi-label">{label}{hasReal ? ' (REAL)' : ''}</div>
+      <div className="kpi-label">{label}{hasReal ? t('monthAnalysis.realSuffix') : ''}</div>
       <div className="kpi-value">{eur(hasReal ? real : planned)}</div>
       {hasReal
         ? <VarianceMeta planned={planned} real={real} goodWhenRealHigher={goodWhenRealHigher} />
-        : <div className="kpi-meta">planeado</div>}
+        : <div className="kpi-meta">{t('monthAnalysis.plannedMeta')}</div>}
     </div>
   )
 }
 
 // "vs planeado X" with a colour cue on the difference.
 function VarianceMeta({ planned, real, goodWhenRealHigher }: { planned: number; real: number; goodWhenRealHigher: boolean }) {
+  const { t } = useTranslation('budget')
   const delta = real - planned
   if (Math.abs(delta) < 0.005) {
-    return <div className="kpi-meta">igual ao planeado ({eur(planned)})</div>
+    return <div className="kpi-meta">{t('monthAnalysis.equalToPlanned', { planned: eur(planned) })}</div>
   }
   const isGood = goodWhenRealHigher ? delta > 0 : delta < 0
   return (
     <div className="kpi-meta">
       <span className={isGood ? 'gain-positive' : 'gain-negative'}>{eurSigned(delta)}</span>
-      {' '}vs planeado ({eur(planned)})
+      {' '}{t('monthAnalysis.vsPlanned', { planned: eur(planned) })}
     </div>
   )
 }

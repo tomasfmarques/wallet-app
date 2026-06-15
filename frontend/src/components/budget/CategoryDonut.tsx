@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { Doughnut } from 'react-chartjs-2'
+import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur } from '@/lib/format'
+import { categoryLabel } from '@/lib/categoryDictionary'
 
 interface Item {
   name: string
@@ -17,6 +19,8 @@ interface Props {
   totalSuffix?: string   // appended to the total, e.g. "/mês"; "" for month views
 }
 
+const UNCAT = 'Por classificar'  // internal bucket key (category is null/empty)
+
 // Tones from the existing accent palette.
 const COLOURS = [
   '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
@@ -31,23 +35,30 @@ const MAX_SLICES = 7
 // Donut chart breaking down a budget list by category. Inactive items are
 // excluded — they don't count toward the active budget. Items without a
 // category fall into the "Por classificar" bucket.
-export function CategoryDonut({ items, title, emptyText, totalSuffix = '/mês' }: Props) {
+export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
+  const { t } = useTranslation('budget')
+  const suffix = totalSuffix ?? t('donut.perMonth')
   const { data, options, total, hasData } = useMemo(() => {
     const byCat = new Map<string, number>()
     for (const it of items) {
       if (!it.active || it.amount <= 0) continue
-      const key = (it.category && it.category.trim()) || 'Por classificar'
+      const key = (it.category && it.category.trim()) || UNCAT
       byCat.set(key, (byCat.get(key) ?? 0) + it.amount)
     }
     let entries = Array.from(byCat.entries()).sort((a, b) => b[1] - a[1])
-    let hasOthers = false
+    let othersCount = 0
     if (entries.length > MAX_SLICES) {
       const rest = entries.slice(MAX_SLICES - 1)
       entries = entries.slice(0, MAX_SLICES - 1)
-      entries.push([`Outras (${rest.length})`, rest.reduce((s, [, v]) => s + v, 0)])
-      hasOthers = true
+      entries.push(['__others__', rest.reduce((s, [, v]) => s + v, 0)])
+      othersCount = rest.length
     }
-    const labels = entries.map(([k]) => k)
+    const hasOthers = othersCount > 0
+    const labelFor = (k: string): string =>
+      k === '__others__' ? t('donut.others', { count: othersCount })
+        : k === UNCAT ? t('donut.uncategorized')
+        : categoryLabel(k)
+    const labels = entries.map(([k]) => labelFor(k))
     const values = entries.map(([, v]) => v)
     const tot = values.reduce((s, v) => s + v, 0)
 
@@ -107,12 +118,12 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix = '/mês' }
       },
     }
     return { data: chartData, options: opts, total: tot, hasData: values.length > 0 }
-  }, [items])
+  }, [items, t])
 
   return (
     <div className="card card-pad-lg category-donut">
       <h3 className="settings-subhead" style={{ marginBottom: 4 }}>{title}</h3>
-      <div className="muted donut-total">Total: <strong>{eur(total)}{totalSuffix}</strong></div>
+      <div className="muted donut-total">{t('donut.totalPrefix')} <strong>{eur(total)}{suffix}</strong></div>
       {hasData ? (
         <div className="chart-wrap" style={{ height: 220 }}>
           <Doughnut data={data} options={options} />
