@@ -394,20 +394,34 @@ router.post('/classify', async (req, res) => {
       update: { kind, type, category: target.category ?? null },
     })
 
+    // Classifying as FIXED promotes the line to a recurring PLAN entry — it
+    // leaves "Movimentos do mês" and shows in Receitas/Despesas Fixas, counting
+    // every month. We do this for the clicked line only: clear its `source`
+    // (so it's no longer an imported one-off "actual") and its month-scoping
+    // (startYm/endYm) so it recurs. Same-merchant siblings are just classified
+    // and kept as actuals — so the user doesn't get N duplicate recurring rows.
+    // Variable classification keeps the existing one-off "actual" behaviour.
+    const promote = type === 'fixed'
+    const targetData = promote
+      ? { type, pending: false, source: null, startYm: null, endYm: null, active: true }
+      : { type, pending: false }
+
     // Apply to this item + all pending siblings of the same kind/merchant.
     let applied = 0
     if (kind === 'income') {
       const pend = await prisma.income.findMany({ where: { userId, pending: true } })
-      const ids = new Set(pend.filter((i) => merchantKey(i.name) === key).map((i) => i.id))
-      ids.add(id)
-      await prisma.income.updateMany({ where: { id: { in: [...ids] } }, data: { type, pending: false } })
-      applied = ids.size
+      const sibIds = new Set(pend.filter((i) => merchantKey(i.name) === key).map((i) => i.id))
+      sibIds.delete(id)
+      await prisma.income.update({ where: { id }, data: targetData })
+      if (sibIds.size > 0) await prisma.income.updateMany({ where: { id: { in: [...sibIds] } }, data: { type, pending: false } })
+      applied = sibIds.size + 1
     } else {
       const pend = await prisma.expense.findMany({ where: { userId, pending: true } })
-      const ids = new Set(pend.filter((e) => merchantKey(e.name) === key).map((e) => e.id))
-      ids.add(id)
-      await prisma.expense.updateMany({ where: { id: { in: [...ids] } }, data: { type, pending: false } })
-      applied = ids.size
+      const sibIds = new Set(pend.filter((e) => merchantKey(e.name) === key).map((e) => e.id))
+      sibIds.delete(id)
+      await prisma.expense.update({ where: { id }, data: targetData })
+      if (sibIds.size > 0) await prisma.expense.updateMany({ where: { id: { in: [...sibIds] } }, data: { type, pending: false } })
+      applied = sibIds.size + 1
     }
 
     res.json({ ok: true, applied })
@@ -432,13 +446,29 @@ router.put('/bulk-update', async (req, res) => {
   if (typeof patch !== 'object' || patch === null) {
     res.status(400).json({ error: 'patch obrigatório' }); return
   }
-  const data: { category?: string | null; type?: 'fixed' | 'variable' } = {}
+  const data: {
+    category?: string | null
+    type?: 'fixed' | 'variable'
+    source?: null
+    startYm?: null
+    endYm?: null
+    active?: boolean
+  } = {}
   if ('category' in patch) data.category = asOptionalString(patch.category, 40)
   if ('type' in patch) {
     if (patch.type !== 'fixed' && patch.type !== 'variable') {
       res.status(400).json({ error: "type deve ser 'fixed' ou 'variable'" }); return
     }
     data.type = patch.type
+    // Setting type to FIXED promotes the selected rows to recurring PLAN
+    // entries: clear the imported `source` + month-scoping so they move out of
+    // "Movimentos do mês" and into Receitas/Despesas Fixas, counting monthly.
+    if (patch.type === 'fixed') {
+      data.source = null
+      data.startYm = null
+      data.endYm = null
+      data.active = true
+    }
   }
   if (Object.keys(data).length === 0) {
     res.status(400).json({ error: 'patch vazio — indica category ou type' }); return
