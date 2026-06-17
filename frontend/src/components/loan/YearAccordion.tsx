@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { eur2, ymToShort, currentYm, ymAddMonths } from '@/lib/format'
 import { useUpdatePayment, useBulkUpdatePayments, type LoanScheduleRow } from '@/hooks/useLoan'
 import type { LoanPayment } from '@/types'
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoMensal, bonificacaoMeses }: Props) {
+  const { t } = useTranslation('loan')
   const today = currentYm()
   const todayYear = today.slice(0, 4)
 
@@ -101,30 +103,30 @@ export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoM
                 <span className="year-chevron" aria-hidden>{isOpen ? '▾' : '▸'}</span>
                 <span className="year-label">{year}</span>
                 <span className="year-meta">
-                  {monthsPaid}/{yearRows.length} pagos · {eur2(totalPrestacao)}
+                  {t('accordion.yearMeta', { paid: monthsPaid, total: yearRows.length, value: eur2(totalPrestacao) })}
                 </span>
               </button>
               <button
                 type="button"
                 className="btn-pay-year"
                 onClick={(e) => startFill(e, year)}
-                title="Preencher todos os meses com o mesmo valor"
+                title={t('accordion.payYearTitle')}
               >
-                Pagar ano
+                {t('accordion.payYear')}
               </button>
             </div>
             {isOpen && (
               <div className="year-body">
                 {isFilling && (
                   <div className="year-fill-bar">
-                    <span className="year-fill-label">Valor pago por mês (€)</span>
+                    <span className="year-fill-label">{t('accordion.fillLabel')}</span>
                     <input
                       type="number"
                       inputMode="decimal"
                       step="any"
                       min="0"
                       className="year-fill-input"
-                      placeholder="ex: 831.73"
+                      placeholder={t('accordion.fillPlaceholder')}
                       value={fillAmount}
                       onChange={(e) => setFillAmount(e.target.value)}
                       onKeyDown={(e) => {
@@ -139,7 +141,7 @@ export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoM
                       onClick={() => confirmFill(yearRows)}
                       disabled={bulkUpdate.isLoading || fillAmount.trim() === ''}
                     >
-                      {bulkUpdate.isLoading ? '…' : 'Confirmar'}
+                      {bulkUpdate.isLoading ? '…' : t('accordion.confirm')}
                     </button>
                     <button
                       type="button"
@@ -147,7 +149,7 @@ export function YearAccordion({ rows, payments, loanId, dataInicio, bonificacaoM
                       onClick={cancelFill}
                       disabled={bulkUpdate.isLoading}
                     >
-                      Cancelar
+                      {t('actions.cancel', { ns: 'common' })}
                     </button>
                   </div>
                 )}
@@ -179,6 +181,7 @@ interface RowProps {
 }
 
 function TrackingRow({ row, payment, isCurrent, loanId, bonificacaoMensal }: RowProps) {
+  const { t } = useTranslation('loan')
   const mutation = useUpdatePayment()
   const [realInput, setRealInput] = useState<string>(
     payment?.real != null ? String(payment.real) : '',
@@ -205,7 +208,7 @@ function TrackingRow({ row, payment, isCurrent, loanId, bonificacaoMensal }: Row
       <div className="tracking-ym">{ymToShort(row.ym)}</div>
       <div className="tracking-prestacao">
         {netPrestacao != null
-          ? <span title={`Bruto: ${eur2(displayPrestacao)}`}>{eur2(netPrestacao)} <span className="bon-tag">líq.</span></span>
+          ? <span title={t('accordion.grossTitle', { value: eur2(displayPrestacao) })}>{eur2(netPrestacao)} <span className="bon-tag">{t('accordion.netTag')}</span></span>
           : eur2(displayPrestacao)
         }
       </div>
@@ -217,13 +220,13 @@ function TrackingRow({ row, payment, isCurrent, loanId, bonificacaoMensal }: Row
             onChange={onTogglePaid}
             disabled={mutation.isLoading}
           />
-          <span>Pago</span>
+          <span>{t('accordion.paid')}</span>
         </label>
       </div>
       <div className="tracking-real">
         <input
           type="number" inputMode="decimal" step="any" min="0"
-          placeholder="valor real"
+          placeholder={t('accordion.realPlaceholder')}
           value={realInput}
           onChange={(e) => setRealInput(e.target.value)}
           onBlur={onRealBlur}

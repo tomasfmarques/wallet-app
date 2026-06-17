@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
@@ -21,6 +22,7 @@ function addMonths(ym: string, n: number): string {
 }
 
 export function Compare() {
+  const { t } = useTranslation('compare')
   const { data: loanData, isLoading: loanLoading, error: loanError, refetch: refetchLoans } = useLoan()
   const { data: portData } = usePortfolio()
   const compare = useCompare()
@@ -92,8 +94,8 @@ export function Compare() {
   if (loanError) {
     return (
       <div className="compare-page">
-        <header className="page-header"><h1>Amortizar ou Investir?</h1></header>
-        <StateBlock variant="error" message="Não foi possível carregar os teus créditos." onRetry={() => refetchLoans()} />
+        <header className="page-header"><h1>{t('title')}</h1></header>
+        <StateBlock variant="error" message={t('loadError')} onRetry={() => refetchLoans()} />
       </div>
     )
   }
@@ -102,8 +104,8 @@ export function Compare() {
     return (
       <div className="compare-page">
         <header className="page-header">
-          <h1>Amortizar ou Investir?</h1>
-          <p className="muted">Adiciona um crédito primeiro para usar este simulador.</p>
+          <h1>{t('title')}</h1>
+          <p className="muted">{t('needLoan')}</p>
         </header>
       </div>
     )
@@ -121,10 +123,10 @@ export function Compare() {
   // Effective rate label for the context card
   const effectiveRateLabel = loan
     ? loan.taeg != null
-      ? `TAEG ${(loan.taeg * 100).toFixed(2)} %`
+      ? t('rate.taeg', { value: (loan.taeg * 100).toFixed(2) })
       : loan.spread === 0 && loan.euribor === 0
-        ? `TAN ${(loan.tanFixa * 100).toFixed(2)} %`
-        : `${((loan.euribor + loan.spread) * 100).toFixed(2)} % (Euribor + spread)`
+        ? t('rate.tan', { value: (loan.tanFixa * 100).toFixed(2) })
+        : t('rate.euriborSpread', { value: ((loan.euribor + loan.spread) * 100).toFixed(2) })
     : '—'
 
   const rec = result?.recommendation
@@ -132,9 +134,9 @@ export function Compare() {
   return (
     <div className="compare-page">
       <header className="page-header">
-        <h1>Amortizar ou Investir?</h1>
+        <h1>{t('title')}</h1>
         <p className="muted">
-          Compara o impacto de amortizar o crédito vs investir o mesmo montante.
+          {t('subtitle')}
         </p>
       </header>
 
@@ -157,23 +159,23 @@ export function Compare() {
       {loan && kpis && (
         <div className="compare-context-strip">
           <div className="compare-context-item">
-            <span className="compare-context-label">Crédito</span>
+            <span className="compare-context-label">{t('context.loan')}</span>
             <span className="compare-context-value">{loan.name}</span>
           </div>
           <div className="compare-context-item">
-            <span className="compare-context-label">Taxa</span>
+            <span className="compare-context-label">{t('context.rate')}</span>
             <span className="compare-context-value">{effectiveRateLabel}</span>
           </div>
           <div className="compare-context-item">
-            <span className="compare-context-label">Capital em dívida</span>
+            <span className="compare-context-label">{t('context.debt')}</span>
             <span className="compare-context-value">{eur(kpis.capitalAtual)}</span>
           </div>
           <div className="compare-context-item">
-            <span className="compare-context-label">Prestação mensal</span>
+            <span className="compare-context-label">{t('context.monthlyPayment')}</span>
             <span className="compare-context-value">{eur2(kpis.proximaPrestacao)}</span>
           </div>
           <div className="compare-context-item">
-            <span className="compare-context-label">Conclusão prevista</span>
+            <span className="compare-context-label">{t('context.completion')}</span>
             <span className="compare-context-value">{kpis.conclusaoYm.slice(0, 4)}</span>
           </div>
         </div>
@@ -182,20 +184,20 @@ export function Compare() {
       {/* Controls */}
       <div className="card card-pad-lg compare-controls">
         <div className="compare-controls-header">
-          <h3 className="section-label" style={{ margin: 0 }}>PARÂMETROS</h3>
+          <h3 className="section-label" style={{ margin: 0 }}>{t('paramsLabel')}</h3>
           <button
             type="button" className="btn btn-ghost btn-sm"
             onClick={resetToDefaults}
-            title="Repor valores predefinidos do teu crédito e portfolio"
+            title={t('resetTitle')}
           >
-            ↺ Repor valores
+            {t('reset')}
           </button>
         </div>
 
         <div className="compare-controls-grid">
           {/* Montante */}
           <div className="form-group">
-            <label className="form-label">Montante a alocar (€)</label>
+            <label className="form-label">{t('amountLabel')}</label>
             <input
               className="form-input"
               type="number" min={100} step={100}
@@ -204,41 +206,39 @@ export function Compare() {
             />
             {kpis && (
               <span className="form-hint">
-                Prestação mensal: {eur2(kpis.proximaPrestacao)}
+                {t('monthlyHint', { value: eur2(kpis.proximaPrestacao) })}
               </span>
             )}
           </div>
 
           {/* Modo */}
           <div className="form-group">
-            <label className="form-label">Modo de amortização</label>
+            <label className="form-label">{t('modeLabel')}</label>
             <div className="toggle-group">
               <button
                 type="button"
                 className={`toggle-btn ${modo === 'prazo' ? 'toggle-btn-active' : ''}`}
                 onClick={() => setModo('prazo')}
               >
-                Reduzir prazo
+                {t('modeReducePrazo')}
               </button>
               <button
                 type="button"
                 className={`toggle-btn ${modo === 'prestacao' ? 'toggle-btn-active' : ''}`}
                 onClick={() => setModo('prestacao')}
               >
-                Reduzir prestação
+                {t('modeReducePrestacao')}
               </button>
             </div>
             <span className="form-hint">
-              {modo === 'prazo'
-                ? 'A prestação mantém-se, pagas mais cedo.'
-                : 'O prazo mantém-se, a prestação baixa.'}
+              {modo === 'prazo' ? t('modePrazoHint') : t('modePrestacaoHint')}
             </span>
           </div>
 
           {/* Rentabilidade */}
           <div className="form-group">
             <label className="form-label">
-              Rentabilidade esperada do investimento
+              {t('returnLabel')}
               <strong style={{ marginLeft: 8 }}>{investReturn.toFixed(1)} %</strong>
             </label>
             <input
@@ -250,7 +250,7 @@ export function Compare() {
             <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
             {avgAssetReturnPct != null && (
               <span className="form-hint">
-                Média de rentabilidade dos teus ativos: {avgAssetReturnPct.toFixed(1)} %.
+                {t('avgReturnHint', { value: avgAssetReturnPct.toFixed(1) })}
               </span>
             )}
           </div>
@@ -258,7 +258,7 @@ export function Compare() {
           {/* Taxa de imposto */}
           <div className="form-group">
             <label className="form-label">
-              Imposto sobre ganhos (mais-valias)
+              {t('taxLabel')}
               <strong style={{ marginLeft: 8 }}>{taxRate} %</strong>
             </label>
             <input
@@ -268,14 +268,14 @@ export function Compare() {
               style={{ accentColor: 'var(--accent)' }}
             />
             <span className="slider-bounds"><span>0 %</span><span>50 %</span></span>
-            <span className="form-hint">Portugal: 28 % sobre mais-valias de capitais.</span>
+            <span className="form-hint">{t('taxHint')}</span>
           </div>
         </div>
       </div>
 
       {/* Loading */}
       {compare.isLoading && !result && (
-        <div className="card card-pad-lg muted">A calcular…</div>
+        <div className="card card-pad-lg muted">{t('calculating')}</div>
       )}
 
       {/* Results */}
@@ -288,17 +288,17 @@ export function Compare() {
             </span>
             <div>
               <div className="compare-rec-title">
-                {rec === 'amortizar' && 'Amortizar é a melhor opção'}
-                {rec === 'investir' && 'Investir é a melhor opção'}
-                {rec === 'equivalente' && 'As opções são equivalentes'}
+                {rec === 'amortizar' && t('recAmortizarTitle')}
+                {rec === 'investir' && t('recInvestirTitle')}
+                {rec === 'equivalente' && t('recEquivTitle')}
               </div>
               <div className="compare-rec-sub">
                 {rec === 'amortizar' &&
-                  `Poupas ${eur(result.amortizar.interestSaved)} em juros vs ${eur(result.investir.netGainAfterTax)} de ganho líquido ao investir.`}
+                  t('recAmortizarSub', { saved: eur(result.amortizar.interestSaved), gain: eur(result.investir.netGainAfterTax) })}
                 {rec === 'investir' &&
-                  `Ganhas ${eur(result.investir.netGainAfterTax)} líquidos ao investir vs ${eur(result.amortizar.interestSaved)} poupados em juros.`}
+                  t('recInvestirSub', { gain: eur(result.investir.netGainAfterTax), saved: eur(result.amortizar.interestSaved) })}
                 {rec === 'equivalente' &&
-                  `A diferença entre as duas opções é inferior a 100 €.`}
+                  t('recEquivSub')}
               </div>
             </div>
           </div>
@@ -308,36 +308,36 @@ export function Compare() {
             <div className="card card-pad-lg compare-col compare-col-amortizar">
               <div className="compare-col-header">
                 <span className="compare-col-icon" aria-hidden>🏠</span>
-                <h3>Amortizar</h3>
+                <h3>{t('amortizar')}</h3>
               </div>
               <div className="kpi-grid compare-kpis">
                 <div className={`kpi ${rec === 'amortizar' ? 'kpi-accent-green' : ''}`}>
-                  <div className="kpi-label">JUROS POUPADOS</div>
+                  <div className="kpi-label">{t('interestSavedLabel')}</div>
                   <div className="kpi-value">{eur(result.amortizar.interestSaved)}</div>
-                  <div className="kpi-meta">ao longo do crédito</div>
+                  <div className="kpi-meta">{t('interestSavedMeta')}</div>
                 </div>
                 <div className="kpi">
-                  <div className="kpi-label">TEMPO POUPADO</div>
-                  <div className="kpi-value">{result.amortizar.monthsSaved} meses</div>
-                  <div className="kpi-meta">nova conclusão: {ymToShort(result.amortizar.payoffYm)}</div>
+                  <div className="kpi-label">{t('timeSavedLabel')}</div>
+                  <div className="kpi-value">{t('timeSavedValue', { count: result.amortizar.monthsSaved })}</div>
+                  <div className="kpi-meta">{t('newCompletion', { value: ymToShort(result.amortizar.payoffYm) })}</div>
                 </div>
                 {modo === 'prestacao' && result.amortizar.monthlyFreed != null && (
                   <div className="kpi">
-                    <div className="kpi-label">POUPANÇA MENSAL</div>
+                    <div className="kpi-label">{t('monthlySavingLabel')}</div>
                     <div className="kpi-value" style={{ color: 'var(--green-d)' }}>
                       {eur(result.amortizar.monthlyFreed)}
                     </div>
                     <div className="kpi-meta">
-                      nova prestação: {result.amortizar.newPrestacao != null ? eur(result.amortizar.newPrestacao) : '—'}
+                      {t('newPayment', { value: result.amortizar.newPrestacao != null ? eur(result.amortizar.newPrestacao) : '—' })}
                     </div>
                   </div>
                 )}
                 <div className="kpi">
-                  <div className="kpi-label">RETORNO EQUIV.</div>
+                  <div className="kpi-label">{t('equivReturnLabel')}</div>
                   <div className="kpi-value">
                     {result.breakEvenReturn < 0.05 ? '≈ 0 %' : `${result.breakEvenReturn.toFixed(2)} %`}
                   </div>
-                  <div className="kpi-meta">rentabilidade anual equivalente</div>
+                  <div className="kpi-meta">{t('equivReturnMeta')}</div>
                 </div>
               </div>
             </div>
@@ -345,29 +345,29 @@ export function Compare() {
             <div className="card card-pad-lg compare-col compare-col-investir">
               <div className="compare-col-header">
                 <span className="compare-col-icon" aria-hidden>📈</span>
-                <h3>Investir</h3>
+                <h3>{t('investir')}</h3>
               </div>
               <div className="kpi-grid compare-kpis">
                 <div className={`kpi ${rec === 'investir' ? 'kpi-accent-green' : ''}`}>
-                  <div className="kpi-label">GANHO LÍQUIDO</div>
+                  <div className="kpi-label">{t('netGainLabel')}</div>
                   <div className="kpi-value">{eur(result.investir.netGainAfterTax)}</div>
-                  <div className="kpi-meta">após {taxRate} % de imposto</div>
+                  <div className="kpi-meta">{t('afterTax', { rate: taxRate })}</div>
                 </div>
                 <div className="kpi">
-                  <div className="kpi-label">VALOR FUTURO</div>
+                  <div className="kpi-label">{t('futureValueLabel')}</div>
                   <div className="kpi-value">{eur(result.investir.futureValue)}</div>
-                  <div className="kpi-meta">ao fim de {Math.round(result.horizonMonths / 12)} anos</div>
+                  <div className="kpi-meta">{t('afterYears', { years: Math.round(result.horizonMonths / 12) })}</div>
                 </div>
                 <div className="kpi">
-                  <div className="kpi-label">GANHO BRUTO</div>
+                  <div className="kpi-label">{t('grossGainLabel')}</div>
                   <div className="kpi-value">{eur(result.investir.grossGain)}</div>
-                  <div className="kpi-meta">antes de impostos</div>
+                  <div className="kpi-meta">{t('beforeTax')}</div>
                 </div>
                 <div className="kpi">
-                  <div className="kpi-label">RETORNO ANUAL</div>
+                  <div className="kpi-label">{t('annualReturnLabel')}</div>
                   <div className="kpi-value">{investReturn.toFixed(1)} %</div>
                   <div className="kpi-meta">
-                    {(investReturn * (1 - taxRate / 100)).toFixed(2)} % após imposto
+                    {t('afterTaxPct', { value: (investReturn * (1 - taxRate / 100)).toFixed(2) })}
                   </div>
                 </div>
               </div>
@@ -376,24 +376,24 @@ export function Compare() {
 
           {/* Break-even callout */}
           <div className="compare-breakeven card">
-            <span className="compare-breakeven-label">⚖️ Ponto de equilíbrio</span>
+            <span className="compare-breakeven-label">{t('breakEvenLabel')}</span>
             <span className="compare-breakeven-value">
               {result.breakEvenReturn < 0.05
-                ? 'Qualquer rentabilidade positiva favorece investir'
-                : `${result.breakEvenReturn.toFixed(2)} % ao ano`}
+                ? t('breakEvenAny')
+                : t('breakEvenValue', { value: result.breakEvenReturn.toFixed(2) })}
             </span>
             <span className="compare-breakeven-hint">
               {result.breakEvenReturn >= 0.05 && (
                 investReturn >= result.breakEvenReturn
-                  ? `Com ${investReturn.toFixed(1)} % superas o ponto de equilíbrio — investir vence.`
-                  : `Com ${investReturn.toFixed(1)} % ficas abaixo do ponto de equilíbrio — amortizar vence.`
+                  ? t('breakEvenAbove', { value: investReturn.toFixed(1) })
+                  : t('breakEvenBelow', { value: investReturn.toFixed(1) })
               )}
             </span>
           </div>
 
           {/* Comparison chart */}
           <div className="card card-pad-lg">
-            <h3 className="section-label" style={{ marginTop: 0 }}>EVOLUÇÃO DO GANHO AO LONGO DO TEMPO</h3>
+            <h3 className="section-label" style={{ marginTop: 0 }}>{t('chartLabel')}</h3>
             <CompareChart curve={result.curve} />
           </div>
         </>
@@ -405,12 +405,13 @@ export function Compare() {
 // ── Chart ─────────────────────────────────────────────────────────
 
 function CompareChart({ curve }: { curve: Array<{ ym: string; amortizar: number; investir: number }> }) {
+  const { t } = useTranslation('compare')
   const labels = curve.map((p) => ymToShort(p.ym))
   const data: ChartData<'line'> = {
     labels,
     datasets: [
       {
-        label: 'Juros poupados (amortizar)',
+        label: t('chartAmortizar'),
         data: curve.map((p) => p.amortizar),
         borderColor: '#2563EB',
         backgroundColor: '#2563EB22',
@@ -421,7 +422,7 @@ function CompareChart({ curve }: { curve: Array<{ ym: string; amortizar: number;
         borderWidth: 2,
       },
       {
-        label: 'Ganho líquido após imposto (investir)',
+        label: t('chartInvestir'),
         data: curve.map((p) => p.investir),
         borderColor: '#059669',
         backgroundColor: '#05966922',

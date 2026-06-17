@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { eur, ymToShort, currentYm } from '@/lib/format'
 import { useSimulation, type SimulationResult } from '@/hooks/useLoan'
 import { CapitalChart } from './CapitalChart'
@@ -16,6 +17,7 @@ interface Props {
 //   • Future Euribor override (%)
 // Re-runs the backend simulation on each change (debounced).
 export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoMeses }: Props) {
+  const { t } = useTranslation('loan')
   const today = currentYm()
   const todayYear = Number(today.slice(0, 4))
   const startYearBase = Number(loanDataInicio.slice(0, 4))
@@ -48,11 +50,11 @@ export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoM
   return (
     <div className="sim-panel">
       <div className="card card-pad-lg sim-controls">
-        <h3 className="section-label" style={{ marginTop: 0 }}>PARÂMETROS</h3>
+        <h3 className="section-label" style={{ marginTop: 0 }}>{t('sim.paramsLabel')}</h3>
 
         <div className="slider-row">
           <label>
-            <span>Amortização anual</span>
+            <span>{t('sim.annualAmort')}</span>
             <strong>{eur(annualAmount)}</strong>
           </label>
           <input
@@ -67,7 +69,7 @@ export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoM
 
         <div className="slider-row">
           <label>
-            <span>Ano de início</span>
+            <span>{t('sim.startYear')}</span>
             <strong>{startYear}</strong>
           </label>
           <input
@@ -83,7 +85,7 @@ export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoM
 
         <div className="slider-row">
           <label>
-            <span>Euribor futura</span>
+            <span>{t('sim.futureEuribor')}</span>
             <strong>{futureEuriborPct.toFixed(2)} %</strong>
           </label>
           <input
@@ -101,39 +103,39 @@ export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoM
         <>
           <div className="kpi-grid">
             <div className="kpi">
-              <div className="kpi-label">JUROS POUPADOS</div>
+              <div className="kpi-label">{t('sim.interestSavedLabel')}</div>
               <div className="kpi-value" style={{ color: 'var(--green-d)' }}>
                 {eur(Math.max(0, result.delta.interestSaved))}
               </div>
-              <div className="kpi-meta">vs. cenário sem amortizações</div>
+              <div className="kpi-meta">{t('sim.interestSavedMeta')}</div>
             </div>
             <div className="kpi">
-              <div className="kpi-label">TEMPO POUPADO</div>
+              <div className="kpi-label">{t('sim.timeSavedLabel')}</div>
               <div className="kpi-value">
-                {Math.max(0, result.delta.monthsSaved)} meses
+                {t('sim.timeSavedValue', { count: Math.max(0, result.delta.monthsSaved) })}
               </div>
               <div className="kpi-meta">
-                ≈ {Math.round(Math.max(0, result.delta.monthsSaved) / 12)} anos
+                {t('sim.timeSavedMeta', { years: Math.round(Math.max(0, result.delta.monthsSaved) / 12) })}
               </div>
             </div>
             <div className="kpi">
-              <div className="kpi-label">NOVA CONCLUSÃO</div>
+              <div className="kpi-label">{t('sim.newCompletionLabel')}</div>
               <div className="kpi-value">{ymToShort(result.simulated.payoffYm)}</div>
-              <div className="kpi-meta">era {ymToShort(result.base.payoffYm)}</div>
+              <div className="kpi-meta">{t('sim.wasMeta', { value: ymToShort(result.base.payoffYm) })}</div>
             </div>
             <div className="kpi">
-              <div className="kpi-label">JUROS TOTAIS</div>
+              <div className="kpi-label">{t('sim.totalInterestLabel')}</div>
               <div className="kpi-value">{eur(result.simulated.totalInterest)}</div>
-              <div className="kpi-meta">era {eur(result.base.totalInterest)}</div>
+              <div className="kpi-meta">{t('sim.wasMeta', { value: eur(result.base.totalInterest) })}</div>
             </div>
           </div>
 
           <div className="card card-pad-lg">
-            <h3 className="section-label" style={{ marginTop: 0 }}>EVOLUÇÃO DO CAPITAL</h3>
+            <h3 className="section-label" style={{ marginTop: 0 }}>{t('sim.evolutionLabel')}</h3>
             <CapitalChart
               series={[
-                { label: 'Sem amortizações', rows: result.base.rows, colour: '#94A3B8' },
-                { label: 'Com amortizações', rows: result.simulated.rows, colour: '#2563EB', fill: true },
+                { label: t('sim.noAmort'), rows: result.base.rows, colour: '#94A3B8' },
+                { label: t('sim.withAmort'), rows: result.simulated.rows, colour: '#2563EB', fill: true },
               ]}
               height={300}
             />
@@ -142,7 +144,7 @@ export function SimulatorPanel({ loanId, loanEuribor, loanDataInicio, loanPrazoM
       )}
 
       {!result && simulate.isLoading && (
-        <div className="card card-pad-lg muted">A calcular cenário…</div>
+        <div className="card card-pad-lg muted">{t('sim.calculating')}</div>
       )}
     </div>
   )

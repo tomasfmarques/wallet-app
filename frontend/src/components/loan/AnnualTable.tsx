@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { eur } from '@/lib/format'
 import type { LoanScheduleRow } from '@/hooks/useLoan'
 
@@ -19,6 +20,7 @@ interface YearAgg {
 // Compact year-by-year table: months in that year, totals paid/interest/principal,
 // extra amortizations applied, and remaining capital at year end.
 export function AnnualTable({ rows }: Props) {
+  const { t } = useTranslation('loan')
   const years: YearAgg[] = useMemo(() => {
     const m = new Map<string, YearAgg>()
     for (const r of rows) {
@@ -48,13 +50,13 @@ export function AnnualTable({ rows }: Props) {
       <table className="annual-table">
         <thead>
           <tr>
-            <th>Ano</th>
-            <th>Meses</th>
-            <th>Pago</th>
-            <th>Juros</th>
-            <th>Capital</th>
-            <th>Amort. extra</th>
-            <th>Capital em dívida</th>
+            <th>{t('annual.year')}</th>
+            <th>{t('annual.months')}</th>
+            <th>{t('annual.paid')}</th>
+            <th>{t('annual.interest')}</th>
+            <th>{t('annual.capital')}</th>
+            <th>{t('annual.extraAmort')}</th>
+            <th>{t('annual.remaining')}</th>
           </tr>
         </thead>
         <tbody>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLoan, useDeleteLoan } from '@/hooks/useLoan'
 import { LoanKpis } from '@/components/loan/LoanKpis'
 import { LoanSetupForm } from '@/components/loan/LoanSetupForm'
@@ -12,6 +13,7 @@ import { StateBlock } from '@/components/ui/StateBlock'
 type Tab = 'tracking' | 'simulacao' | 'tabela'
 
 export function Loan() {
+  const { t } = useTranslation('loan')
   const { data, isLoading, error, refetch } = useLoan()
   const del = useDeleteLoan()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -25,8 +27,8 @@ export function Loan() {
   if (error) {
     return (
       <div className="page-stub">
-        <h1>Crédito</h1>
-        <StateBlock variant="error" message="Não foi possível carregar os teus créditos." onRetry={() => refetch()} />
+        <h1>{t('title')}</h1>
+        <StateBlock variant="error" message={t('loadError')} onRetry={() => refetch()} />
       </div>
     )
   }
@@ -37,13 +39,12 @@ export function Loan() {
   if (loans.length === 0) {
     return (
       <div className="loan-empty">
-        <h1>Crédito</h1>
+        <h1>{t('title')}</h1>
         <p className="muted">
-          Ainda não tens créditos. Adiciona o primeiro (casa, carro…) para começar
-          o tracking mensal e ver projeções.
+          {t('emptyText')}
         </p>
         <div className="card">
-          <LoanSetupForm submitLabel="Criar crédito" />
+          <LoanSetupForm submitLabel={t('createSubmit')} />
         </div>
       </div>
     )
@@ -53,10 +54,10 @@ export function Loan() {
   if (mode === 'create') {
     return (
       <div className="loan-page">
-        <header className="page-header"><h1>Novo crédito</h1></header>
+        <header className="page-header"><h1>{t('createTitle')}</h1></header>
         <div className="card">
           <LoanSetupForm
-            submitLabel="Criar crédito"
+            submitLabel={t('createSubmit')}
             onSaved={() => setMode('view')}
             onCancel={() => setMode('view')}
           />
@@ -73,7 +74,7 @@ export function Loan() {
   if (mode === 'edit') {
     return (
       <div className="loan-page">
-        <header className="page-header"><h1>Editar {loan.name}</h1></header>
+        <header className="page-header"><h1>{t('editTitle', { name: loan.name })}</h1></header>
         <div className="card">
           <LoanSetupForm
             loanId={loan.id}
@@ -92,7 +93,7 @@ export function Loan() {
   }
 
   const removeCredit = () => {
-    if (!confirm(`Remover o crédito "${loan.name}"? Esta ação é permanente.`)) return
+    if (!confirm(t('removeConfirm', { name: loan.name }))) return
     del.mutate(loan.id, { onSuccess: () => setSelectedId(null) })
   }
 
@@ -100,19 +101,19 @@ export function Loan() {
   return (
     <div className="loan-page">
       <header className="page-header">
-        <h1>Crédito</h1>
+        <h1>{t('title')}</h1>
         <div className="page-header-actions">
           <button type="button" className="btn btn-ghost" onClick={() => setAmortOpen(true)}>
-            Amortizações ({loan.amortizations.length})
+            {t('amortizationsBtn', { count: loan.amortizations.length })}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setMode('edit')}>
-            Editar dados
+            {t('editData')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={removeCredit} disabled={del.isLoading}>
-            Remover
+            {t('actions.remove', { ns: 'common' })}
           </button>
           <button type="button" className="btn btn-primary" onClick={() => setMode('create')}>
-            + Adicionar crédito
+            + {t('addLoan')}
           </button>
         </div>
       </header>
@@ -154,32 +155,32 @@ export function Loan() {
           type="button" role="tab" aria-selected={tab === 'tracking'}
           className={`subtab ${tab === 'tracking' ? 'is-active' : ''}`}
           onClick={() => setTab('tracking')}
-        >Tracking mensal</button>
+        >{t('tabs.tracking')}</button>
         <button
           type="button" role="tab" aria-selected={tab === 'simulacao'}
           className={`subtab ${tab === 'simulacao' ? 'is-active' : ''}`}
           onClick={() => setTab('simulacao')}
-        >Simulação</button>
+        >{t('tabs.simulation')}</button>
         <button
           type="button" role="tab" aria-selected={tab === 'tabela'}
           className={`subtab ${tab === 'tabela' ? 'is-active' : ''}`}
           onClick={() => setTab('tabela')}
-        >Tabela anual</button>
+        >{t('tabs.table')}</button>
       </div>
 
       {tab === 'tracking' && (
         <>
           <section>
-            <h2 className="section-label">EVOLUÇÃO DO CAPITAL</h2>
+            <h2 className="section-label">{t('capitalEvolution')}</h2>
             <div className="card card-pad-lg">
               <CapitalChart
-                series={[{ label: 'Capital em dívida', rows: schedule.rows, colour: '#2563EB', fill: true }]}
+                series={[{ label: t('capitalSeries'), rows: schedule.rows, colour: '#2563EB', fill: true }]}
                 height={260}
               />
             </div>
           </section>
           <section>
-            <h2 className="section-label">PAGAMENTOS</h2>
+            <h2 className="section-label">{t('payments')}</h2>
             <YearAccordion
               rows={schedule.rows}
               payments={loan.payments}

@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useUpsertLoan, type LoanInputBody } from '@/hooks/useLoan'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 
@@ -23,9 +24,11 @@ export function LoanSetupForm({
   loanId,
   onSaved,
   onCancel,
-  submitLabel = 'Guardar',
+  submitLabel,
 }: Props) {
+  const { t } = useTranslation('loan')
   const upsert = useUpsertLoan()
+  const saveLabel = submitLabel ?? t('actions.save', { ns: 'common' })
 
   const [rateMode, setRateMode] = useState<'fixed' | 'mixed'>(detectRateMode(initial))
 
@@ -60,25 +63,25 @@ export function LoanSetupForm({
     setErrors({})
 
     const clientErrors: FieldErrors = {}
-    if (!name.trim()) clientErrors.name = 'Dá um nome (ex: Casa, Carro)'
+    if (!name.trim()) clientErrors.name = t('setup.errName')
     const cap = Number(capital)
-    if (!Number.isFinite(cap) || cap <= 0) clientErrors.capital = 'Valor obrigatório'
+    if (!Number.isFinite(cap) || cap <= 0) clientErrors.capital = t('setup.errCapital')
     const prazo = Number(prazoMeses)
-    if (!Number.isInteger(prazo) || prazo <= 0) clientErrors.prazoMeses = 'Inteiro positivo'
+    if (!Number.isInteger(prazo) || prazo <= 0) clientErrors.prazoMeses = t('setup.errInteger')
     const tan = Number(tanFixaPct)
-    if (!Number.isFinite(tan) || tan < 0) clientErrors.tanFixa = '%'
+    if (!Number.isFinite(tan) || tan < 0) clientErrors.tanFixa = t('setup.errPct')
 
     let mFix = prazo
     let spr = 0
     let eur = 0
     if (rateMode === 'mixed') {
       mFix = Number(mesesFixos)
-      if (!Number.isInteger(mFix) || mFix <= 0) clientErrors.mesesFixos = 'Inteiro positivo'
-      if (mFix > prazo) clientErrors.mesesFixos = 'Não pode exceder o prazo total'
+      if (!Number.isInteger(mFix) || mFix <= 0) clientErrors.mesesFixos = t('setup.errInteger')
+      if (mFix > prazo) clientErrors.mesesFixos = t('setup.errFixedExceeds')
       spr = Number(spreadPct)
-      if (!Number.isFinite(spr) || spr < 0) clientErrors.spread = '%'
+      if (!Number.isFinite(spr) || spr < 0) clientErrors.spread = t('setup.errPct')
       eur = Number(euriborPct)
-      if (!Number.isFinite(eur) || eur < 0) clientErrors.euribor = '%'
+      if (!Number.isFinite(eur) || eur < 0) clientErrors.euribor = t('setup.errPct')
     }
 
     if (Object.keys(clientErrors).length > 0) {
@@ -88,21 +91,21 @@ export function LoanSetupForm({
 
     let taeg: number | null = null
     if (taegStr.trim() !== '') {
-      const t = Number(taegStr)
-      if (!Number.isFinite(t) || t < 0) { clientErrors.taeg = 'Valor inválido' }
-      else taeg = t > 0 ? t / 100 : null
+      const tg = Number(taegStr)
+      if (!Number.isFinite(tg) || tg < 0) { clientErrors.taeg = t('setup.errInvalid') }
+      else taeg = tg > 0 ? tg / 100 : null
     }
 
     let bonificacaoMensal: number | null = null
     if (bonMensalStr.trim() !== '') {
       const b = Number(bonMensalStr)
-      if (!Number.isFinite(b) || b < 0) { clientErrors.bonificacaoMensal = 'Valor inválido' }
+      if (!Number.isFinite(b) || b < 0) { clientErrors.bonificacaoMensal = t('setup.errInvalid') }
       else bonificacaoMensal = b > 0 ? b : null
     }
     let bonificacaoMeses: number | null = null
     if (bonMesesStr.trim() !== '') {
       const m = Number(bonMesesStr)
-      if (!Number.isInteger(m) || m < 0) { clientErrors.bonificacaoMeses = 'Inteiro ≥ 0' }
+      if (!Number.isInteger(m) || m < 0) { clientErrors.bonificacaoMeses = t('setup.errIntegerGte0') }
       else bonificacaoMeses = m > 0 ? m : null
     }
 
@@ -140,35 +143,33 @@ export function LoanSetupForm({
 
       {/* Rate mode selector */}
       <div className="field" style={{ marginBottom: 6 }}>
-        <label>Tipo de taxa</label>
+        <label>{t('setup.rateType')}</label>
         <div className="toggle-group" style={{ marginTop: 4 }}>
           <button
             type="button"
             className={`toggle-btn ${rateMode === 'fixed' ? 'toggle-btn-active' : ''}`}
             onClick={() => setRateMode('fixed')}
           >
-            Taxa fixa
+            {t('setup.fixed')}
           </button>
           <button
             type="button"
             className={`toggle-btn ${rateMode === 'mixed' ? 'toggle-btn-active' : ''}`}
             onClick={() => setRateMode('mixed')}
           >
-            Mista (TAN + Euribor)
+            {t('setup.mixed')}
           </button>
         </div>
         <span className="field-hint" style={{ marginTop: 4 }}>
-          {rateMode === 'fixed'
-            ? 'Crédito automóvel, pessoal ou outra taxa 100% fixa.'
-            : 'Crédito habitação com período fixo seguido de Euribor + spread.'}
+          {rateMode === 'fixed' ? t('setup.fixedHint') : t('setup.mixedHint')}
         </span>
       </div>
 
       <div className="field-grid">
         <div className="field">
-          <label htmlFor="credit-name">Nome do crédito</label>
+          <label htmlFor="credit-name">{t('setup.nameLabel')}</label>
           <input
-            id="credit-name" type="text" placeholder="Casa, Carro…"
+            id="credit-name" type="text" placeholder={t('setup.namePlaceholder')}
             value={name} onChange={(e) => setName(e.target.value)}
             aria-invalid={!!errors.name}
           />
@@ -176,7 +177,7 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="capital">Capital (€)</label>
+          <label htmlFor="capital">{t('setup.capitalLabel')}</label>
           <input
             id="capital" type="number" inputMode="decimal" step="any" min="0"
             value={capital} onChange={(e) => setCapital(e.target.value)}
@@ -186,7 +187,7 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="dataInicio">Data de início</label>
+          <label htmlFor="dataInicio">{t('setup.startLabel')}</label>
           <input
             id="dataInicio" type="month"
             value={dataInicio} onChange={(e) => setDataInicio(e.target.value)}
@@ -196,7 +197,7 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="prazoMeses">Prazo total (meses)</label>
+          <label htmlFor="prazoMeses">{t('setup.termLabel')}</label>
           <input
             id="prazoMeses" type="number" inputMode="numeric" step="1" min="1"
             value={prazoMeses} onChange={(e) => setPrazoMeses(e.target.value)}
@@ -206,7 +207,7 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="tanFixaPct">TAN {rateMode === 'fixed' ? '(%)' : 'fixa (%)'}</label>
+          <label htmlFor="tanFixaPct">{rateMode === 'fixed' ? t('setup.tanLabelFixed') : t('setup.tanLabelMixed')}</label>
           <input
             id="tanFixaPct" type="number" inputMode="decimal" step="any" min="0"
             value={tanFixaPct} onChange={(e) => setTanFixaPct(e.target.value)}
@@ -217,11 +218,11 @@ export function LoanSetupForm({
 
         <div className="field">
           <label htmlFor="taegPct">
-            TAEG (%) <span className="field-hint">opcional</span>
+            {t('setup.taegLabel')} <span className="field-hint">{t('setup.optional')}</span>
           </label>
           <input
             id="taegPct" type="number" inputMode="decimal" step="any" min="0"
-            placeholder="ex: 5.2"
+            placeholder={t('setup.taegPlaceholder')}
             value={taegStr} onChange={(e) => setTaegStr(e.target.value)}
             aria-invalid={!!errors.taeg}
           />
@@ -231,7 +232,7 @@ export function LoanSetupForm({
         {rateMode === 'mixed' && (
           <>
             <div className="field">
-              <label htmlFor="mesesFixos">Meses a taxa fixa</label>
+              <label htmlFor="mesesFixos">{t('setup.fixedMonthsLabel')}</label>
               <input
                 id="mesesFixos" type="number" inputMode="numeric" step="1" min="1"
                 value={mesesFixos} onChange={(e) => setMesesFixos(e.target.value)}
@@ -241,7 +242,7 @@ export function LoanSetupForm({
             </div>
 
             <div className="field">
-              <label htmlFor="spreadPct">Spread (%)</label>
+              <label htmlFor="spreadPct">{t('setup.spreadLabel')}</label>
               <input
                 id="spreadPct" type="number" inputMode="decimal" step="any" min="0"
                 value={spreadPct} onChange={(e) => setSpreadPct(e.target.value)}
@@ -251,7 +252,7 @@ export function LoanSetupForm({
             </div>
 
             <div className="field">
-              <label htmlFor="euriborPct">Euribor atual (%)</label>
+              <label htmlFor="euriborPct">{t('setup.euriborLabel')}</label>
               <input
                 id="euriborPct" type="number" inputMode="decimal" step="any" min="0"
                 value={euriborPct} onChange={(e) => setEuriborPct(e.target.value)}
@@ -263,10 +264,10 @@ export function LoanSetupForm({
         )}
 
         <div className="field">
-          <label htmlFor="bonMensal">Bonificação mensal (€) <span className="field-hint">opcional — devolução de spread</span></label>
+          <label htmlFor="bonMensal">{t('setup.bonMonthlyLabel')} <span className="field-hint">{t('setup.bonMonthlyHint')}</span></label>
           <input
             id="bonMensal" type="number" inputMode="decimal" step="any" min="0"
-            placeholder="ex: 119.73"
+            placeholder={t('setup.bonMonthlyPlaceholder')}
             value={bonMensalStr} onChange={(e) => setBonMensalStr(e.target.value)}
             aria-invalid={!!errors.bonificacaoMensal}
           />
@@ -274,10 +275,10 @@ export function LoanSetupForm({
         </div>
 
         <div className="field">
-          <label htmlFor="bonMeses">Duração bonificação (meses) <span className="field-hint">opcional</span></label>
+          <label htmlFor="bonMeses">{t('setup.bonDurationLabel')} <span className="field-hint">{t('setup.optional')}</span></label>
           <input
             id="bonMeses" type="number" inputMode="numeric" step="1" min="0"
-            placeholder="ex: 24"
+            placeholder={t('setup.bonDurationPlaceholder')}
             value={bonMesesStr} onChange={(e) => setBonMesesStr(e.target.value)}
             aria-invalid={!!errors.bonificacaoMeses}
           />
@@ -288,11 +289,11 @@ export function LoanSetupForm({
       <div className="form-actions">
         {onCancel && (
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Cancelar
+            {t('actions.cancel', { ns: 'common' })}
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={upsert.isLoading}>
-          {upsert.isLoading ? 'A guardar…' : submitLabel}
+          {upsert.isLoading ? t('states.saving', { ns: 'common' }) : saveLabel}
         </button>
       </div>
     </form>
