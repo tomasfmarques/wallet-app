@@ -185,6 +185,7 @@
     "importError": "Falha ao importar. Tenta novamente.",
     "doneIncomesExpenses": "Importado com sucesso: <1>{{incomes}}</1> receita(s) e <3>{{expenses}}</3> despesa(s).",
     "doneDuplicates": " {{count}} duplicada(s) ignorada(s).",
+    "doneMatchedToPlan": " {{count}} associada(s) a itens fixos já existentes (sem duplicar).",
     "doneSkipped": " {{count}} linha(s) inválida(s) ignorada(s).",
     "doneAutoClassified": "✨ {{count}} classificada(s) automaticamente por regras aprendidas.",
     "doneRemaining": "As restantes ficam em <1>Por classificar</1> — escolhe <3>Fixa</3> ou <5>Variável</5> e a app aprende para as próximas.",

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { CategoryDonut } from './CategoryDonut'
 import { eur, eurSigned, ymToLong, currentYm, ymAddMonths } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
+import { realMonth } from '@/lib/budgetReal'
 import type { Income, Expense } from '@/types'
 
 interface Props {
@@ -26,12 +27,6 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
   if (item.startYm && ym < item.startYm) return false
   if (item.endYm && ym > item.endYm) return false
   return true
-}
-
-// An imported actual is month-scoped (startYm === endYm); it belongs to the
-// month its startYm names.
-function isActualInMonth(item: { startYm: string | null }, ym: string): boolean {
-  return item.startYm === ym
 }
 
 interface Lane {
@@ -66,13 +61,18 @@ export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses
     expenses.filter((e) => e.type === 'variable' && isActiveInMonth(e, ym)),
   ), [incomes, expenses, ym])
 
-  const real = useMemo<Lane>(() => laneFrom(
-    actualIncomes.filter((i) => isActualInMonth(i, ym)),
-    actualExpenses.filter((e) => e.type === 'fixed' && isActualInMonth(e, ym)),
-    actualExpenses.filter((e) => e.type === 'variable' && isActualInMonth(e, ym)),
-  ), [actualIncomes, actualExpenses, ym])
+  // "Real" = imported actuals for the month + recurring fixed plan rows folded
+  // in (they're auto-matched to the plan on import, not duplicated as actuals).
+  const rm = useMemo(
+    () => realMonth(incomes, expenses, actualIncomes, actualExpenses, ym),
+    [incomes, expenses, actualIncomes, actualExpenses, ym],
+  )
+  const real = useMemo<Lane>(
+    () => laneFrom(rm.incomes, rm.fixedExpenses, rm.variableExpenses),
+    [rm],
+  )
 
-  const hasReal = real.incomeItems.length + real.fixedItems.length + real.variableItems.length > 0
+  const hasReal = rm.hasActuals
 
   // Category breakdowns + "maiores despesas" reflect what actually happened when
   // the month has actuals, else the plan.

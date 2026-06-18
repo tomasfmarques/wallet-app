@@ -65,7 +65,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
   const [filename, setFilename] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number } | null>(null)
+  const [done, setDone] = useState<{ incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number; matchedToPlan: number } | null>(null)
 
   // Signatures of month-scoped rows the user already has, so re-importing the
   // same statement flags the existing lines instead of duplicating them.
@@ -186,6 +186,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
           <p>
             <Trans i18nKey="import.doneIncomesExpenses" ns="budget" values={{ incomes: done.incomes, expenses: done.expenses }} components={{ 1: <strong />, 3: <strong /> }} />
             {done.duplicates > 0 && t('import.doneDuplicates', { count: done.duplicates })}
+            {done.matchedToPlan > 0 && t('import.doneMatchedToPlan', { count: done.matchedToPlan })}
             {done.skipped > 0 && t('import.doneSkipped', { count: done.skipped })}
           </p>
           {done.autoClassified > 0 && (

@@ -185,6 +185,7 @@
     "importError": "Import failed. Try again.",
     "doneIncomesExpenses": "Imported successfully: <1>{{incomes}}</1> income line(s) and <3>{{expenses}}</3> expense line(s).",
     "doneDuplicates": " {{count}} duplicate(s) ignored.",
+    "doneMatchedToPlan": " {{count}} matched to existing fixed items (not duplicated).",
     "doneSkipped": " {{count}} invalid line(s) ignored.",
     "doneAutoClassified": "✨ {{count}} auto-classified by learned rules.",
     "doneRemaining": "The rest land in <1>To classify</1> — choose <3>Fixed</3> or <5>Variable</5> and the app learns for next time.",

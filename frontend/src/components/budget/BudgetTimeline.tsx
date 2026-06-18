@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
+import { realMonth } from '@/lib/budgetReal'
 import type { Income, Expense } from '@/types'
 
 interface Props {
@@ -63,15 +64,14 @@ export function BudgetTimeline({
       yms.push(ym)
       labels.push(ymToShort(ym))
       // Prefer the REAL (imported) figures for any month that has actuals;
-      // fall back to the recurring PLAN for months without imports (FX1).
+      // fall back to the recurring PLAN for months without imports (FX1). Real
+      // months fold recurring fixed plan rows back in (they're auto-matched to
+      // the plan on import, not duplicated as actuals) — see lib/budgetReal.ts.
       const sumAmt = (rows: Array<{ amount: number }>) => rows.reduce((s, x) => s + x.amount, 0)
-      const realInc = actualIncomes.filter((x) => x.startYm === ym)
-      const realFixed = actualExpenses.filter((x) => x.type === 'fixed' && x.startYm === ym)
-      const realVar = actualExpenses.filter((x) => x.type === 'variable' && x.startYm === ym)
-      const hasReal = realInc.length + realFixed.length + realVar.length > 0
-      const inc = hasReal ? sumAmt(realInc) : sumAmt(incomes.filter((x) => isActiveInMonth(x, ym)))
-      const fixed = hasReal ? sumAmt(realFixed) : sumAmt(expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)))
-      const variable = hasReal ? sumAmt(realVar) : sumAmt(expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)))
+      const rm = realMonth(incomes, expenses, actualIncomes, actualExpenses, ym)
+      const inc = rm.hasActuals ? sumAmt(rm.incomes) : sumAmt(incomes.filter((x) => isActiveInMonth(x, ym)))
+      const fixed = rm.hasActuals ? sumAmt(rm.fixedExpenses) : sumAmt(expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)))
+      const variable = rm.hasActuals ? sumAmt(rm.variableExpenses) : sumAmt(expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)))
       incomeSeries.push(inc)
       fixedSeries.push(fixed)
       variableSeries.push(variable)

@@ -63,7 +63,7 @@ export interface ImportItem {
 
 export interface ImportResult {
   ok: true
-  summary: { incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number }
+  summary: { incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number; matchedToPlan: number }
 }
 
 export const BUDGET_KEY = ['budget'] as const

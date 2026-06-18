@@ -267,6 +267,12 @@ router.post('/import', async (req, res) => {
   try {
     const summary = await processImportItems(userId, items)
     if (summary.incomes === 0 && summary.expenses === 0) {
+      // Everything matched an existing recurring item → nothing to insert, but
+      // that's a successful no-op (not an error): the money is already tracked.
+      if (summary.matchedToPlan > 0) {
+        res.status(201).json({ ok: true, summary })
+        return
+      }
       res.status(400).json({
         error: summary.duplicates > 0
           ? 'Todas as transações já tinham sido importadas (duplicadas).'
@@ -286,7 +292,7 @@ router.post('/import', async (req, res) => {
 // Used by the statement import above AND by the bank sync (routes/bank.ts),
 // so file uploads and live bank transactions behave identically.
 export interface ImportSummary {
-  incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number
+  incomes: number; expenses: number; skipped: number; duplicates: number; autoClassified: number; matchedToPlan: number
 }
 export async function processImportItems(userId: string, items: unknown[]): Promise<ImportSummary> {
   // Build the set of signatures the user already has. Only month-scoped rows
@@ -309,11 +315,28 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
   const rules = await prisma.classificationRule.findMany({ where: { userId } })
   const ruleByKey = new Map(rules.map((r) => [r.matchKey, r]))
 
+  // Recurring FIXED plan rows the user already has (salary, rent, subscriptions:
+  // source = null, type = fixed, active). An imported line matching one of these
+  // is the realisation of that recurring item, not a new movement — we skip it so
+  // the same money isn't shown twice (recurring plan row + a duplicate imported
+  // "actual"). VARIABLE plan rows are budgets, not fixed amounts, so they do NOT
+  // suppress their actuals. Keyed `${kind}|${merchantKey}` to reuse the same
+  // normalization as learned rules. (Frontend folds these plan rows back into the
+  // "real" month view so planeado-vs-real stays correct — see lib/budgetReal.ts.)
+  const [planIncomes, planExpenses] = await Promise.all([
+    prisma.income.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true } }),
+    prisma.expense.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true } }),
+  ])
+  const recurringFixed = new Set<string>()
+  for (const r of planIncomes) { const k = merchantKey(r.name); if (k) recurringFixed.add(`income|${k}`) }
+  for (const r of planExpenses) { const k = merchantKey(r.name); if (k) recurringFixed.add(`expense|${k}`) }
+
   const incomeRows: Prisma.IncomeCreateManyInput[] = []
   const expenseRows: Prisma.ExpenseCreateManyInput[] = []
   let skipped = 0
   let duplicates = 0
   let autoClassified = 0
+  let matchedToPlan = 0
 
   for (const raw of items) {
     if (typeof raw !== 'object' || raw === null) { skipped++; continue }
@@ -334,6 +357,13 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
     const kind = item.kind === 'income' ? 'income' : item.kind === 'expense' ? 'expense' : null
     if (!kind) { skipped++; continue }
 
+    const mKey = merchantKey(name)
+
+    // Auto-match to an existing recurring fixed plan row (salary/rent/etc.): the
+    // recurring entry already accounts for this money every month, so don't
+    // create a duplicate one-off "actual" for it. Reported as matchedToPlan.
+    if (mKey && recurringFixed.has(`${kind}|${mKey}`)) { matchedToPlan++; continue }
+
     // Skip if this month-scoped line already exists. Also dedupes against
     // rows added earlier in this same batch (e.g. an accidentally doubled
     // file). Lines without a month can't be fingerprinted — always insert.
@@ -345,7 +375,7 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
 
     // If a learned rule matches this merchant, auto-classify (skip the box).
     // Otherwise the line lands as `pending` for manual fixed/variable triage.
-    const rule = ruleByKey.get(merchantKey(name))
+    const rule = ruleByKey.get(mKey)
     const matched = !!rule && rule.kind === kind
     if (matched) autoClassified++
     const pending = !matched
@@ -366,7 +396,7 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
       if (expenseRows.length > 0) await tx.expense.createMany({ data: expenseRows })
     })
   }
-  return { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates, autoClassified }
+  return { incomes: incomeRows.length, expenses: expenseRows.length, skipped, duplicates, autoClassified, matchedToPlan }
 }
 
 // ── Classify a pending line (and learn a rule) ──────────────────

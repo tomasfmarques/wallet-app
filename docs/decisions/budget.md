@@ -459,3 +459,62 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
 - **How to change:** don't revert to `readAsText(file, 'utf-8')`. If a bank ships
   true UTF-8, the fallback simply never triggers.
 
+## 2026-06-18 — Classifying as "Fixed" promotes a movement to a recurring plan row
+
+- **What:** in `backend/src/routes/budget.ts`, setting a budget line's `type` to
+  `fixed` — via `POST /classify` ("Por classificar → Fixa") or `PUT /bulk-update`
+  ("Tipo → Fixa") — now also clears `source`, `startYm`, `endYm` and sets
+  `active: true`. Setting `variable` is unchanged (stays a one-off actual).
+- **Why:** imported lines carry a `source` tag ⇒ they're "actuals" shown only in
+  "Movimentos do mês", never in Receitas/Despesas Fixas (which list plan rows,
+  `source: null`). So marking an import Fixed previously *looked like it did
+  nothing*. Clearing `source` + the month-scoping promotes the row into the
+  recurring PLAN lane, so it appears in the Fixas tables and counts every month —
+  which is what "this is a fixed cost/revenue" means to the user.
+- **How it behaves:** `/classify` promotes **only the clicked line**; same-merchant
+  pending siblings (other months) are just classified and kept as actuals, so the
+  user doesn't end up with N duplicate recurring rows. `/bulk-update` promotes
+  **every selected row** (explicit multi-select).
+- **~~Known gap (next-step #6)~~ — now closed by the auto-match work below.**
+- **Don't:** "simplify" away the `source` clearing — that's the whole fix.
+  Rows marked fixed *before* this change won't move retroactively (re-apply
+  Tipo → Fixa).
+
+## 2026-06-18 — Plan ↔ actual matching: imports auto-match recurring fixed rows
+
+- **What:** `processImportItems` (`backend/src/routes/budget.ts`) now skips an
+  imported line when its `merchantKey` matches an existing **recurring fixed plan
+  row** (`source: null`, `type: 'fixed'`, `active`) of the same kind. Such a line
+  is the realisation of money the plan already counts every month, so creating a
+  one-off "actual" for it would show the same money twice (plan row + Movimentos).
+  Reported in the import summary as `matchedToPlan`; the `/import` route now
+  returns 201 (success no-op) when *everything* matched. Bank sync (`bank.ts`)
+  inherits this — same pipeline.
+- **Why:** closes next-step #5 / the gap above. Before this, a re-import of a
+  now-fixed merchant re-created that month's actual (matched the learned rule →
+  `type: fixed` but kept `source`) and it reappeared in Movimentos. No schema
+  change — reuses the same `merchantKey` normalization as learned rules.
+- **Keeping planeado-vs-real correct:** because the matched actual is no longer
+  created, the "real" lane in `MonthAnalysis` + `BudgetTimeline` would otherwise
+  lose that item. New helper **`frontend/src/lib/budgetReal.ts` (`realMonth`)**
+  folds active recurring **fixed** plan rows back into the real month, *unless* a
+  same-`merchantKey` actual already represents them (no double-count, incl. legacy
+  same-key duplicates). `hasActuals` stays driven by actuals only, so months with
+  no import still render plan-only. **Variable** plan rows are budgets, not fixed
+  amounts → never folded (real variable = actual spend only).
+- **Net effect per view:** Movimentos no longer shows the recurring fixed item as
+  a re-imported movement; KPIs unchanged (plan-only); MonthAnalysis/Timeline real
+  lane shows the recurring item once (from the plan) plus genuine one-offs
+  (e.g. a bonus alongside salary counts both).
+- **Known limitation (the genuinely-hard case):** matching is by `merchantKey`.
+  A **manually renamed** fixed plan row (e.g. "Salário") whose bank line reads
+  differently ("ORDENADO ACME") has a different key → it is *not* suppressed *and*
+  gets folded → that month's real income can read high (plan + the unmatched
+  actual). Promoted rows keep the bank-derived name, so the supported
+  promote→re-import flow matches correctly; this only bites hand-renamed rows.
+  This is the long-standing "Salário vs ORDENADO ACME" problem — a durable link
+  (id-based, needs schema) is the real fix if it ever matters.
+- **Don't:** drop the `realMonth` fold thinking the plan/actual are double-counted
+  — the per-key guard prevents that for same-key items; the fold is what keeps the
+  suppressed recurring item visible in the real lane.
+
