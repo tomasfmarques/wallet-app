@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLoan } from '@/hooks/useLoan'
-import { usePortfolio } from '@/hooks/usePortfolio'
+import { usePortfolio, usePortfolioRisk } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
 import { compareDefaults, type Modo, type Frequencia, type ReturnMode } from '@/lib/compareDefaults'
 import { StateBlock } from '@/components/ui/StateBlock'
@@ -25,7 +25,9 @@ export function Compare() {
   const { t } = useTranslation('compare')
   const { data: loanData, isLoading: loanLoading, error: loanError, refetch: refetchLoans } = useLoan()
   const { data: portData } = usePortfolio()
+  const { data: riskData } = usePortfolioRisk()
   const compare = useCompare()
+  const riskVol = riskData?.portfolio.volatility ?? null
 
   const loans = loanData?.loans ?? []
   // Deep link from the dashboard wedge insight: /comparar?loan=<id> preselects it.
@@ -86,13 +88,14 @@ export function Compare() {
           taxRate,
           frequencia,
           returnMode,
+          ...(riskVol != null ? { riskVolatility: riskVol } : {}),
         },
         { onSuccess: (r) => setResult(r) },
       )
     }, 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLoan?.loan.id, valor, modo, investReturn, taxRate, frequencia, returnMode])
+  }, [selectedLoan?.loan.id, valor, modo, investReturn, taxRate, frequencia, returnMode, riskVol])
 
   if (loanLoading) {
     return <div className="auth-loading"><div className="spinner" /></div>
@@ -465,6 +468,40 @@ export function Compare() {
               )}
             </span>
           </div>
+
+          {/* Risk band (±1σ) — investment uncertainty vs the guaranteed saving */}
+          {result.investir.pessimisticNet != null && result.investir.optimisticNet != null && (
+            <div className="card card-pad-lg compare-risk">
+              <div className="compare-risk-head">
+                <h3 className="section-label" style={{ margin: 0 }}>{t('risk.label')}</h3>
+                {riskData?.portfolio.level && (
+                  <span className={`risk-pill risk-${riskData.portfolio.level}`}>
+                    {t(`risk.level.${riskData.portfolio.level}`)}
+                  </span>
+                )}
+                {result.investir.riskVolatility != null && (
+                  <span className="muted">{t('risk.vol', { value: result.investir.riskVolatility.toFixed(1) })}</span>
+                )}
+              </div>
+              <div className="compare-risk-band">
+                <span className="gain-negative">{t('risk.pessimistic', { value: eur(result.investir.pessimisticNet) })}</span>
+                <span className="muted"> · </span>
+                <span className="gain-positive">{t('risk.optimistic', { value: eur(result.investir.optimisticNet) })}</span>
+              </div>
+              <p className="compare-risk-verdict muted" style={{ margin: '6px 0 0' }}>
+                {result.investir.pessimisticNet >= result.amortizar.interestSaved
+                  ? t('risk.robustInvest')
+                  : result.investir.netGainAfterTax >= result.amortizar.interestSaved
+                    ? t('risk.fragileInvest', { saved: eur(result.amortizar.interestSaved) })
+                    : t('risk.robustAmortize')}
+              </p>
+              {riskData && riskData.portfolio.coverage < 0.999 && (
+                <p className="muted" style={{ fontSize: 11, margin: '4px 0 0' }}>
+                  {t('risk.coverage', { value: Math.round(riskData.portfolio.coverage * 100) })}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Comparison chart */}
           <div className="card card-pad-lg">

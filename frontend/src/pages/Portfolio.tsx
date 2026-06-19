@@ -7,6 +7,7 @@ import { MonthlyContribTable } from '@/components/portfolio/MonthlyContribTable'
 import { ProjectionPanel } from '@/components/portfolio/ProjectionPanel'
 import { AssetModal, type AssetPreset } from '@/components/portfolio/AssetModal'
 import { Watchlist } from '@/components/portfolio/Watchlist'
+import { RiskCard } from '@/components/portfolio/RiskCard'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { resolveWatchlist } from '@/hooks/useQuotes'
 
@@ -57,6 +58,13 @@ export function Portfolio() {
       </section>
 
       {hasAssets && <PortfolioKpis kpis={kpis} horizonYears={settings.gH} />}
+
+      {hasAssets && (
+        <section>
+          <h2 className="section-label">{t('risk.section')}</h2>
+          <RiskCard />
+        </section>
+      )}
 
       <section>
         <div className="budget-section-head">

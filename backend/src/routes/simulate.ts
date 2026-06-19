@@ -21,7 +21,7 @@ function currentYm(): string {
 // Compares putting a lump sum toward a mortgage vs investing it.
 // Returns interest saved, investment gain, and a recommendation.
 router.post('/compare', async (req, res) => {
-  const { loanId, valor, modo, ymAmortizacao, investReturn, taxRate, frequencia, returnMode } = req.body
+  const { loanId, valor, modo, ymAmortizacao, investReturn, taxRate, frequencia, returnMode, riskVolatility } = req.body
 
   if (!loanId || typeof loanId !== 'string') {
     res.status(400).json({ error: 'loanId obrigatório' }); return
@@ -171,18 +171,33 @@ router.post('/compare', async (req, res) => {
     // The flat annual return at which investing the SAME cash-flow shape equals
     // amortizing — a clean "what return would I need" answer, independent of the
     // projection.
-    const flatNetGain = (annual: number): number => {
+    // Flat-rate gross gain for a given annual % (same cash-flow shape). Net taxes
+    // only POSITIVE gains — a loss stays a loss (you aren't taxed on it).
+    const flatGross = (annual: number): number => {
       const rr = annual / 12
       let v = freq === 'unica' ? valorN : 0
       for (let m = 0; m < horizonMonths; m++) v = v * (1 + rr) + (freq === 'unica' ? 0 : contribMonth(m))
-      return (v - totalContributed) * (1 - taxFraction)
+      return v - totalContributed
     }
+    const netFromGross = (g: number) => (g >= 0 ? g * (1 - taxFraction) : g)
+    const flatNetGain = (annual: number) => netFromGross(flatGross(annual))
+
     let lo = 0, hi = 2  // 0..200% annual
     for (let i = 0; i < 60; i++) {
       const mid = (lo + hi) / 2
       if (flatNetGain(mid) < interestSaved) { lo = mid } else { hi = mid }
     }
     const breakEvenReturn = ((lo + hi) / 2) * 100  // %
+
+    // ── Risk band (±1σ) ──────────────────────────────────────────
+    // If the caller passes the portfolio's annualized volatility, bracket the
+    // expected net gain by re-pricing the investment at effectiveReturn ∓ σ — a
+    // plain "bad year / good year" range that sets the investment's uncertainty
+    // against the GUARANTEED interest saved by amortizing.
+    const riskVolN = Number(riskVolatility)
+    const hasRisk = Number.isFinite(riskVolN) && riskVolN > 0 && riskVolN <= 200
+    const pessimisticNet = hasRisk ? netFromGross(flatGross(effectiveReturn - riskVolN)) : null
+    const optimisticNet = hasRisk ? netFromGross(flatGross(effectiveReturn + riskVolN)) : null
 
     // ── Curves for chart (sampled to keep payload small) ─────────
     const baseJuroByYm = new Map(base.rows.map((r2) => [r2.ym, r2.juros]))
@@ -214,7 +229,12 @@ router.post('/compare', async (req, res) => {
       horizonMonths,
       frequencia: freq,
       amortizar: { interestSaved, monthsSaved, payoffYm: amort.payoffYm, newPrestacao, monthlyFreed },
-      investir: { futureValue, grossGain, netGainAfterTax, totalContributed, effectiveReturn, returnMode: usedReturnMode },
+      investir: {
+        futureValue, grossGain, netGainAfterTax, totalContributed, effectiveReturn,
+        returnMode: usedReturnMode,
+        riskVolatility: hasRisk ? riskVolN : null,
+        pessimisticNet, optimisticNet,
+      },
       curve,
       recommendation,
       breakEvenReturn,

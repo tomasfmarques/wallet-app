@@ -51,6 +51,8 @@ _Done: Neon DB password rotated (2026-06-18) — prod `/api/health` ok; no plain
 
 _Done (`ea12dcf`, on `main`/deployed): **Plan ↔ actual matching** — imports now auto-match existing recurring **fixed** rows instead of duplicating them; `MonthAnalysis`/`BudgetTimeline` fold the recurring item back into the "real" lane. Backend-only matching + new `frontend/src/lib/budgetReal.ts`. See [`docs/decisions/budget.md`](docs/decisions/budget.md)._
 
+_Done (uncommitted): **Investment risk** — new `GET /api/portfolio/risk` computes **annualized volatility** (stddev of monthly returns × √12, from each holding's Yahoo 10y series) per asset + value-weighted portfolio level (`baixo|medio|alto|muito_alto`). Shown on the Portfolio page (`RiskCard`) and folded into "Amortizar vs Investir" as a **±1σ band** (bad-year/good-year net gain vs the guaranteed interest saved) with a robustness verdict. Pure helper `backend/src/lib/risk.ts`. Simplifications: value-weighted (no correlation), heuristic thresholds, no Finnhub beta (key unset). See [`docs/decisions/portfolio.md`](docs/decisions/portfolio.md) + [`loan.md`](docs/decisions/loan.md)._
+
 _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a) invests across the **real portfolio** (per-asset returns, value-weighted) instead of a flat rate, with the slider kept as a manual override, and (b) supports **recurring amounts — monthly OR yearly** (`frequencia: unica|mensal|anual`), not just a lump sum (yearly = "recurrent all years", like the loan simulator). New toggles on `/comparar`; dashboard `WedgeInsight` benefits automatically. No schema change. See [`docs/decisions/loan.md`](docs/decisions/loan.md)._
 
 ## Open threads / deferred

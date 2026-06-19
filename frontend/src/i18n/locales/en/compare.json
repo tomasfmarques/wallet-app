@@ -79,5 +79,16 @@
   "breakEvenBelow": "At {{value}} % you're below the break-even point — paying down wins.",
   "chartLabel": "GAIN OVER TIME",
   "chartAmortizar": "Interest saved (pay down)",
-  "chartInvestir": "Net gain after tax (invest)"
+  "chartInvestir": "Net gain after tax (invest)",
+  "risk": {
+    "label": "INVESTMENT RISK (±1σ)",
+    "vol": "volatility {{value}} %/yr",
+    "pessimistic": "Bad year (−1σ): {{value}}",
+    "optimistic": "Good year (+1σ): {{value}}",
+    "robustInvest": "Even in a bad year, investing beats what you'd save by paying down.",
+    "fragileInvest": "Investing wins on average, but in a bad year the guaranteed {{saved}} saved by paying down could be better.",
+    "robustAmortize": "Paying down wins — and with no market risk.",
+    "coverage": "Risk computed on {{value}} % of the portfolio (no history for the rest).",
+    "level": { "baixo": "Low risk", "medio": "Medium risk", "alto": "High risk", "muito_alto": "Very high risk" }
+  }
 }

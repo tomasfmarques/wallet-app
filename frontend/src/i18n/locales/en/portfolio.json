@@ -142,5 +142,15 @@
       "CRYPTOCURRENCY": "Crypto",
       "FUTURE": "Future"
     }
+  },
+  "risk": {
+    "section": "RISK",
+    "volLabel": "PORTFOLIO VOLATILITY",
+    "perYear": "yr",
+    "loading": "Calculating portfolio risk…",
+    "none": "Not enough price history to compute risk.",
+    "explain": "Annualized volatility — how much monthly returns swing. Higher = more risk. Value-weighted; does not model correlation between assets.",
+    "coverage": "Computed on {{value}} % of portfolio value.",
+    "level": { "baixo": "Low", "medio": "Medium", "alto": "High", "muito_alto": "Very high" }
   }
 }

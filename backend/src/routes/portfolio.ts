@@ -8,6 +8,7 @@ import {
   type ProjectionSettings,
 } from '../lib/portfolioEngine'
 import { getYahooChart } from '../lib/yahooFinance'
+import { annualizedVolatility, riskLevel, portfolioRisk } from '../lib/risk'
 import { convertPrice } from '../lib/fx'
 import { stripFormulaPrefix } from '../lib/sanitize'
 
@@ -112,6 +113,42 @@ router.get('/', async (req, res) => {
     res.json({ assets, settings, projection, kpis })
   } catch (err) {
     console.error('GET /api/portfolio failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── GET /api/portfolio/risk ──────────────────────────────────────
+// Investment risk = annualized volatility (stddev of monthly returns × √12),
+// derived from each holding's Yahoo 10y monthly series. Kept SEPARATE from the
+// main GET (which uses stored values and never touches Yahoo) so the dashboard
+// stays fast — the Portfolio/Compare pages load this lazily. Yahoo charts are
+// cached 1h, so repeat calls are cheap. Per-asset failures degrade to null
+// rather than failing the whole request.
+router.get('/risk', async (req, res) => {
+  try {
+    const userId = req.session.userId!
+    const assets = await prisma.portfolioAsset.findMany({
+      where: { userId },
+      select: { id: true, name: true, ticker: true, value: true },
+      orderBy: { value: 'desc' },
+    })
+    const perAsset = await Promise.all(
+      assets.map(async (a) => {
+        let volatility: number | null = null
+        try {
+          const chart = a.ticker ? await getYahooChart(a.ticker) : null
+          if (chart) volatility = annualizedVolatility(chart.prices)
+        } catch { /* leave null — risk for this asset is just unknown */ }
+        return {
+          id: a.id, name: a.name, ticker: a.ticker, value: a.value,
+          volatility,
+          level: volatility != null ? riskLevel(volatility) : null,
+        }
+      }),
+    )
+    res.json({ assets: perAsset, portfolio: portfolioRisk(perAsset) })
+  } catch (err) {
+    console.error('GET /api/portfolio/risk failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

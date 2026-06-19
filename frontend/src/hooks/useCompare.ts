@@ -10,6 +10,7 @@ export interface CompareInput {
   taxRate: number       // % e.g. 28.0
   frequencia?: 'unica' | 'mensal' | 'anual'  // lump sum vs recurring monthly / yearly (default unica)
   returnMode?: 'portfolio' | 'manual'        // project across assets vs flat rate (default portfolio)
+  riskVolatility?: number                     // portfolio annualized volatility % → enables ±1σ band
 }
 
 export interface CurvePoint {
@@ -35,6 +36,9 @@ export interface CompareResult {
     totalContributed: number          // total invested over the horizon
     effectiveReturn: number           // annual % actually applied (blended in portfolio mode)
     returnMode: 'portfolio' | 'manual' // mode actually used (falls back to manual w/o assets)
+    riskVolatility: number | null     // σ used for the band (null if not provided)
+    pessimisticNet: number | null     // net gain at effectiveReturn − σ
+    optimisticNet: number | null      // net gain at effectiveReturn + σ
   }
   curve: CurvePoint[]
   recommendation: 'amortizar' | 'investir' | 'equivalente'

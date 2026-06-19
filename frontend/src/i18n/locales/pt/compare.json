@@ -79,5 +79,16 @@
   "breakEvenBelow": "Com {{value}} % ficas abaixo do ponto de equilíbrio — amortizar vence.",
   "chartLabel": "EVOLUÇÃO DO GANHO AO LONGO DO TEMPO",
   "chartAmortizar": "Juros poupados (amortizar)",
-  "chartInvestir": "Ganho líquido após imposto (investir)"
+  "chartInvestir": "Ganho líquido após imposto (investir)",
+  "risk": {
+    "label": "RISCO DO INVESTIMENTO (±1σ)",
+    "vol": "volatilidade {{value}} %/ano",
+    "pessimistic": "Ano mau (−1σ): {{value}}",
+    "optimistic": "Ano bom (+1σ): {{value}}",
+    "robustInvest": "Mesmo num ano mau, investir supera o que pouparias a amortizar.",
+    "fragileInvest": "Investir vence em média, mas num ano mau a poupança garantida de {{saved}} ao amortizar pode ser melhor.",
+    "robustAmortize": "Amortizar vence — e sem o risco de mercado.",
+    "coverage": "Risco calculado sobre {{value}} % da carteira (sem dados históricos nos restantes).",
+    "level": { "baixo": "Risco baixo", "medio": "Risco médio", "alto": "Risco alto", "muito_alto": "Risco muito alto" }
+  }
 }

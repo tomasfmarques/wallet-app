@@ -59,6 +59,32 @@ export interface ReforcarInputBody {
   useMarketPrice?: boolean
 }
 
+// ── Risk (annualized volatility) ─────────────────────────────────
+export type RiskLevel = 'baixo' | 'medio' | 'alto' | 'muito_alto'
+
+export interface AssetRisk {
+  id: string
+  name: string
+  ticker: string
+  value: number
+  volatility: number | null   // annualized %
+  level: RiskLevel | null
+}
+export interface PortfolioRiskResponse {
+  assets: AssetRisk[]
+  portfolio: { volatility: number | null; level: RiskLevel | null; coverage: number }
+}
+
+// Lazy + cached 30 min: hits Yahoo per holding, so we don't want it on every
+// portfolio render. `enabled` lets callers defer until they actually need it.
+export function usePortfolioRisk(enabled = true) {
+  return useQuery<PortfolioRiskResponse, ApiError>(
+    ['portfolio-risk'],
+    () => api.get<PortfolioRiskResponse>('/api/portfolio/risk'),
+    { staleTime: 1000 * 60 * 30, enabled },
+  )
+}
+
 // ── Query key ────────────────────────────────────────────────────
 const PORTFOLIO_KEY = ['portfolio'] as const
 

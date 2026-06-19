@@ -142,5 +142,15 @@
       "CRYPTOCURRENCY": "Cripto",
       "FUTURE": "Futuro"
     }
+  },
+  "risk": {
+    "section": "RISCO",
+    "volLabel": "VOLATILIDADE DA CARTEIRA",
+    "perYear": "ano",
+    "loading": "A calcular o risco da carteira…",
+    "none": "Sem histórico de preços suficiente para calcular o risco.",
+    "explain": "Volatilidade anualizada — quanto os retornos mensais oscilam. Mais alta = mais risco. Média ponderada pelos valores; não modela a correlação entre ativos.",
+    "coverage": "Calculado sobre {{value}} % do valor da carteira.",
+    "level": { "baixo": "Baixo", "medio": "Médio", "alto": "Alto", "muito_alto": "Muito alto" }
   }
 }

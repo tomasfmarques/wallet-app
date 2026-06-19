@@ -358,3 +358,35 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 
 ---
 
+## 2026-06-19 — Investment risk = annualized volatility
+
+- **What:** a risk metric for the portfolio, computed from data we already have.
+  `backend/src/lib/risk.ts` (pure): `annualizedVolatility(prices)` = sample
+  stddev of monthly returns × √12 (uses the last ≤60 monthly returns of each
+  holding's Yahoo 10y series from `getYahooChart`); `riskLevel(vol%)` →
+  `baixo|medio|alto|muito_alto` (thresholds 10/20/35); `portfolioRisk(items)` =
+  **value-weighted** average vol + coverage.
+- **Why volatility:** it's the standard quantitative risk proxy and the ONLY one
+  computable with the current API for free — Finnhub `beta` exists
+  (`/api/quotes/metric`) but needs `FINNHUB_API_KEY`, which isn't set in prod.
+- **Endpoint:** `GET /api/portfolio/risk` (in `portfolio.ts`) — fetches each
+  holding's Yahoo chart (cached 1h), returns per-asset vol/level + the portfolio
+  aggregate. Kept **separate from `GET /api/portfolio`** (which uses stored
+  values and never calls Yahoo) so the main render stays fast; the Portfolio +
+  Compare pages load it lazily (`usePortfolioRisk`, 30-min cache, `enabled` flag).
+  Per-asset failures degrade to `volatility: null` (shown as "—"), never 500.
+- **Shown:** `RiskCard` on the Portfolio page (portfolio level + volatility +
+  per-asset breakdown). Risk-level pills styled in `index.css` (`.risk-*`).
+- **Simplifications (documented, intentional):**
+  - **No correlation/covariance** — the portfolio number is a value-weighted
+    average of per-asset vols, so it *overstates* risk (a diversified portfolio's
+    true vol is ≤ this). Conservative; a covariance model needs aligned
+    timestamped return series (a follow-up).
+  - **Level thresholds are heuristics** (cash/bonds <10, broad ETFs ~10–20,
+    single stocks ~20–35, crypto >35). Tune in `riskLevel()` if needed.
+  - Volatility ≠ a complete risk picture (no drawdown, liquidity, concentration).
+- **Don't:** move risk into `GET /api/portfolio` — it would put N Yahoo calls on
+  the dashboard's hot path. Keep it lazy.
+
+---
+

@@ -3615,3 +3615,71 @@ body {
   color: var(--muted);
   line-height: 1.4;
 }
+
+/* ── Investment risk (volatility) ─────────────────────────── */
+.risk-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.risk-pill-sm { padding: 2px 8px; font-size: 11px; }
+.risk-baixo      { background: #ECFDF5; color: var(--green-d); }
+.risk-medio      { background: #FEF3C7; color: var(--amber); }
+.risk-alto       { background: #FFEDD5; color: #C2410C; }
+.risk-muito_alto { background: #FEE2E2; color: var(--red); }
+
+.risk-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.risk-card-vol {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.risk-card-explain {
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.risk-asset-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.risk-asset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.risk-asset-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.risk-asset-vol { font-size: 12.5px; min-width: 52px; text-align: right; }
+
+.compare-risk-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.compare-risk-band {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}

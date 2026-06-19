@@ -136,3 +136,23 @@ of per-asset expected returns. Two upgrades:
 - **Don't:** revert the invest side to `valor*(1+r)^n` flat — that drops both the
   recurring annuity and the per-asset projection.
 
+### 2026-06-19 — Risk band (±1σ) in the wedge
+
+- **What:** `/compare` accepts optional `riskVolatility` (annual %, the
+  portfolio's volatility from `/api/portfolio/risk`). When present it returns
+  `investir.pessimisticNet` / `optimisticNet` — the net gain re-priced at
+  `effectiveReturn ∓ σ` (a "bad year / good year" band) — plus echoes
+  `riskVolatility`. The Compare page passes the portfolio vol in and renders a
+  risk callout: level pill + the ±1σ band + a robustness verdict (does the
+  recommendation still hold in a bad year?).
+- **Why:** the investment side is uncertain while interest saved by amortizing is
+  GUARANTEED. The band puts that uncertainty next to the guaranteed saving so the
+  recommendation is read with risk in mind, not just expected value.
+- **Tax on the band:** `netFromGross` taxes only POSITIVE gains — a pessimistic
+  scenario can be a real loss, and you aren't taxed on a loss. (`flatNetGain`,
+  used for break-even, now routes through the same helper.)
+- **Kept out of the compare engine's Yahoo path:** `riskVolatility` is passed IN
+  as a number (computed by the lazy `/portfolio/risk` endpoint), so `/compare`
+  stays fast and the dashboard `WedgeInsight` (which doesn't pass it) shows no
+  band — by design.
+
