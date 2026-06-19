@@ -46,11 +46,12 @@ _Done: Neon DB password rotated (2026-06-18) — prod `/api/health` ok; no plain
 
 **Product / engineering (next build candidates):**
 5. **Activate GoCardless** — still BLOCKED externally (signups disabled at bankaccountdata.gocardless.com). When reopened: create secret `wallet360-production`, add `GOCARDLESS_SECRET_ID/KEY` to Vercel, redeploy. Code built (`backend/src/routes/bank.ts`).
-6. **Deeper wedge** — use the portfolio *projection* (not a flat return) + a recurring-amount mode in the compare engine.
-7. **i18n follow-ups (optional)** — backend-originated API error messages are still pt; the Google Sign-In button self-localizes via Google's own widget (pass it a locale if it matters).
-8. **Durable plan↔actual link (only if hand-renamed rows bite)** — auto-match is `merchantKey`-based, so a manually-renamed fixed plan row ("Salário") whose bank line differs ("ORDENADO ACME") isn't matched. An id-based link (needs schema) is the real fix; deferred until it actually matters.
+6. **i18n follow-ups (optional)** — backend-originated API error messages are still pt; the Google Sign-In button self-localizes via Google's own widget (pass it a locale if it matters).
+7. **Durable plan↔actual link (only if hand-renamed rows bite)** — auto-match is `merchantKey`-based, so a manually-renamed fixed plan row ("Salário") whose bank line differs ("ORDENADO ACME") isn't matched. An id-based link (needs schema) is the real fix; deferred until it actually matters.
 
-_Done (uncommitted): **Plan ↔ actual matching** — imports now auto-match existing recurring **fixed** rows instead of duplicating them; `MonthAnalysis`/`BudgetTimeline` fold the recurring item back into the "real" lane. Backend-only matching + new `frontend/src/lib/budgetReal.ts`. See [`docs/decisions/budget.md`](docs/decisions/budget.md)._
+_Done (`ea12dcf`, on `main`/deployed): **Plan ↔ actual matching** — imports now auto-match existing recurring **fixed** rows instead of duplicating them; `MonthAnalysis`/`BudgetTimeline` fold the recurring item back into the "real" lane. Backend-only matching + new `frontend/src/lib/budgetReal.ts`. See [`docs/decisions/budget.md`](docs/decisions/budget.md)._
+
+_Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a) invests across the **real portfolio** (per-asset returns, value-weighted) instead of a flat rate, with the slider kept as a manual override, and (b) supports **recurring amounts — monthly OR yearly** (`frequencia: unica|mensal|anual`), not just a lump sum (yearly = "recurrent all years", like the loan simulator). New toggles on `/comparar`; dashboard `WedgeInsight` benefits automatically. No schema change. See [`docs/decisions/loan.md`](docs/decisions/loan.md)._
 
 ## Open threads / deferred
 

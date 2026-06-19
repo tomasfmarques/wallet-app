@@ -2,12 +2,16 @@ import type { LoanItem } from '@/hooks/useLoan'
 import type { PortfolioResponse } from '@/hooks/usePortfolio'
 
 export type Modo = 'prazo' | 'prestacao'
+export type Frequencia = 'unica' | 'mensal' | 'anual'
+export type ReturnMode = 'portfolio' | 'manual'
 
 export interface CompareDefaults {
   valor: number
-  investReturn: number  // % e.g. 7.0
+  investReturn: number  // % e.g. 7.0 (manual mode / fallback)
   taxRate: number       // % — Portugal mais-valias = 28
   modo: Modo
+  frequencia: Frequencia
+  returnMode: ReturnMode
 }
 
 // Smart defaults for the "amortizar vs investir" simulation, derived from the
@@ -23,8 +27,9 @@ export function compareDefaults(
   portfolio: PortfolioResponse | null | undefined,
 ): CompareDefaults {
   const assets = portfolio?.assets
-  const avgAssetReturn = assets && assets.length
-    ? (assets.reduce((s, a) => s + a.expectedReturn, 0) / assets.length) * 100
+  const hasAssets = !!assets && assets.length > 0
+  const avgAssetReturn = hasAssets
+    ? (assets!.reduce((s, a) => s + a.expectedReturn, 0) / assets!.length) * 100
     : null
   const investReturn = avgAssetReturn ?? 7
 
@@ -37,5 +42,9 @@ export function compareDefaults(
     investReturn: Math.round(investReturn * 10) / 10,
     taxRate: 28,
     modo: 'prazo',
+    frequencia: 'unica',
+    // Project across real assets by default; fall back to the manual slider when
+    // the user holds no investments (nothing to project).
+    returnMode: hasAssets ? 'portfolio' : 'manual',
   }
 }

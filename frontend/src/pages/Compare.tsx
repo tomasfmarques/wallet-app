@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useLoan } from '@/hooks/useLoan'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
-import { compareDefaults, type Modo } from '@/lib/compareDefaults'
+import { compareDefaults, type Modo, type Frequencia, type ReturnMode } from '@/lib/compareDefaults'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, ymToShort } from '@/lib/format'
 import { Line } from 'react-chartjs-2'
@@ -43,8 +43,9 @@ export function Compare() {
   )
 
   // Average of the user's per-asset expected returns (for the slider hint).
-  const avgAssetReturnPct = portData?.assets?.length
-    ? (portData.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData.assets.length) * 100
+  const hasAssets = (portData?.assets?.length ?? 0) > 0
+  const avgAssetReturnPct = hasAssets
+    ? (portData!.assets.reduce((s, a) => s + a.expectedReturn, 0) / portData!.assets.length) * 100
     : null
 
   const [valor, setValor] = useState(smartDefaults.valor)
@@ -52,6 +53,8 @@ export function Compare() {
   const [modo, setModo] = useState<Modo>(smartDefaults.modo)
   const [investReturn, setInvestReturn] = useState(smartDefaults.investReturn)
   const [taxRate, setTaxRate] = useState(smartDefaults.taxRate)
+  const [frequencia, setFrequencia] = useState<Frequencia>(smartDefaults.frequencia)
+  const [returnMode, setReturnMode] = useState<ReturnMode>(smartDefaults.returnMode)
   const [result, setResult] = useState<CompareResult | null>(null)
 
   // When the selected loan changes, reset to smart defaults for that loan
@@ -61,6 +64,8 @@ export function Compare() {
     setModo(smartDefaults.modo)
     setInvestReturn(smartDefaults.investReturn)
     setTaxRate(smartDefaults.taxRate)
+    setFrequencia(smartDefaults.frequencia)
+    setReturnMode(smartDefaults.returnMode)
   }
 
   // Re-seed when loan selection changes
@@ -79,13 +84,15 @@ export function Compare() {
           ymAmortizacao: addMonths(currentYm(), 1),
           investReturn,
           taxRate,
+          frequencia,
+          returnMode,
         },
         { onSuccess: (r) => setResult(r) },
       )
     }, 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLoan?.loan.id, valor, modo, investReturn, taxRate])
+  }, [selectedLoan?.loan.id, valor, modo, investReturn, taxRate, frequencia, returnMode])
 
   if (loanLoading) {
     return <div className="auth-loading"><div className="spinner" /></div>
@@ -195,9 +202,42 @@ export function Compare() {
         </div>
 
         <div className="compare-controls-grid">
+          {/* Frequência */}
+          <div className="form-group">
+            <label className="form-label">{t('freqLabel')}</label>
+            <div className="toggle-group">
+              <button
+                type="button"
+                className={`toggle-btn ${frequencia === 'unica' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setFrequencia('unica')}
+              >
+                {t('freqOnce')}
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn ${frequencia === 'mensal' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setFrequencia('mensal')}
+              >
+                {t('freqMonthly')}
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn ${frequencia === 'anual' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setFrequencia('anual')}
+              >
+                {t('freqAnnual')}
+              </button>
+            </div>
+            <span className="form-hint">
+              {frequencia === 'unica' ? t('freqOnceHint') : frequencia === 'mensal' ? t('freqMonthlyHint') : t('freqAnnualHint')}
+            </span>
+          </div>
+
           {/* Montante */}
           <div className="form-group">
-            <label className="form-label">{t('amountLabel')}</label>
+            <label className="form-label">
+              {frequencia === 'mensal' ? t('amountLabelMonthly') : frequencia === 'anual' ? t('amountLabelAnnual') : t('amountLabel')}
+            </label>
             <input
               className="form-input"
               type="number" min={100} step={100}
@@ -237,20 +277,49 @@ export function Compare() {
 
           {/* Rentabilidade */}
           <div className="form-group">
-            <label className="form-label">
-              {t('returnLabel')}
-              <strong style={{ marginLeft: 8 }}>{investReturn.toFixed(1)} %</strong>
-            </label>
-            <input
-              type="range" min={0} max={20} step={0.5}
-              value={investReturn}
-              onChange={(e) => setInvestReturn(Number(e.target.value))}
-              style={{ accentColor: 'var(--green)' }}
-            />
-            <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
-            {avgAssetReturnPct != null && (
-              <span className="form-hint">
-                {t('avgReturnHint', { value: avgAssetReturnPct.toFixed(1) })}
+            <label className="form-label">{t('returnSourceLabel')}</label>
+            <div className="toggle-group">
+              <button
+                type="button"
+                className={`toggle-btn ${returnMode === 'portfolio' ? 'toggle-btn-active' : ''}`}
+                disabled={!hasAssets}
+                title={!hasAssets ? t('returnPortfolioEmpty') : undefined}
+                onClick={() => setReturnMode('portfolio')}
+              >
+                {t('returnPortfolio')}
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn ${returnMode === 'manual' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setReturnMode('manual')}
+              >
+                {t('returnManual')}
+              </button>
+            </div>
+            {returnMode === 'manual' ? (
+              <>
+                <label className="form-label" style={{ marginTop: 10 }}>
+                  {t('returnLabel')}
+                  <strong style={{ marginLeft: 8 }}>{investReturn.toFixed(1)} %</strong>
+                </label>
+                <input
+                  type="range" min={0} max={20} step={0.5}
+                  value={investReturn}
+                  onChange={(e) => setInvestReturn(Number(e.target.value))}
+                  style={{ accentColor: 'var(--green)' }}
+                />
+                <span className="slider-bounds"><span>0 %</span><span>20 %</span></span>
+                {avgAssetReturnPct != null && (
+                  <span className="form-hint">
+                    {t('avgReturnHint', { value: avgAssetReturnPct.toFixed(1) })}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="form-hint" style={{ marginTop: 10 }}>
+                {result
+                  ? t('returnPortfolioHint', { value: result.investir.effectiveReturn.toFixed(1) })
+                  : t('returnPortfolioCalc')}
               </span>
             )}
           </div>
@@ -356,7 +425,11 @@ export function Compare() {
                 <div className="kpi">
                   <div className="kpi-label">{t('futureValueLabel')}</div>
                   <div className="kpi-value">{eur(result.investir.futureValue)}</div>
-                  <div className="kpi-meta">{t('afterYears', { years: Math.round(result.horizonMonths / 12) })}</div>
+                  <div className="kpi-meta">
+                    {result.frequencia !== 'unica'
+                      ? t('investedMeta', { value: eur(result.investir.totalContributed) })
+                      : t('afterYears', { years: Math.round(result.horizonMonths / 12) })}
+                  </div>
                 </div>
                 <div className="kpi">
                   <div className="kpi-label">{t('grossGainLabel')}</div>
@@ -365,9 +438,11 @@ export function Compare() {
                 </div>
                 <div className="kpi">
                   <div className="kpi-label">{t('annualReturnLabel')}</div>
-                  <div className="kpi-value">{investReturn.toFixed(1)} %</div>
+                  <div className="kpi-value">{result.investir.effectiveReturn.toFixed(1)} %</div>
                   <div className="kpi-meta">
-                    {t('afterTaxPct', { value: (investReturn * (1 - taxRate / 100)).toFixed(2) })}
+                    {result.investir.returnMode === 'portfolio'
+                      ? t('returnModePortfolio')
+                      : t('afterTaxPct', { value: (result.investir.effectiveReturn * (1 - taxRate / 100)).toFixed(2) })}
                   </div>
                 </div>
               </div>

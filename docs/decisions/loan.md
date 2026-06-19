@@ -88,3 +88,51 @@ _Source: split from CAVEATS-full.md._
 
 ---
 
+## 2026-06-19 — "Deeper wedge": portfolio-projected invest + recurring mode
+
+`POST /api/simulate/compare` ("Amortizar vs Investir", powering the /comparar
+page **and** the dashboard `WedgeInsight` card) was simplistic: it invested a
+one-off lump at a single flat rate and the default rate was the *simple average*
+of per-asset expected returns. Two upgrades:
+
+- **Invest across the real portfolio (not a flat rate).** New
+  `returnMode: 'portfolio' | 'manual'` (default `portfolio`). In portfolio mode
+  the amount is spread across the user's `PortfolioAsset` rows **by current value
+  weight** and each slice compounds at its own `expectedReturn` — the same
+  per-asset model as the Portfolio projection, so the wedge agrees with that
+  page. Falls back to `manual` automatically when the user holds no assets (or
+  total value 0). The flat `investReturn` **slider stays as a manual override /
+  what-if**. Response adds `investir.effectiveReturn` (value-weighted annual %,
+  shown in the RETORNO ANUAL KPI) and `investir.returnMode` (the mode actually
+  used). Decision (asked): *project across real assets*, keep the slider.
+  - **Note (convexity):** the per-asset projection is **slightly higher** than a
+    flat rate at the average return (Jensen's inequality on `(1+rᵢ/12)ⁿ`). That's
+    correct, not a bug — don't "fix" it by averaging the rate then compounding.
+
+- **Recurring (monthly / yearly) mode.** New
+  `frequencia: 'unica' | 'mensal' | 'anual'` (default `unica`, back-compat).
+  `mensal` invests/amortizes `valor` **every month**; `anual` does it **every 12
+  months** from `ym` (the "recurrent all years" mode, like the Loan simulator's
+  yearly `annualAmount`). Invest = annuity FV via an iterative monthly loop (a
+  shared `contribMonth(m)` adds the amount monthly, or when `m % 12 === 0`);
+  amortize = one engine `Amortization` per period over the loan's remaining life
+  (entries past payoff are capped to the outstanding capital by `loanEngine`, so
+  it's safe). Measured **over the loan's remaining term** (decision asked:
+  *outlay over loan life* — mirrors the lump-sum logic, no "invest-the-difference
+  after early payoff"). Response adds `investir.totalContributed`; `monthlyFreed`
+  is intentionally **null** in recurring modes (a recurring overpayment changes
+  the installment every period, so a single "freed" figure would mislead).
+  Note: `anual` is anchored to `ym`'s anniversary (every 12 months), not calendar
+  January like `/api/loan/simulate` — the annual *cadence* is what matters here.
+
+- **Break-even** is now computed by iterating the same cash-flow shape (lump or
+  annuity) in a binary search rather than the closed-form lump formula — so it
+  stays a clean "what flat return would I need to beat amortizing" for both modes
+  and is independent of the projection.
+
+- **No schema change.** Pure engine + UI. The dashboard card needed no change —
+  it calls the same endpoint and only fires when the user has investments, so it
+  now uses the projection automatically.
+- **Don't:** revert the invest side to `valor*(1+r)^n` flat — that drops both the
+  recurring annuity and the per-asset projection.
+
