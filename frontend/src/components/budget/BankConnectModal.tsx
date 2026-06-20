@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
+import { apiErrorMessage } from '@/lib/apiError'
 import {
   useBankStatus, useBankInstitutions, useBankConnect, useBankSync, useBankDisconnect,
   type BankInstitution,
@@ -65,7 +66,7 @@ export function BankConnectModal({ open, onClose }: Props) {
       // Hand the user to the bank's own consent page.
       window.location.href = link
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('bank.connectError'))
+      setErr(apiErrorMessage(e, t('bank.connectError')))
     }
   }
 
@@ -80,7 +81,7 @@ export function BankConnectModal({ open, onClose }: Props) {
         (r.summary.duplicates > 0 ? t('bank.syncDup', { count: r.summary.duplicates }) : ''),
       )
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('bank.syncError'))
+      setErr(apiErrorMessage(e, t('bank.syncError')))
     }
   }
 

@@ -23,7 +23,9 @@
     "error": "Erro a obter cotações: {{message}}",
     "viewChart": "Ver evolução do preço",
     "noData": "sem dados",
-    "addAria": "Adicionar {{symbol}} à carteira"
+    "addAria": "Adicionar {{symbol}} à carteira",
+    "reorderTitle": "Arrasta para reordenar",
+    "reorderAria": "Reordenar {{symbol}}"
   },
   "table": {
     "empty": "Sem ativos. Carrega em <1>Adicionar ativo</1> para começar.",
@@ -43,7 +45,15 @@
     "rowRefreshTitle": "Atualizar valor com cotação atual (Yahoo)",
     "refreshAria": "Atualizar",
     "reforcar": "Reforçar",
-    "viewChart": "Ver evolução do preço"
+    "viewChart": "Ver evolução do preço",
+    "history": "Histórico",
+    "historyTitle": "Ver histórico de reforços",
+    "historyAria": "Histórico de reforços de {{name}}"
+  },
+  "flows": {
+    "title": "Reforços — {{name}}",
+    "empty": "Ainda sem reforços registados para este ativo.",
+    "total": "{{count}} reforço(s)"
   },
   "monthly": {
     "empty": "Adiciona ativos para configurar reforços.",
@@ -150,6 +160,8 @@
     "loading": "A calcular o risco da carteira…",
     "none": "Sem histórico de preços suficiente para calcular o risco.",
     "explain": "Volatilidade anualizada — quanto os retornos mensais oscilam. Mais alta = mais risco. Média ponderada pelos valores; não modela a correlação entre ativos.",
+    "explainCorrelated": "Volatilidade anualizada da carteira, já a considerar a correlação entre ativos — a diversificação reduz o risco.",
+    "diversification": "Sem diversificação seria {{weighted}} %; a correlação entre os teus ativos poupa {{saved}} pontos.",
     "coverage": "Calculado sobre {{value}} % do valor da carteira.",
     "level": { "baixo": "Baixo", "medio": "Médio", "alto": "Alto", "muito_alto": "Muito alto" }
   }

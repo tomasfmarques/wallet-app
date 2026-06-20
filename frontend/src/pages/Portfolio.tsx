@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { usePortfolio } from '@/hooks/usePortfolio'
+import { usePortfolio, useUpdateSettings } from '@/hooks/usePortfolio'
 import { PortfolioKpis } from '@/components/portfolio/PortfolioKpis'
 import { AssetTable } from '@/components/portfolio/AssetTable'
 import { MonthlyContribTable } from '@/components/portfolio/MonthlyContribTable'
@@ -14,6 +14,7 @@ import { resolveWatchlist } from '@/hooks/useQuotes'
 export function Portfolio() {
   const { t } = useTranslation('portfolio')
   const { data, isLoading, error, refetch } = usePortfolio()
+  const updateSettings = useUpdateSettings()
   const [addOpen, setAddOpen] = useState(false)
   const [preset, setPreset] = useState<AssetPreset | undefined>(undefined)
 
@@ -54,6 +55,7 @@ export function Portfolio() {
         <Watchlist
           items={resolveWatchlist((settings as { watchlistSymbols?: string | null }).watchlistSymbols ?? null)}
           onAdd={openAdd}
+          onReorder={(symbols) => updateSettings.mutate({ watchlistSymbols: symbols.join(',') })}
         />
       </section>
 

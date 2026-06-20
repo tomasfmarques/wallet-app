@@ -61,6 +61,25 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendors out of the monolithic app chunk so the browser can
+        // fetch them in parallel and cache them across deploys (they change far
+        // less often than app code). The PDF parser stays its own lazy chunk via
+        // its dynamic import — manualChunks only affects statically-imported deps.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('chart.js') || id.includes('react-chartjs-2')) return 'charts'
+          if (id.includes('react-query')) return 'react-query'
+          if (id.includes('react-router') || id.includes('@remix-run')) return 'router'
+          if (id.includes('i18next') || id.includes('react-i18next')) return 'i18n'
+          if (id.includes('/react/') || id.includes('react-dom') || id.includes('scheduler')) return 'react'
+          return 'vendor'
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

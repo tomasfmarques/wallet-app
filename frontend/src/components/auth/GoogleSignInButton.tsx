@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from 'react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/apiError'
 import type { User } from '@/types'
 
 // Type-only shim for the Google Identity Services global.
@@ -91,7 +92,7 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
           await signIn.mutateAsync({ credential: resp.credential })
           navigate(redirectTo, { replace: true })
         } catch (e) {
-          setErr(e instanceof Error ? e.message : 'Falha no Sign in with Google')
+          setErr(apiErrorMessage(e))
         }
       },
       cancel_on_tap_outside: true,

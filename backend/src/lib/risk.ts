@@ -33,6 +33,59 @@ export function riskLevel(volPct: number): RiskLevel {
   return 'muito_alto'
 }
 
+// Monthly returns keyed by calendar month (YYYY-MM), aligned to `timestamps`.
+// Empty when we can't key them (timestamps missing/misaligned). Capped to the
+// last 60 months to match annualizedVolatility's window.
+export function monthlyReturns(prices: number[], timestamps: number[]): Array<{ ym: string; r: number }> {
+  if (prices.length < 13 || timestamps.length !== prices.length) return []
+  const out: Array<{ ym: string; r: number }> = []
+  for (let i = 1; i < prices.length; i++) {
+    const prev = prices[i - 1]
+    const ts = timestamps[i]
+    if (prev > 0 && ts > 0) {
+      const d = new Date(ts * 1000)
+      const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+      out.push({ ym, r: prices[i] / prev - 1 })
+    }
+  }
+  return out.slice(-60)
+}
+
+// Correlation-aware portfolio volatility (annualized %): σ_p = √(wᵀΣw)×√12, where
+// Σ is the sample covariance matrix of monthly returns over the months COMMON to
+// all usable assets. This credits diversification (σ_p ≤ the value-weighted
+// average). Returns null when it can't be modeled (need ≥2 assets with ≥12
+// overlapping months) → caller falls back to the value-weighted figure.
+export function correlatedPortfolioVol(
+  assets: Array<{ value: number; returns: Array<{ ym: string; r: number }> }>,
+): number | null {
+  const usable = assets.filter((a) => a.value > 0 && a.returns.length >= 12)
+  if (usable.length < 2) return null
+
+  const maps = usable.map((a) => new Map(a.returns.map((x) => [x.ym, x.r])))
+  let common = [...maps[0].keys()]
+  for (let k = 1; k < maps.length; k++) common = common.filter((ym) => maps[k].has(ym))
+  if (common.length < 12) return null
+
+  const totalVal = usable.reduce((s, a) => s + a.value, 0)
+  const w = usable.map((a) => a.value / totalVal)
+  const series = maps.map((m) => common.map((ym) => m.get(ym) as number))
+  const means = series.map((s) => s.reduce((a, b) => a + b, 0) / s.length)
+  const n = common.length
+
+  let portVar = 0
+  for (let i = 0; i < usable.length; i++) {
+    for (let j = 0; j < usable.length; j++) {
+      let cov = 0
+      for (let t = 0; t < n; t++) cov += (series[i][t] - means[i]) * (series[j][t] - means[j])
+      cov /= n - 1
+      portVar += w[i] * w[j] * cov
+    }
+  }
+  if (portVar < 0) portVar = 0 // numerical guard
+  return Math.sqrt(portVar) * Math.sqrt(12) * 100
+}
+
 export interface PortfolioRisk {
   volatility: number | null  // annualized %, value-weighted
   level: RiskLevel | null

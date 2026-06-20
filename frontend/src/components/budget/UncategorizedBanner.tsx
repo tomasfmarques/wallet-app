@@ -7,6 +7,7 @@ import {
   inferCategory, categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
 import { eur } from '@/lib/format'
+import { apiErrorMessage } from '@/lib/apiError'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 interface Props {
@@ -137,7 +138,7 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
       )
       onClose()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('uncat.saveError'))
+      setErr(apiErrorMessage(e, t('uncat.saveError')))
     } finally {
       setSaving(false)
     }

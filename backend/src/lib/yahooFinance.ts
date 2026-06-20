@@ -32,6 +32,7 @@ interface YahooChartResponse {
 export interface YahooChart {
   resolvedSymbol: string
   prices: number[]          // length ≥ 12, monthly cadence, oldest → newest
+  timestamps: number[]      // unix seconds, aligned 1:1 with `prices` (0 if unknown)
   currentPrice: number
   previousClose: number
   currency: string
@@ -73,7 +74,18 @@ async function fetchChart(symbol: string): Promise<YahooChart | null> {
   const adj = r.indicators?.adjclose?.[0]?.adjclose
   const raw = r.indicators?.quote?.[0]?.close
   const series = adj ?? raw ?? []
-  const prices = series.filter((p): p is number => typeof p === 'number' && Number.isFinite(p) && p > 0)
+  const ts = r.timestamp ?? []
+  // Keep prices identical to before (drop nulls/invalid) but capture the aligned
+  // timestamp for each kept point, so risk can key returns by month.
+  const prices: number[] = []
+  const timestamps: number[] = []
+  for (let i = 0; i < series.length; i++) {
+    const p = series[i]
+    if (typeof p === 'number' && Number.isFinite(p) && p > 0) {
+      prices.push(p)
+      timestamps.push(typeof ts[i] === 'number' ? ts[i] : 0)
+    }
+  }
 
   // Need at least 12 months for any useful CAGR
   if (prices.length < 12) return null
@@ -81,6 +93,7 @@ async function fetchChart(symbol: string): Promise<YahooChart | null> {
   return {
     resolvedSymbol: r.meta.symbol ?? symbol,
     prices,
+    timestamps,
     currentPrice: r.meta.regularMarketPrice,
     previousClose: r.meta.previousClose ?? r.meta.chartPreviousClose ?? r.meta.regularMarketPrice,
     currency: r.meta.currency ?? 'USD',

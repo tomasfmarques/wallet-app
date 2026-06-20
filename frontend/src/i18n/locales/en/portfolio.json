@@ -23,7 +23,9 @@
     "error": "Error fetching quotes: {{message}}",
     "viewChart": "View price history",
     "noData": "no data",
-    "addAria": "Add {{symbol}} to portfolio"
+    "addAria": "Add {{symbol}} to portfolio",
+    "reorderTitle": "Drag to reorder",
+    "reorderAria": "Reorder {{symbol}}"
   },
   "table": {
     "empty": "No assets. Click <1>Add asset</1> to get started.",
@@ -43,7 +45,15 @@
     "rowRefreshTitle": "Refresh value with current quote (Yahoo)",
     "refreshAria": "Refresh",
     "reforcar": "Top up",
-    "viewChart": "View price history"
+    "viewChart": "View price history",
+    "history": "History",
+    "historyTitle": "View contribution history",
+    "historyAria": "Contribution history for {{name}}"
+  },
+  "flows": {
+    "title": "Contributions — {{name}}",
+    "empty": "No contributions recorded for this asset yet.",
+    "total": "{{count}} contribution(s)"
   },
   "monthly": {
     "empty": "Add assets to set up contributions.",
@@ -150,6 +160,8 @@
     "loading": "Calculating portfolio risk…",
     "none": "Not enough price history to compute risk.",
     "explain": "Annualized volatility — how much monthly returns swing. Higher = more risk. Value-weighted; does not model correlation between assets.",
+    "explainCorrelated": "Annualized portfolio volatility, accounting for correlation between assets — diversification lowers risk.",
+    "diversification": "Without diversification it would be {{weighted}} %; correlation between your assets saves {{saved}} points.",
     "coverage": "Computed on {{value}} % of portfolio value.",
     "level": { "baixo": "Low", "medio": "Medium", "alto": "High", "muito_alto": "Very high" }
   }

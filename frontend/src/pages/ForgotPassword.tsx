@@ -1,7 +1,8 @@
 import { FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { api, ApiError } from '@/lib/api'
+import { api } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/apiError'
 
 export function ForgotPassword() {
   const { t } = useTranslation('auth')
@@ -19,7 +20,7 @@ export function ForgotPassword() {
       await api.post('/api/auth/forgot-password', { email: email.trim() })
       setSent(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('forgot.errUnexpected'))
+      setError(apiErrorMessage(err, t('forgot.errUnexpected')))
     } finally {
       setLoading(false)
     }

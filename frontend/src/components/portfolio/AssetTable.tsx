@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { eur, eurSigned, pctSigned, num } from '@/lib/format'
+import { apiErrorMessage } from '@/lib/apiError'
 import {
   useDeleteAsset, useRefreshAssetValue, useRefreshAllValues,
   type AssetWithFlows,
@@ -8,6 +9,7 @@ import {
 import { AssetModal } from './AssetModal'
 import { ReforcarModal } from './ReforcarModal'
 import { StockChartModal } from './StockChartModal'
+import { FlowsModal } from './FlowsModal'
 import type { PortfolioAsset } from '@/types'
 
 interface Props {
@@ -23,6 +25,7 @@ export function AssetTable({ assets }: Props) {
   const [editing, setEditing] = useState<PortfolioAsset | null>(null)
   const [reforcando, setReforcando] = useState<PortfolioAsset | null>(null)
   const [charting, setCharting] = useState<PortfolioAsset | null>(null)
+  const [flowing, setFlowing] = useState<AssetWithFlows | null>(null)
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
 
   const handleRefreshAll = async () => {
@@ -110,6 +113,7 @@ export function AssetTable({ assets }: Props) {
               asset={a}
               colour={ALLOC_COLOURS[i % ALLOC_COLOURS.length]}
               onOpenChart={() => setCharting(a)}
+              onHistory={() => setFlowing(a)}
               onEdit={() => setEditing(a)}
               onReforcar={() => setReforcando(a)}
               onDelete={() => {
@@ -139,6 +143,11 @@ export function AssetTable({ assets }: Props) {
         symbol={charting?.ticker ?? ''}
         name={charting?.name ?? ''}
       />
+      <FlowsModal
+        open={!!flowing}
+        onClose={() => setFlowing(null)}
+        asset={flowing}
+      />
     </>
   )
 }
@@ -149,12 +158,13 @@ interface RowProps {
   asset: AssetWithFlows
   colour: string
   onOpenChart: () => void
+  onHistory: () => void
   onEdit: () => void
   onReforcar: () => void
   onDelete: () => void
 }
 
-function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: RowProps) {
+function HoldRow({ asset, colour, onOpenChart, onHistory, onEdit, onReforcar, onDelete }: RowProps) {
   const { t } = useTranslation('portfolio')
   const refresh = useRefreshAssetValue()
   const [refreshErr, setRefreshErr] = useState<string | null>(null)
@@ -166,7 +176,7 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
     try {
       await refresh.mutateAsync(asset.id)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('table.noQuote')
+      const msg = apiErrorMessage(e, t('table.noQuote'))
       setRefreshErr(msg)
       setTimeout(() => setRefreshErr(null), 4000)
     }
@@ -210,6 +220,16 @@ function HoldRow({ asset, colour, onOpenChart, onEdit, onReforcar, onDelete }: R
         </button>
         <button type="button" className="btn btn-primary btn-sm" onClick={onReforcar}>
           {t('table.reforcar')}
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={onHistory}
+          disabled={asset.flows.length === 0}
+          title={t('table.historyTitle')}
+          aria-label={t('table.historyAria', { name: asset.name })}
+        >
+          {t('table.history')}
         </button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onEdit}>
           {t('actions.edit', { ns: 'common' })}

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from 'react-query'
 import { useTranslation, Trans } from 'react-i18next'
 import { api, ApiError } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/apiError'
 
 interface ImportResult {
   ok: true
@@ -127,7 +128,7 @@ export function ImportSection() {
         summary: summarize(json, format),
       })
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('import.readError'))
+      setErr(apiErrorMessage(e, t('import.readError')))
     }
   }
 
@@ -139,7 +140,7 @@ export function ImportSection() {
       setDone(result.summary)
       reset()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('import.importFailed'))
+      setErr(apiErrorMessage(e, t('import.importFailed')))
     }
   }
 

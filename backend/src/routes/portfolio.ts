@@ -8,7 +8,7 @@ import {
   type ProjectionSettings,
 } from '../lib/portfolioEngine'
 import { getYahooChart } from '../lib/yahooFinance'
-import { annualizedVolatility, riskLevel, portfolioRisk } from '../lib/risk'
+import { annualizedVolatility, riskLevel, portfolioRisk, monthlyReturns, correlatedPortfolioVol } from '../lib/risk'
 import { convertPrice } from '../lib/fx'
 import { stripFormulaPrefix } from '../lib/sanitize'
 
@@ -132,21 +132,43 @@ router.get('/risk', async (req, res) => {
       select: { id: true, name: true, ticker: true, value: true },
       orderBy: { value: 'desc' },
     })
-    const perAsset = await Promise.all(
+    const enriched = await Promise.all(
       assets.map(async (a) => {
         let volatility: number | null = null
+        let returns: Array<{ ym: string; r: number }> = []
         try {
           const chart = a.ticker ? await getYahooChart(a.ticker) : null
-          if (chart) volatility = annualizedVolatility(chart.prices)
+          if (chart) {
+            volatility = annualizedVolatility(chart.prices)
+            returns = monthlyReturns(chart.prices, chart.timestamps)
+          }
         } catch { /* leave null — risk for this asset is just unknown */ }
-        return {
-          id: a.id, name: a.name, ticker: a.ticker, value: a.value,
-          volatility,
-          level: volatility != null ? riskLevel(volatility) : null,
-        }
+        return { id: a.id, name: a.name, ticker: a.ticker, value: a.value, volatility, returns }
       }),
     )
-    res.json({ assets: perAsset, portfolio: portfolioRisk(perAsset) })
+
+    const perAsset = enriched.map((a) => ({
+      id: a.id, name: a.name, ticker: a.ticker, value: a.value,
+      volatility: a.volatility,
+      level: a.volatility != null ? riskLevel(a.volatility) : null,
+    }))
+
+    // Headline = correlation-aware vol when we can model it (credits
+    // diversification), else the value-weighted average.
+    const weighted = portfolioRisk(perAsset)
+    const correlated = correlatedPortfolioVol(enriched)
+    const volatility = correlated ?? weighted.volatility
+
+    res.json({
+      assets: perAsset,
+      portfolio: {
+        volatility,
+        level: volatility != null ? riskLevel(volatility) : null,
+        coverage: weighted.coverage,
+        weightedVolatility: weighted.volatility,
+        correlationModeled: correlated != null,
+      },
+    })
   } catch (err) {
     console.error('GET /api/portfolio/risk failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })

@@ -32,7 +32,19 @@ export function RiskCard() {
         )}
       </div>
 
-      <p className="muted risk-card-explain">{t('risk.explain')}</p>
+      <p className="muted risk-card-explain">
+        {portfolio.correlationModeled ? t('risk.explainCorrelated') : t('risk.explain')}
+      </p>
+      {portfolio.correlationModeled
+        && portfolio.weightedVolatility != null
+        && portfolio.weightedVolatility - portfolio.volatility! > 0.1 && (
+        <p className="muted" style={{ fontSize: 11, margin: '4px 0 0' }}>
+          {t('risk.diversification', {
+            weighted: portfolio.weightedVolatility.toFixed(1),
+            saved: (portfolio.weightedVolatility - portfolio.volatility!).toFixed(1),
+          })}
+        </p>
+      )}
 
       {rated.length > 0 && (
         <ul className="risk-asset-list">

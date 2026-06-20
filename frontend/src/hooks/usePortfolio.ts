@@ -72,7 +72,13 @@ export interface AssetRisk {
 }
 export interface PortfolioRiskResponse {
   assets: AssetRisk[]
-  portfolio: { volatility: number | null; level: RiskLevel | null; coverage: number }
+  portfolio: {
+    volatility: number | null        // headline (correlation-aware when modeled)
+    level: RiskLevel | null
+    coverage: number
+    weightedVolatility: number | null // value-weighted (no correlation)
+    correlationModeled: boolean       // true when covariance was used
+  }
 }
 
 // Lazy + cached 30 min: hits Yahoo per holding, so we don't want it on every

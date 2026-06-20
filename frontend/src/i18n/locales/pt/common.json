@@ -42,5 +42,19 @@
     "Compras": "Compras",
     "Viagens": "Viagens",
     "Impostos": "Impostos"
+  },
+  "errors": {
+    "server": "Erro interno do servidor. Tenta novamente.",
+    "session": "Sessão inválida. Inicia sessão novamente.",
+    "unauthenticated": "Sessão expirada. Inicia sessão novamente.",
+    "emailPasswordRequired": "Email e password são obrigatórios.",
+    "invalidCredentials": "Email ou password incorretos.",
+    "tooManyAttempts": "Demasiadas tentativas falhadas. Tenta novamente em 15 minutos.",
+    "invalidEmail": "Email inválido.",
+    "resetLinkInvalid": "O link de recuperação é inválido ou expirou.",
+    "useGoogle": "Esta conta usa Sign in with Google. Usa o botão Google para entrar.",
+    "notFound": "Não encontrado.",
+    "logout": "Erro ao terminar sessão.",
+    "unknown": "Ocorreu um erro inesperado. Tenta novamente."
   }
 }

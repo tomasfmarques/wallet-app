@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { API_URL } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/apiError'
 
 export function ExportSection() {
   const { t } = useTranslation('settings')
@@ -49,7 +50,7 @@ export function ExportSection() {
       URL.revokeObjectURL(url)
       setPassword('')
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t('export.errDownload'))
+      setErr(apiErrorMessage(e, t('export.errDownload')))
     } finally {
       setBusy(false)
     }

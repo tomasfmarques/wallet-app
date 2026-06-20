@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from 'react-query'
 import { api, ApiError } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/apiError'
 import type { User } from '@/types'
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -163,8 +164,7 @@ export function fieldErrorsFrom(err: unknown): FieldErrors {
   if (err instanceof ApiError && err.data && typeof err.data === 'object') {
     const data = err.data as { errors?: FieldErrors; error?: string }
     if (data.errors && typeof data.errors === 'object') return data.errors
-    if (data.error) return { _form: data.error }
   }
-  if (err instanceof Error) return { _form: err.message }
-  return { _form: 'Erro inesperado' }
+  // Translate the common backend messages; falls back to the raw string.
+  return { _form: apiErrorMessage(err) }
 }

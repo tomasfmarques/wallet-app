@@ -378,15 +378,36 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 - **Shown:** `RiskCard` on the Portfolio page (portfolio level + volatility +
   per-asset breakdown). Risk-level pills styled in `index.css` (`.risk-*`).
 - **Simplifications (documented, intentional):**
-  - **No correlation/covariance** — the portfolio number is a value-weighted
-    average of per-asset vols, so it *overstates* risk (a diversified portfolio's
-    true vol is ≤ this). Conservative; a covariance model needs aligned
-    timestamped return series (a follow-up).
   - **Level thresholds are heuristics** (cash/bonds <10, broad ETFs ~10–20,
     single stocks ~20–35, crypto >35). Tune in `riskLevel()` if needed.
   - Volatility ≠ a complete risk picture (no drawdown, liquidity, concentration).
 - **Don't:** move risk into `GET /api/portfolio` — it would put N Yahoo calls on
   the dashboard's hot path. Keep it lazy.
+
+### 2026-06-20 — Correlation-aware portfolio volatility (covariance)
+
+- **Upgraded** the headline portfolio risk from a value-weighted average to a
+  proper **covariance** model: `σ_p = √(wᵀΣw)×√12` over the months COMMON to all
+  usable assets, so **diversification is credited** (σ_p ≤ the weighted average).
+  `correlatedPortfolioVol()` in `risk.ts`; `monthlyReturns(prices, timestamps)`
+  keys returns by calendar month. `getYahooChart` now also returns aligned
+  `timestamps` (prices array unchanged → CAGR unaffected).
+- **Fallback:** needs ≥2 assets with ≥12 overlapping months; otherwise falls back
+  to the value-weighted average. `/api/portfolio/risk` now returns
+  `weightedVolatility` + `correlationModeled` alongside `volatility`, and the
+  `RiskCard` shows the diversification benefit when modeled.
+- **Verified:** identical assets → σ_p = single-asset vol (ρ=1, no benefit);
+  perfectly anti-correlated 50/50 → ≈0; imperfectly correlated → σ_p < weighted.
+
+### 2026-06-20 — Asset flows history + watchlist drag-to-reorder
+
+- **Flows history:** `FlowsModal` lists an asset's `portfolio_flows` (already in
+  the portfolio response — no new endpoint), opened from a per-row "Histórico"
+  button in `AssetTable`.
+- **Watchlist reorder:** native HTML5 drag (a drag handle per `TrendCard`)
+  reorders the list and persists via `useUpdateSettings({ watchlistSymbols })`
+  (CSV, the existing `normalizeWatchlist` format). Optimistic local order,
+  resynced when the underlying symbol set changes.
 
 ---
 
