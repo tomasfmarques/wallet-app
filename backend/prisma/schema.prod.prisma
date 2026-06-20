@@ -119,6 +119,7 @@ model Expense {
   pending     Boolean  @default(false)
   source      String?
   loanId      String?  @map("loan_id") // soft link to a Loan; budget syncs amount from its prestação
+  matchHint   String?  @map("match_hint") // bank-statement description → matches imports to this plan row
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

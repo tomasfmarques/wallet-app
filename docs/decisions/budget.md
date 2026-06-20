@@ -540,3 +540,30 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
 - **Don't:** add a Prisma relation/FK with cascade for this — the soft ref avoids
   cross-schema FK churn and the "deleted loan breaks the budget" failure mode.
 
+### 2026-06-20 — matchHint + kind-agnostic import matching (mortgage edges)
+
+Two follow-ups to the loan link, both in `processImportItems`:
+
+- **`Expense.matchHint`** (**SCHEMA CHANGE** — both schemas, migration
+  `add_expense_match_hint`, `import.ts` whitelist): an optional bank-statement
+  description for a fixed expense. The import suppression set now keys on
+  `merchantKey(name)` **and** `merchantKey(matchHint)`, so a statement line like
+  `EMP HABITACAO 0001` matches an expense the user named `Prestação casa`. Set it
+  in `ExpenseModal` (fixed expenses). Fixes the name-mismatch gap (a linked
+  mortgage debit is recognised instead of creating a duplicate / being promotable
+  to a second Fixa row).
+- **Kind-agnostic match:** the suppression check matches a line if its merchant is
+  ANY recurring fixed item (`expense|key` OR `income|key`), regardless of the
+  line's own sign. So a mortgage **refund/devolução** (a positive line, e.g. a
+  spread bonificação) is absorbed into the plan instead of surfacing as spurious
+  income. Both the −812 debit and the +100 credit are matched-to-plan.
+- **Deliberate trade-off (documented):** matched fixed lines are **absorbed**, so
+  the budget shows the **contracted prestação** (the loan's figure), not the
+  net-of-refund amount. This is consistent with how every fixed item works here
+  (actuals absorbed, `realMonth` folds the plan → no per-month variance shown for
+  fixed). Surfacing the net (e.g. −712) would require treating the mortgage as a
+  tracked *real* movement (it would then appear in "Movimentos") — the FX1
+  plan/real split — which is the opposite of "appears once". Left as a future opt-in.
+- **Don't:** make the match kind-specific again — that's what let refunds leak in
+  as income.
+

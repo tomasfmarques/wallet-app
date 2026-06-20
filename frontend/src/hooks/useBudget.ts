@@ -46,6 +46,7 @@ export interface ExpenseInput {
   endYm?: string | null
   notes?: string | null
   loanId?: string | null    // link to a Loan; amount then syncs from its prestação
+  matchHint?: string | null // bank-statement description → matches imports to this row
 }
 
 // One reviewed statement line, ready to be inserted as income or expense.

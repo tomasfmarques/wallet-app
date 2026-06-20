@@ -297,6 +297,7 @@ router.post('/', async (req, res) => {
               pending: isBool(e.pending) ? e.pending : false,
               source: isStr(e.source) ? e.source : null,
               loanId:  isStr(e.loanId)       ? e.loanId            : null,
+              matchHint: isStr(e.matchHint)  ? e.matchHint         : null,
               startYm: isValidYm(e.startYm) ? e.startYm as string : null,
               endYm:   isValidYm(e.endYm)   ? e.endYm as string   : null,
               notes:   isStr(e.notes)        ? e.notes             : null,

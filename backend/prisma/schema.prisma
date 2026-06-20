@@ -126,6 +126,11 @@ model Expense {
   // the prestação isn't tracked in two places. Soft (no FK) — an unresolved id is
   // simply ignored, so deleting the loan just unlinks gracefully.
   loanId      String?  @map("loan_id")
+  // Optional bank-statement description for this fixed expense. Imports whose
+  // merchant normalizes to this (or to `name`) are matched to this plan row, so a
+  // mortgage line like "EMP HABITACAO 0001" links to an expense you named
+  // "Prestação casa". See merchantKey matching in routes/budget.ts.
+  matchHint   String?  @map("match_hint")
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

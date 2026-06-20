@@ -36,6 +36,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
   const [loanId, setLoanId] = useState('')
+  const [matchHint, setMatchHint] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const userPickedCategory = useRef(false)
 
@@ -51,6 +52,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
     setNotes(expense?.notes ?? '')
     setActive(expense?.active ?? true)
     setLoanId(expense?.loanId ?? '')
+    setMatchHint(expense?.matchHint ?? '')
     setErrors({})
     userPickedCategory.current = !!expense?.category
   }, [open, expense, defaultStartYm])
@@ -104,6 +106,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
       notes: notes.trim() || null,
       active,
       loanId: effectiveType === 'fixed' ? (loanId || null) : null,
+      matchHint: effectiveType === 'fixed' ? (matchHint.trim() || null) : null,
     }
     try {
       if (isEdit && expense) await upd.mutateAsync({ id: expense.id, patch: body })
@@ -176,6 +179,16 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
                   🔗 {t('expense.loanLinkedHint', { value: eur2(linkedPrestacao!) })}
                 </span>
               )}
+            </div>
+          )}
+          {effectiveType === 'fixed' && (
+            <div className="field">
+              <label htmlFor="ex-hint">{t('expense.matchHintLabel')}</label>
+              <input
+                id="ex-hint" value={matchHint} onChange={(e) => setMatchHint(e.target.value)}
+                placeholder={t('expense.matchHintPlaceholder')}
+              />
+              <span className="muted" style={{ fontSize: 12 }}>{t('expense.matchHintHelp')}</span>
             </div>
           )}
         </div>

@@ -130,6 +130,9 @@
     "loanNone": "— none —",
     "loanSynced": "Amount synced with the loan's payment.",
     "loanLinkedHint": "Current payment: {{value}}",
+    "matchHintLabel": "Bank statement description (optional)",
+    "matchHintPlaceholder": "e.g. EMP HABITACAO 0001",
+    "matchHintHelp": "Matches imports to this row (even with a different name). Debits and refunds from this merchant are recognized as this expense.",
     "errRequired": "Required",
     "errGt0": "> 0",
     "errDay": "1-31"

@@ -130,6 +130,9 @@
     "loanNone": "— nenhum —",
     "loanSynced": "Valor sincronizado com a prestação do crédito.",
     "loanLinkedHint": "Prestação atual: {{value}}",
+    "matchHintLabel": "Descrição no extrato (opcional)",
+    "matchHintPlaceholder": "ex: EMP HABITACAO 0001",
+    "matchHintHelp": "Associa as importações a esta linha (mesmo com nome diferente). Débitos e devoluções deste comerciante são reconhecidos como esta despesa.",
     "errRequired": "Obrigatório",
     "errGt0": "> 0",
     "errDay": "1-31"

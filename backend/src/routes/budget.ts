@@ -360,11 +360,16 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
   // "real" month view so planeado-vs-real stays correct — see lib/budgetReal.ts.)
   const [planIncomes, planExpenses] = await Promise.all([
     prisma.income.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true } }),
-    prisma.expense.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true } }),
+    prisma.expense.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true, matchHint: true } }),
   ])
   const recurringFixed = new Set<string>()
   for (const r of planIncomes) { const k = merchantKey(r.name); if (k) recurringFixed.add(`income|${k}`) }
-  for (const r of planExpenses) { const k = merchantKey(r.name); if (k) recurringFixed.add(`expense|${k}`) }
+  for (const r of planExpenses) {
+    const k = merchantKey(r.name); if (k) recurringFixed.add(`expense|${k}`)
+    // A fixed expense's bank-statement description also matches (so a mortgage line
+    // links to "Prestação casa" regardless of the display name).
+    if (r.matchHint) { const h = merchantKey(r.matchHint); if (h) recurringFixed.add(`expense|${h}`) }
+  }
 
   const incomeRows: Prisma.IncomeCreateManyInput[] = []
   const expenseRows: Prisma.ExpenseCreateManyInput[] = []
@@ -394,10 +399,13 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
 
     const mKey = merchantKey(name)
 
-    // Auto-match to an existing recurring fixed plan row (salary/rent/etc.): the
-    // recurring entry already accounts for this money every month, so don't
-    // create a duplicate one-off "actual" for it. Reported as matchedToPlan.
-    if (mKey && recurringFixed.has(`${kind}|${mKey}`)) { matchedToPlan++; continue }
+    // Auto-match to an existing recurring fixed plan row (salary/rent/mortgage):
+    // the recurring entry already accounts for this money every month, so don't
+    // create a duplicate one-off "actual". Kind-AGNOSTIC: a debit (the cost) OR a
+    // credit (a refund/devolução of that cost, e.g. a spread bonification) both
+    // match, so a refund doesn't surface as spurious income. Reported as
+    // matchedToPlan.
+    if (mKey && (recurringFixed.has(`expense|${mKey}`) || recurringFixed.has(`income|${mKey}`))) { matchedToPlan++; continue }
 
     // Skip if this month-scoped line already exists. Also dedupes against
     // rows added earlier in this same batch (e.g. an accidentally doubled
@@ -586,6 +594,7 @@ router.post('/expenses', async (req, res) => {
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
   const loanId = asOptionalString(req.body?.loanId, 40)
+  const matchHint = asOptionalString(req.body?.matchHint, 80)
   const active = typeof req.body?.active === 'boolean' ? req.body.active : true
   const pending = typeof req.body?.pending === 'boolean' ? req.body.pending : false
 
@@ -593,7 +602,7 @@ router.post('/expenses', async (req, res) => {
 
   try {
     const expense = await prisma.expense.create({
-      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, loanId, active, pending },
+      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, loanId, matchHint, active, pending },
     })
     res.status(201).json({ expense })
   } catch (err) {
@@ -615,6 +624,7 @@ router.put('/expenses/:id', async (req, res) => {
   if (req.body?.endYm !== undefined)       data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)       data.notes = asOptionalString(req.body.notes, 500)
   if (req.body?.loanId !== undefined)      data.loanId = asOptionalString(req.body.loanId, 40)
+  if (req.body?.matchHint !== undefined)   data.matchHint = asOptionalString(req.body.matchHint, 80)
   if (req.body?.active !== undefined && typeof req.body.active === 'boolean') data.active = req.body.active
   if (req.body?.pending !== undefined && typeof req.body.pending === 'boolean') data.pending = req.body.pending
 
