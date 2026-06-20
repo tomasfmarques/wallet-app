@@ -38,6 +38,7 @@
     "removeConfirm": "Remover \"{{name}}\"?",
     "sinceMeta": "desde {{ym}}",
     "dayMeta": "dia {{day}}",
+    "loanLinked": "🔗 do crédito",
     "totalFixedIncome": "Total receitas fixas",
     "totalFixed": "Total fixas",
     "emptyFixedIncome": "Sem receitas fixas. Adiciona o salário ou outras entradas recorrentes.",
@@ -125,6 +126,10 @@
     "categoryLabel": "Categoria",
     "dayLabel": "Dia do mês (opcional)",
     "dayPlaceholder": "1-31",
+    "loanLabel": "Crédito associado (opcional)",
+    "loanNone": "— nenhum —",
+    "loanSynced": "Valor sincronizado com a prestação do crédito.",
+    "loanLinkedHint": "Prestação atual: {{value}}",
     "errRequired": "Obrigatório",
     "errGt0": "> 0",
     "errDay": "1-31"

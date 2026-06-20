@@ -40,7 +40,13 @@ export interface YahooChart {
 
 interface CacheEntry { data: YahooChart | null; expiry: number }
 const cache = new Map<string, CacheEntry>()
+// Last successful chart per key, kept indefinitely (until replaced) as a
+// failover: if Yahoo later breaks, we serve this stale value instead of null so
+// valuations/CAGR/risk degrade gracefully (F8). Within a warm instance only —
+// on serverless cold start it's empty, which is the same as the old behaviour.
+const lastGood = new Map<string, YahooChart>()
 const TTL_MS = 60 * 60 * 1000 // 1 hour
+const STALE_RETRY_MS = 5 * 60 * 1000 // retry Yahoo sooner while serving stale
 
 // Hand-curated mapping for tickers where the prototype's symbol doesn't match
 // Yahoo's convention. Extend as needed.
@@ -107,7 +113,8 @@ async function fetchChart(symbol: string): Promise<YahooChart | null> {
 export async function getYahooChart(rawSymbol: string): Promise<YahooChart | null> {
   const key = rawSymbol.toUpperCase()
   const hit = cache.get(key)
-  if (hit && hit.expiry > Date.now()) return hit.data
+  // On a fresh cached miss, fall back to the last good value (stale) if we have one.
+  if (hit && hit.expiry > Date.now()) return hit.data ?? lastGood.get(key) ?? null
 
   const overridden = SYMBOL_OVERRIDES[key]
   const candidates = overridden
@@ -118,13 +125,17 @@ export async function getYahooChart(rawSymbol: string): Promise<YahooChart | nul
     const data = await fetchChart(candidate)
     if (data) {
       cache.set(key, { data, expiry: Date.now() + TTL_MS })
+      lastGood.set(key, data)
       return data
     }
   }
 
-  // Cache the miss so we don't hammer Yahoo for the same bad ticker
-  cache.set(key, { data: null, expiry: Date.now() + TTL_MS })
-  return null
+  // Total failure. If we've seen this ticker before, serve the stale value and
+  // retry Yahoo sooner; otherwise cache the miss for the full TTL so we don't
+  // hammer Yahoo for a genuinely bad ticker.
+  const stale = lastGood.get(key)
+  cache.set(key, { data: null, expiry: Date.now() + (stale ? STALE_RETRY_MS : TTL_MS) })
+  return stale ?? null
 }
 
 // ── Price history (for the per-stock chart) ──────────────────────

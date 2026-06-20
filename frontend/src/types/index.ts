@@ -105,6 +105,7 @@ export interface Expense {
   active: boolean
   pending: boolean           // true = imported, awaiting fixed/variable classification
   source: string | null     // origin bank/import label; null = manual
+  loanId: string | null     // linked Loan; amount is synced from its prestação (#9)
   startYm: string | null
   endYm: string | null
   notes: string | null

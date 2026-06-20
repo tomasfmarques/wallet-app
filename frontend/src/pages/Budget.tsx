@@ -146,7 +146,8 @@ export function Budget() {
             <BudgetList
               rows={fixedExpenses.map((e) => ({
                 id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
-                meta: e.dayOfMonth ? t('list.dayMeta', { day: e.dayOfMonth }) : undefined,
+                meta: [e.loanId ? t('list.loanLinked') : null, e.dayOfMonth ? t('list.dayMeta', { day: e.dayOfMonth }) : null]
+                  .filter(Boolean).join(' · ') || undefined,
                 onEdit: () => setExpenseModal({ open: true, type: 'fixed', expense: e }),
                 onDelete: () => { if (confirm(t('list.removeConfirm', { name: e.name }))) delExpense.mutate(e.id) },
               }))}

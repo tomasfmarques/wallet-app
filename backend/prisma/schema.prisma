@@ -121,6 +121,11 @@ model Expense {
   active      Boolean  @default(true)
   pending     Boolean  @default(false)       // true = imported, awaiting fixed/variable classification
   source      String?                         // origin bank/import label; null = manual
+  // Soft link to a Loan (mortgage/credit). When set, the budget shows this fixed
+  // expense's amount LIVE from the loan's current prestação (see budget GET), so
+  // the prestação isn't tracked in two places. Soft (no FK) — an unresolved id is
+  // simply ignored, so deleting the loan just unlinks gracefully.
+  loanId      String?  @map("loan_id")
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

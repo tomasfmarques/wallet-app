@@ -118,6 +118,7 @@ model Expense {
   active      Boolean  @default(true)
   pending     Boolean  @default(false)
   source      String?
+  loanId      String?  @map("loan_id") // soft link to a Loan; budget syncs amount from its prestação
   startYm     String?  @map("start_ym")
   endYm       String?  @map("end_ym")
   notes       String?

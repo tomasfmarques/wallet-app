@@ -399,6 +399,22 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 - **Verified:** identical assets → σ_p = single-asset vol (ρ=1, no benefit);
   perfectly anti-correlated 50/50 → ≈0; imperfectly correlated → σ_p < weighted.
 
+### 2026-06-20 — Yahoo failover (stale-cache, F8)
+
+- **What:** `getYahooChart` now keeps a `lastGood` map (per key, never expires
+  until replaced). On a fetch failure it serves the **last good (stale)** chart
+  instead of `null`, and re-tries Yahoo sooner (`STALE_RETRY_MS` 5 min) rather than
+  caching the miss for the full hour. Benefits everything that reads Yahoo:
+  value refresh, CAGR, history, and risk degrade gracefully during transient
+  Yahoo outages.
+- **Scope/limits:** in-memory, so on **serverless cold start** `lastGood` is empty
+  (same as before — no regression); it helps within a warm instance. A durable
+  cross-instance cache would need the DB/external store (deferred).
+- **Finnhub backup NOT wired:** Finnhub's quote endpoint doesn't return the
+  listing currency, so it can't safely price a multi-currency EUR portfolio
+  (would mis-convert). Left for later, and the key is unset in prod anyway. The
+  stale-cache is the failover that actually ships.
+
 ### 2026-06-20 — Asset flows history + watchlist drag-to-reorder
 
 - **Flows history:** `FlowsModal` lists an asset's `portfolio_flows` (already in

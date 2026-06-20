@@ -518,3 +518,25 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
   — the per-key guard prevents that for same-key items; the fold is what keeps the
   suppressed recurring item visible in the real lane.
 
+## 2026-06-20 — Mortgage ↔ budget link (`Expense.loanId`)
+
+- **What:** a budget **fixed expense** can be linked to a Loan via a new nullable
+  `Expense.loanId` (**SCHEMA CHANGE** — both `schema.prisma` + `schema.prod.prisma`,
+  migration `add_expense_loan_id`, and `import.ts` whitelist; `export.ts` dumps full
+  rows so it carried automatically). The link is **soft** (no FK).
+- **Why:** the mortgage prestação was tracked in 3 places (Loan module, budget
+  plan, budget actual). Linking the plan expense to the loan makes the loan the
+  single source for the planned figure.
+- **How the amount syncs:** `GET /api/budget` builds `loanPrestacoes(userId)`
+  (`computeKpis(...).proximaPrestacao` per loan) and, for any expense with a
+  resolvable `loanId`, **overrides `amount` with the live prestação** — in the
+  returned rows AND in `summarize()` (so KPIs use it). The stored `amount` is just
+  a fallback. `ExpenseModal` offers a loan selector for fixed expenses (disables the
+  amount field, shows "🔗 prestação atual: X"); the Fixas list shows a "🔗 do
+  crédito" tag.
+- **Graceful:** soft ref — if the loan is deleted (or the id doesn't resolve, e.g.
+  after an import that regenerated loan ids), `syncedAmount` falls back to the
+  stored amount; the expense just behaves as a normal manual line.
+- **Don't:** add a Prisma relation/FK with cascade for this — the soft ref avoids
+  cross-schema FK churn and the "deleted loan breaks the budget" failure mode.
+

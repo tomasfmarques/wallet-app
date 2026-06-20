@@ -4,8 +4,10 @@ import { Modal } from '@/components/ui/Modal'
 import {
   useAddExpense, useUpdateExpense, type ExpenseInput,
 } from '@/hooks/useBudget'
+import { useLoan } from '@/hooks/useLoan'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { inferCategory, categoryLabel, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
+import { eur2 } from '@/lib/format'
 import type { Expense, ExpenseType } from '@/types'
 
 interface Props {
@@ -20,6 +22,8 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const { t } = useTranslation('budget')
   const add = useAddExpense()
   const upd = useUpdateExpense()
+  const { data: loanData } = useLoan()
+  const loans = loanData?.loans ?? []
   const isEdit = !!expense
 
   const [name, setName] = useState('')
@@ -31,6 +35,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const [endYm, setEndYm] = useState('')
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
+  const [loanId, setLoanId] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const userPickedCategory = useRef(false)
 
@@ -45,6 +50,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
     setEndYm(expense?.endYm ?? '')
     setNotes(expense?.notes ?? '')
     setActive(expense?.active ?? true)
+    setLoanId(expense?.loanId ?? '')
     setErrors({})
     userPickedCategory.current = !!expense?.category
   }, [open, expense, defaultStartYm])
@@ -68,13 +74,19 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   }
 
   const effectiveType: ExpenseType = expense?.type ?? type
+  // Loan link is only offered for fixed expenses. When linked, the amount is
+  // taken LIVE from the loan's prestação (the backend syncs it on read too).
+  const linkedLoan = loans.find((l) => l.loan.id === loanId) ?? null
+  const linkedPrestacao = linkedLoan?.kpis.proximaPrestacao ?? null
+  const linked = effectiveType === 'fixed' && !!loanId && linkedPrestacao != null
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const errs: FieldErrors = {}
     if (!name.trim()) errs.name = t('expense.errRequired')
-    const n = Number(amount)
-    if (!Number.isFinite(n) || n <= 0) errs.amount = t('expense.errGt0')
+    // When linked to a loan, use its prestação; otherwise require a positive amount.
+    const n = linked ? linkedPrestacao! : Number(amount)
+    if (!linked && (!Number.isFinite(n) || n <= 0)) errs.amount = t('expense.errGt0')
     let dayNum: number | null = null
     if (dayOfMonth.trim()) {
       const d = Number(dayOfMonth)
@@ -91,6 +103,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
       endYm: effectiveType === 'variable' ? (startYm.trim() || null) : (endYm.trim() || null),
       notes: notes.trim() || null,
       active,
+      loanId: effectiveType === 'fixed' ? (loanId || null) : null,
     }
     try {
       if (isEdit && expense) await upd.mutateAsync({ id: expense.id, patch: body })
@@ -122,9 +135,13 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
             <label htmlFor="ex-amount">{t('expense.amountLabel')}</label>
             <input
               id="ex-amount" type="number" inputMode="decimal" step="any" min="0"
-              value={amount} onChange={(e) => setAmount(e.target.value)}
+              value={linked ? String(linkedPrestacao) : amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={linked}
             />
-            {errors.amount && <span className="field-error">{errors.amount}</span>}
+            {linked
+              ? <span className="muted" style={{ fontSize: 12 }}>{t('expense.loanSynced')}</span>
+              : errors.amount && <span className="field-error">{errors.amount}</span>}
           </div>
           <div className="field">
             <label htmlFor="ex-category">
@@ -145,6 +162,20 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
                 placeholder={t('expense.dayPlaceholder')}
               />
               {errors.dayOfMonth && <span className="field-error">{errors.dayOfMonth}</span>}
+            </div>
+          )}
+          {effectiveType === 'fixed' && loans.length > 0 && (
+            <div className="field">
+              <label htmlFor="ex-loan">{t('expense.loanLabel')}</label>
+              <select id="ex-loan" value={loanId} onChange={(e) => setLoanId(e.target.value)}>
+                <option value="">{t('expense.loanNone')}</option>
+                {loans.map((l) => <option key={l.loan.id} value={l.loan.id}>{l.loan.name}</option>)}
+              </select>
+              {linked && (
+                <span className="muted" style={{ fontSize: 12 }}>
+                  🔗 {t('expense.loanLinkedHint', { value: eur2(linkedPrestacao!) })}
+                </span>
+              )}
             </div>
           )}
         </div>

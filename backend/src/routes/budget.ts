@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { stripFormulaPrefix } from '../lib/sanitize'
+import { computeKpis } from '../lib/loanEngine'
 
 const router = Router()
 router.use(requireAuth)
@@ -112,8 +113,39 @@ function merchantKey(name: string): string {
 // recurring PLAN. The headline KPIs and the Tabelas are plan-only — see FX1.
 const isActual = (r: { source: string | null }) => !!r.source
 
+// ── Loan-linked expenses ─────────────────────────────────────────
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+// Map of loanId → current monthly prestação. A budget fixed expense linked to a
+// loan (`loanId`) shows this LIVE figure instead of a stale manual amount, so the
+// mortgage isn't tracked in two places (#9).
+async function loanPrestacoes(userId: string): Promise<Map<string, number>> {
+  const map = new Map<string, number>()
+  const loans = await prisma.loan.findMany({
+    where: { userId },
+    include: { amortizations: { orderBy: { ym: 'asc' } } },
+  })
+  for (const loan of loans) {
+    try {
+      const kpis = computeKpis({
+        capital: loan.capital, prazoMeses: loan.prazoMeses, tanFixa: loan.tanFixa,
+        mesesFixos: loan.mesesFixos, spread: loan.spread, euribor: loan.euribor,
+        dataInicio: loan.dataInicio,
+        amortizacoes: loan.amortizations.map((a) => ({ ym: a.ym, valor: a.valor, modo: a.modo as 'prazo' | 'prestacao' })),
+      })
+      if (kpis.proximaPrestacao > 0) map.set(loan.id, round2(kpis.proximaPrestacao))
+    } catch { /* skip a loan that can't be computed */ }
+  }
+  return map
+}
+
+// A linked expense's effective amount = its loan's current prestação (if the loan
+// still resolves), else the stored amount (graceful when the loan was deleted).
+const syncedAmount = (e: { loanId: string | null; amount: number }, prest: Map<string, number>): number =>
+  e.loanId && prest.has(e.loanId) ? prest.get(e.loanId)! : e.amount
+
 // ── KPI helper ───────────────────────────────────────────────────
-async function summarize(userId: string) {
+async function summarize(userId: string, prest: Map<string, number>) {
   // Pending (imported, not yet classified) items don't count toward totals
   // until the user assigns them fixed/variable. Imported actuals (source set)
   // are one-off realised lines, NOT recurring — excluding them keeps this a
@@ -124,7 +156,7 @@ async function summarize(userId: string) {
   ])
 
   const incomeTotal = incomes.reduce((s, i) => s + i.amount, 0)
-  const fixedTotal = expenses.filter((e) => e.type === 'fixed').reduce((s, e) => s + e.amount, 0)
+  const fixedTotal = expenses.filter((e) => e.type === 'fixed').reduce((s, e) => s + syncedAmount(e, prest), 0)
   const variableTotal = expenses.filter((e) => e.type === 'variable').reduce((s, e) => s + e.amount, 0)
   const expensesTotal = fixedTotal + variableTotal
 
@@ -143,13 +175,16 @@ async function summarize(userId: string) {
 router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
-    const [allIncomes, allExpenses, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
+    const prest = await loanPrestacoes(userId)
+    const [allIncomes, allExpensesRaw, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
       prisma.income.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
       prisma.expense.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { type: 'asc' }, { name: 'asc' }] }),
       prisma.income.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
       prisma.expense.findMany({ where: { userId, pending: true }, orderBy: [{ createdAt: 'desc' }] }),
-      summarize(userId),
+      summarize(userId, prest),
     ])
+    // Loan-linked fixed expenses show the loan's LIVE prestação (#9).
+    const allExpenses = allExpensesRaw.map((e) => ({ ...e, amount: syncedAmount(e, prest) }))
     // Split the two lanes (FX1): `incomes`/`expenses` are the recurring PLAN
     // (what the Tabelas show); `actual*` are imported one-off realised lines.
     const incomes = allIncomes.filter((r) => !isActual(r))
@@ -550,6 +585,7 @@ router.post('/expenses', async (req, res) => {
   const startYm = asOptionalYm(req.body?.startYm, 'startYm', errors)
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
+  const loanId = asOptionalString(req.body?.loanId, 40)
   const active = typeof req.body?.active === 'boolean' ? req.body.active : true
   const pending = typeof req.body?.pending === 'boolean' ? req.body.pending : false
 
@@ -557,7 +593,7 @@ router.post('/expenses', async (req, res) => {
 
   try {
     const expense = await prisma.expense.create({
-      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, active, pending },
+      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, loanId, active, pending },
     })
     res.status(201).json({ expense })
   } catch (err) {
@@ -578,6 +614,7 @@ router.put('/expenses/:id', async (req, res) => {
   if (req.body?.startYm !== undefined)     data.startYm = asOptionalYm(req.body.startYm, 'startYm', errors)
   if (req.body?.endYm !== undefined)       data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)       data.notes = asOptionalString(req.body.notes, 500)
+  if (req.body?.loanId !== undefined)      data.loanId = asOptionalString(req.body.loanId, 40)
   if (req.body?.active !== undefined && typeof req.body.active === 'boolean') data.active = req.body.active
   if (req.body?.pending !== undefined && typeof req.body.pending === 'boolean') data.pending = req.body.pending
 
