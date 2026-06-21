@@ -31,6 +31,7 @@
     "bioHead": "Desbloqueio biométrico",
     "bioDesc": "Usa a impressão digital / reconhecimento facial deste dispositivo para desbloquear, com o PIN como alternativa.",
     "bioUnsupported": "Este dispositivo/navegador não suporta biometria.",
+    "bioNeedsPin": "👤 Desbloqueio biométrico: define primeiro um PIN (é a alternativa), depois podes ativar a impressão digital / reconhecimento facial aqui.",
     "bioDevice": "Dispositivo",
     "bioNameLabel": "Nome do dispositivo (opcional)",
     "bioNamePlaceholder": "ex: iPhone do Tomás",

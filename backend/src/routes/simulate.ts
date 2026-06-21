@@ -194,10 +194,14 @@ router.post('/compare', async (req, res) => {
     // expected net gain by re-pricing the investment at effectiveReturn ∓ σ — a
     // plain "bad year / good year" range that sets the investment's uncertainty
     // against the GUARANTEED interest saved by amortizing.
+    // NOTE: `flatGross` takes the annual rate as a FRACTION (the break-even
+    // search feeds it 0..2). `effectiveReturn` and `riskVolN` are PERCENT
+    // (e.g. 8.8 and 16.0), so divide by 100 — otherwise rr = 24.8/12 ≈ 2.07
+    // compounds to ~1e30 and the "good year" figure overflows.
     const riskVolN = Number(riskVolatility)
     const hasRisk = Number.isFinite(riskVolN) && riskVolN > 0 && riskVolN <= 200
-    const pessimisticNet = hasRisk ? netFromGross(flatGross(effectiveReturn - riskVolN)) : null
-    const optimisticNet = hasRisk ? netFromGross(flatGross(effectiveReturn + riskVolN)) : null
+    const pessimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn - riskVolN) / 100)) : null
+    const optimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn + riskVolN) / 100)) : null
 
     // ── Curves for chart (sampled to keep payload small) ─────────
     const baseJuroByYm = new Map(base.rows.map((r2) => [r2.ym, r2.juros]))

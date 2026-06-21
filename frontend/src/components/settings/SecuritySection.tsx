@@ -137,6 +137,12 @@ export function SecuritySection() {
         </form>
       )}
 
+      {/* Discoverability: biometric unlock is hidden until a PIN exists (the
+          PIN is its fallback). Tell the user that instead of showing nothing. */}
+      {biometricsSupported && !hasPin && !showPinForm && (
+        <p className="muted" style={{ marginTop: 12 }}>{t('security.bioNeedsPin')}</p>
+      )}
+
       {/* Biometrics — only when a PIN exists (PIN is the fallback) */}
       {hasPin && (
         <>

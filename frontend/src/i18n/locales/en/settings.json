@@ -31,6 +31,7 @@
     "bioHead": "Biometric unlock",
     "bioDesc": "Use this device's fingerprint / face unlock to unlock, with the PIN as a fallback.",
     "bioUnsupported": "This device/browser doesn't support biometrics.",
+    "bioNeedsPin": "👤 Biometric unlock: set up a PIN first (it's the fallback), then you can enable fingerprint / face unlock here.",
     "bioDevice": "Device",
     "bioNameLabel": "Device name (optional)",
     "bioNamePlaceholder": "e.g. Tomás's iPhone",
