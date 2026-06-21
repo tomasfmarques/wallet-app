@@ -1,5 +1,35 @@
 # Decisions — Auth (email/password + Google Sign In)
 
+## 2026-06-21 — Demo mode (ephemeral seeded account)
+
+- **What:** a throwaway sandbox account so visitors can try the app pre-signup and
+  devs can demo/test without touching real data. Entry: a **small "Try the demo"
+  link** on the sign-in page + a **Demo section** in Settings → Account. Each entry
+  mints a fresh ephemeral account (so concurrent demos are isolated).
+- **Model:** `User.isDemo` (**additive schema**, migration `add_user_is_demo`, both
+  Prisma files). Demo users have no `passwordHash` → unreachable by normal login;
+  only minted via `POST /api/auth/demo`.
+- **Seeding:** `backend/src/lib/demoSeed.ts` `seedDemoAccount(userId, {clearFirst?})`
+  creates a curated dataset (1 mortgage, 3 portfolio assets w/ 12mo flows + settings,
+  salary/freelance incomes, fixed expenses + import-style monthly *actuals* so
+  Movimentos/Análise have content, 2 learned rules). Months are relative to now so it
+  always looks current. Seeds **directly** (does NOT reuse/refactor the import route).
+- **Endpoints** (`auth.ts`, rate-limited): `POST /demo` (lazy-GC stale demo users
+  >24h via cascade delete → create ephemeral user → seed → `session.regenerate` +
+  `userId` + 1-day cookie, mirroring signup) and `POST /demo/reset` (re-seed the
+  current demo account; demo-only). `/api/me` gains `isDemo`.
+- **Cleanup:** no cron → **lazy GC** on each `/demo` call deletes demo users older
+  than 24h (cascade wipes all their data). Serverless-friendly.
+- **Frontend:** `useDemoLogin`/`useDemoReset` (useAuth), `DemoSection` (open / reset
+  / exit), a persistent **demo banner** in `Layout` ("temporary data · Create
+  account · Exit"). Entering demo from a real account replaces the session (a
+  `confirm()` warns; real data untouched — return = sign back in).
+- **Browser-verified:** sign-in demo link → seeded `/overview` (income/debt/wedge),
+  banner shown, `/api/me isDemo:true`; Settings shows reset/exit; reset → ok.
+- **Don't:** allow demo accounts to be reachable by password login (no hash by
+  design); don't skip the lazy GC (only cleanup mechanism).
+
+
 _Source: split from CAVEATS-full.md._
 
 ## Phase 1 — Authentication

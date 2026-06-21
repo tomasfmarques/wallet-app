@@ -155,5 +155,17 @@
     "deleteSubmit": "Delete account",
     "errRequired": "Required",
     "errPhrase": "Type DELETE to confirm"
+  },
+  "demo": {
+    "head": "Demo mode",
+    "openDesc": "Open a demo account with sample data to explore the app. Your account isn't affected.",
+    "open": "Open demo mode",
+    "openConfirm": "This signs you out and opens a temporary demo account. Your data is not affected. Continue?",
+    "loading": "Preparing…",
+    "activeDesc": "You're in a demo account. The data is temporary and may be wiped.",
+    "reset": "Reset demo data",
+    "resetting": "Resetting…",
+    "resetDone": "Data reset",
+    "exit": "Exit demo"
   }
 }

@@ -129,6 +129,7 @@ app.use([
   '/api/auth/change-password', '/api/auth/forgot-password', '/api/auth/reset-password',
   '/api/auth/pin/set', '/api/auth/pin/verify', '/api/auth/pin/disable',
   '/api/auth/webauthn/auth/verify', '/api/auth/webauthn/register/verify',
+  '/api/auth/demo', '/api/auth/demo/reset',
 ], authLimiter)
 
 // General rate limiter applied to all API routes to prevent DoS / API abuse.

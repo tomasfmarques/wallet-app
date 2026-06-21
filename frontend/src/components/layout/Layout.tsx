@@ -38,6 +38,15 @@ export function Layout() {
 
   return (
     <div className="app-shell">
+      {user?.isDemo && (
+        <div className="demo-banner" role="status">
+          <span className="demo-banner-text">🧪 {t('demoBanner')}</span>
+          <span className="demo-banner-actions">
+            <NavLink to="/signup" className="demo-banner-link">{t('demoSignup')}</NavLink>
+            <button type="button" className="demo-banner-exit" onClick={handleSignOut}>{t('demoExit')}</button>
+          </span>
+        </div>
+      )}
       <header className="navbar">
         <div className="navbar-inner">
           <div className="navbar-left">

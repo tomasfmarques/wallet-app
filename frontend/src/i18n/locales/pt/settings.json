@@ -155,5 +155,17 @@
     "deleteSubmit": "Apagar conta",
     "errRequired": "Obrigatória",
     "errPhrase": "Escreve APAGAR para confirmar"
+  },
+  "demo": {
+    "head": "Modo demonstração",
+    "openDesc": "Abre uma conta de demonstração com dados de exemplo para explorar a app. Não afeta a tua conta.",
+    "open": "Abrir modo demonstração",
+    "openConfirm": "Isto termina a tua sessão e abre uma conta de demonstração temporária. Os teus dados não são afetados. Continuar?",
+    "loading": "A preparar…",
+    "activeDesc": "Estás numa conta de demonstração. Os dados são temporários e podem ser apagados.",
+    "reset": "Reiniciar dados demo",
+    "resetting": "A reiniciar…",
+    "resetDone": "Dados repostos",
+    "exit": "Sair do demo"
   }
 }

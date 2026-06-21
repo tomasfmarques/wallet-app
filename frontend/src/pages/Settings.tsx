@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AccountSection } from '@/components/settings/AccountSection'
 import { SecuritySection } from '@/components/settings/SecuritySection'
+import { DemoSection } from '@/components/settings/DemoSection'
 import { EuriborSection } from '@/components/settings/EuriborSection'
 import { ExportSection } from '@/components/settings/ExportSection'
 import { ImportSection } from '@/components/settings/ImportSection'
@@ -34,7 +35,12 @@ export function Settings() {
         <TabBtn id="danger"    label={t('tabs.danger')}    tab={tab} set={setTab} />
       </div>
 
-      {tab === 'account'   && <AccountSection />}
+      {tab === 'account'   && (
+        <div className="settings-backup-stack">
+          <AccountSection />
+          <DemoSection />
+        </div>
+      )}
       {tab === 'security'  && <SecuritySection />}
       {tab === 'language'  && <LanguageSection />}
       {tab === 'euribor'   && <EuriborSection />}

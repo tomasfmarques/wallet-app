@@ -3,6 +3,7 @@ import { randomBytes, createHash } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma'
 import { sendPasswordResetEmail } from '../lib/email'
+import { seedDemoAccount } from '../lib/demoSeed'
 
 const router = Router()
 
@@ -298,6 +299,53 @@ router.post('/pin/disable', async (req, res) => {
     res.json({ ok: true })
   } catch (err) {
     console.error('PIN disable failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── Demo mode ────────────────────────────────────────────────────
+// A throwaway, seeded sandbox account so visitors can try the app and devs can
+// demo/test without touching real data. Each call mints a fresh ephemeral user,
+// seeds it, and logs in. No password → unreachable by normal login. Old demo
+// accounts are lazily garbage-collected here (the app has no cron); cascade
+// delete wipes all their data.
+const DEMO_TTL_MS = 1000 * 60 * 60 * 24 // ~24h
+
+router.post('/demo', async (req, res) => {
+  try {
+    await prisma.user.deleteMany({ where: { isDemo: true, createdAt: { lt: new Date(Date.now() - DEMO_TTL_MS) } } })
+
+    const email = `demo+${randomBytes(9).toString('hex')}@demo.wallet360.pt`
+    const user = await prisma.user.create({ data: { email, name: 'Convidado', isDemo: true } })
+    await seedDemoAccount(user.id)
+
+    req.session.regenerate((err) => {
+      if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
+      req.session.userId = user.id
+      req.session.cookie.maxAge = ONE_DAY
+      res.status(201).json({
+        user: {
+          id: user.id, email: user.email, name: user.name,
+          createdAt: user.createdAt.toISOString(),
+          hasPassword: false, hasPin: false, hasBiometrics: false, isDemo: true,
+        },
+      })
+    })
+  } catch (err) {
+    console.error('Demo create failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+router.post('/demo/reset', async (req, res) => {
+  if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
+    if (!user || !user.isDemo) { res.status(403).json({ error: 'Apenas contas demo' }); return }
+    await seedDemoAccount(user.id, { clearFirst: true })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Demo reset failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

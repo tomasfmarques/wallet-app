@@ -33,6 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
         hasPassword: !!user.passwordHash,
         hasPin: !!user.pinHash,
         hasBiometrics: biometricCount > 0,
+        isDemo: user.isDemo,
       },
     })
   } catch (err) {

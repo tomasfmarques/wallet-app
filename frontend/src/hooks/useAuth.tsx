@@ -95,6 +95,30 @@ export function useSignup() {
   )
 }
 
+// Mint + log into a fresh seeded demo account. Replaces any current session.
+export function useDemoLogin() {
+  const qc = useQueryClient()
+  return useMutation<AuthResponse, ApiError, void>(
+    () => api.post<AuthResponse>('/api/auth/demo'),
+    {
+      onSuccess: (data) => {
+        try { sessionStorage.removeItem('w360:unlocked') } catch { /* demo has no PIN */ }
+        qc.setQueryData(ME_KEY, data)
+        qc.invalidateQueries() // refetch all module data for the new account
+      },
+    },
+  )
+}
+
+// Reset the current demo account's data back to the seeded state.
+export function useDemoReset() {
+  const qc = useQueryClient()
+  return useMutation<{ ok: true }, ApiError, void>(
+    () => api.post<{ ok: true }>('/api/auth/demo/reset'),
+    { onSuccess: () => { qc.invalidateQueries() } },
+  )
+}
+
 export interface ChangePasswordInput {
   currentPassword: string
   newPassword: string

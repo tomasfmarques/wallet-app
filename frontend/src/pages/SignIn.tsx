@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth, useLogin, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
+import { useAuth, useLogin, useDemoLogin, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 
 interface LocationState {
@@ -12,6 +12,7 @@ export function SignIn() {
   const { t } = useTranslation('auth')
   const { isAuthenticated, isLoading } = useAuth()
   const login = useLogin()
+  const demo = useDemoLogin()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = (location.state as LocationState | null)?.from ?? '/overview'
@@ -120,6 +121,22 @@ export function SignIn() {
         <p className="auth-footer">
           {t('signIn.noAccount')} <Link to="/signup">{t('signIn.createAccount')}</Link>
         </p>
+
+        <p className="auth-demo">
+          {t('demo.peek')}{' '}
+          <button
+            type="button"
+            className="linklike"
+            disabled={demo.isLoading}
+            onClick={async () => {
+              try { await demo.mutateAsync(); navigate('/overview', { replace: true }) }
+              catch { /* surfaced below */ }
+            }}
+          >
+            {demo.isLoading ? t('demo.loading') : t('demo.try')}
+          </button>
+        </p>
+        {demo.isError && <p className="field-error" style={{ textAlign: 'center' }}>{t('demo.error')}</p>}
       </div>
     </div>
   )

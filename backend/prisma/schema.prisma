@@ -23,6 +23,8 @@ model User {
   googleId     String?  @unique @map("google_id")
   // bcrypt hash of the 6-digit app-lock PIN. Null = no PIN set (app-lock off).
   pinHash      String?  @map("pin_hash")
+  // Throwaway demo account (seeded sandbox). GC'd ~24h after createdAt.
+  isDemo       Boolean  @default(false) @map("is_demo")
   name         String
   createdAt    DateTime @default(now()) @map("created_at")
 

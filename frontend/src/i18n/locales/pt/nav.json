@@ -26,5 +26,8 @@
     "loanDesc": "Créditos e amortizações",
     "investmentsDesc": "Carteira e projeções",
     "compareDesc": "Simulador de decisão"
-  }
+  },
+  "demoBanner": "Modo demonstração — os dados são temporários.",
+  "demoSignup": "Criar conta",
+  "demoExit": "Sair"
 }

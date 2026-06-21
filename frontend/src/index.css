@@ -3798,3 +3798,41 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-md, 10px);
 }
+
+/* ── Demo mode ─────────────────────────────────────────────── */
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.linklike:hover { color: var(--accent-d); }
+.linklike:disabled { opacity: 0.6; cursor: default; }
+.auth-demo {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 7px 16px;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 13px;
+  font-weight: 500;
+}
+.demo-banner-actions { display: inline-flex; align-items: center; gap: 12px; }
+.demo-banner-link { color: #92400E; font-weight: 600; text-decoration: underline; }
+.demo-banner-exit {
+  background: none; border: none; padding: 0;
+  font: inherit; font-weight: 600; color: #92400E;
+  cursor: pointer; text-decoration: underline;
+}

@@ -26,6 +26,7 @@ model User {
   passwordHash String?  @map("password_hash")
   googleId     String?  @unique @map("google_id")
   pinHash      String?  @map("pin_hash") // bcrypt hash of the 6-digit app-lock PIN
+  isDemo       Boolean  @default(false) @map("is_demo") // throwaway demo account
   name         String
   createdAt    DateTime @default(now()) @map("created_at")
 

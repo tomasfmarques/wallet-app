@@ -26,5 +26,8 @@
     "loanDesc": "Loans and overpayments",
     "investmentsDesc": "Portfolio and projections",
     "compareDesc": "Decision simulator"
-  }
+  },
+  "demoBanner": "Demo mode — data is temporary.",
+  "demoSignup": "Create account",
+  "demoExit": "Exit"
 }
