@@ -56,5 +56,16 @@
     "notFound": "Not found.",
     "logout": "Error signing out.",
     "unknown": "Something went wrong. Please try again."
+  },
+  "lock": {
+    "title": "App locked",
+    "subtitle": "Hi {{name}}. Enter your PIN to continue.",
+    "wrong": "Wrong PIN",
+    "checking": "Checking…",
+    "delete": "Delete",
+    "useBiometric": "Use biometrics",
+    "biometricChecking": "Checking…",
+    "biometricFailed": "Biometrics cancelled — use your PIN.",
+    "signOut": "Sign out"
   }
 }

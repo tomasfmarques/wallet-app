@@ -21,6 +21,8 @@ model User {
   passwordHash String?  @map("password_hash")
   // Google "sub" claim (stable per-user identifier). Unique, optional.
   googleId     String?  @unique @map("google_id")
+  // bcrypt hash of the 6-digit app-lock PIN. Null = no PIN set (app-lock off).
+  pinHash      String?  @map("pin_hash")
   name         String
   createdAt    DateTime @default(now()) @map("created_at")
 
@@ -32,8 +34,28 @@ model User {
   classificationRules ClassificationRule[]
   bankConnections   BankConnection[]
   passwordResetTokens PasswordResetToken[]
+  webauthnCredentials WebAuthnCredential[]
 
   @@map("users")
+}
+
+// A registered WebAuthn (passkey/biometric) credential for the PIN lock's
+// biometric unlock. One row per device+browser. Device-bound — deliberately NOT
+// included in export/import backup (a credential is invalid outside its origin).
+model WebAuthnCredential {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  credentialId String   @unique @map("credential_id") // base64url
+  publicKey    String   @map("public_key")            // base64url-encoded COSE key
+  counter      Int      @default(0)
+  transports   String?                                 // CSV of authenticator transports
+  deviceName   String?  @map("device_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
 }
 
 model PasswordResetToken {

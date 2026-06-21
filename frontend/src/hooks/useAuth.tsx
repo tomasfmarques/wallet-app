@@ -152,6 +152,12 @@ export function useLogout() {
     () => api.post<{ ok: true }>('/api/auth/logout'),
     {
       onSuccess: () => {
+        try { sessionStorage.removeItem('w360:unlocked') } catch { /* re-lock on next launch */ }
+        // Don't silently re-sign the user right after an explicit logout.
+        try {
+          (window as unknown as { google?: { accounts?: { id?: { disableAutoSelect?: () => void } } } })
+            .google?.accounts?.id?.disableAutoSelect?.()
+        } catch { /* ignore */ }
         qc.setQueryData(ME_KEY, null)
         qc.clear() // drop all cached user-scoped data
       },

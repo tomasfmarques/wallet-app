@@ -127,3 +127,38 @@ _Source: split from CAVEATS-full.md._
 
 ---
 
+## 2026-06-21 — Google silent auto sign-in + 6-digit PIN app-lock + biometrics
+
+### Google silent auto sign-in
+- `GoogleSignInButton.tsx` now sets `auto_select: true` + `use_fedcm_for_prompt: true`
+  and calls `google.accounts.id.prompt()` (One Tap). A remembered account signs in
+  **silently** via the existing callback; otherwise the chooser shows. The rendered
+  button stays as the manual fallback.
+- `useAuth.useLogout` calls `google.accounts.id.disableAutoSelect()` (via the global)
+  so an explicit logout doesn't instantly re-sign the user.
+- **Note:** One Tap needs a real browser Google/FedCM session — it errors in
+  headless/automation (`FedCM get() NetworkError`), which is expected, not a bug.
+
+### PIN app-lock (server-verified) + biometrics (WebAuthn)
+Banking-style app-lock layered over the session. **Re-lock = launch only.**
+- **Schema (additive, both Prisma files, migration `add_pin_and_webauthn`):**
+  `User.pinHash` (bcrypt) + new `WebAuthnCredential` model (per device).
+  **Deliberately excluded from export/import** (device+origin-bound); `User` isn't
+  serialized in backup so `pinHash` needs no export change either.
+- **PIN endpoints** in `auth.ts`: `/pin/set`, `/pin/verify` (rate-limited via the
+  change-password lockout, keyed `pin:<userId>`; returns `lockedOut` → client logs
+  out), `/pin/disable`. Re-auth reuses the password-or-session rule. `/api/me` gains
+  `hasPin` + `hasBiometrics`.
+- **WebAuthn** (`routes/webauthn.ts`, `@simplewebauthn/server` v13): register/auth
+  options+verify, list, delete. RP id/origin from `APP_ORIGIN`; challenge on the
+  session. Biometrics requires a PIN first (PIN is the fallback).
+- **Frontend:** `LockProvider`/`useLock` (sessionStorage `w360:unlocked` ⇒
+  launch-only), `LockGate` wrapping `Layout` inside `AuthGuard`, full-screen
+  `LockScreen` (6-dot pad + biometric button + sign-out), `useSecurity` mutations
+  (`@simplewebauthn/browser`), Settings → **Security** tab (`SecuritySection`).
+- **Boundary:** the lock is a client gate over a still-valid session; the PIN hash
+  is server-verified + rate-limited (anti-brute-force). Server-wide route
+  enforcement (a `pinVerified` session flag) is intentionally out of scope.
+
+---
+

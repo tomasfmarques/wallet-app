@@ -218,6 +218,90 @@ router.post('/change-password', async (req, res) => {
   }
 })
 
+// ── App-lock PIN (6 digits) ──────────────────────────────────────
+// A privacy app-lock layered on top of the session (like banking apps). The PIN
+// is hashed server-side (bcrypt) and verified via /pin/verify, which is rate-
+// limited (reusing the change-password lockout, namespaced "pin:<userId>").
+const PIN_RE = /^\d{6}$/
+
+// Re-auth for setting/disabling the PIN: password users prove with the current
+// password; Google-only users (no passwordHash) are proven by the active session
+// (same rule as me.ts verifyIdentity).
+async function reauth(user: { passwordHash: string | null }, currentPassword: unknown): Promise<boolean> {
+  if (!user.passwordHash) return true
+  if (typeof currentPassword !== 'string' || currentPassword.length === 0) return false
+  return bcrypt.compare(currentPassword, user.passwordHash)
+}
+
+router.post('/pin/set', async (req, res) => {
+  if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
+  const { pin, currentPassword } = req.body ?? {}
+  if (typeof pin !== 'string' || !PIN_RE.test(pin)) {
+    res.status(400).json({ errors: { pin: 'O PIN deve ter 6 dígitos' } }); return
+  }
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
+    if (!user) { res.status(401).json({ error: 'Sessão inválida' }); return }
+    if (!(await reauth(user, currentPassword))) {
+      res.status(401).json({ errors: { currentPassword: 'Password atual incorreta' } }); return
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { pinHash: await bcrypt.hash(pin, 12) } })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('PIN set failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+router.post('/pin/verify', async (req, res) => {
+  if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
+  const userId = req.session.userId
+  const key = `pin:${userId}`
+  if (cpIsLocked(key)) {
+    res.status(429).json({ error: 'Demasiadas tentativas falhadas.', lockedOut: true }); return
+  }
+  const { pin } = req.body ?? {}
+  if (typeof pin !== 'string' || !PIN_RE.test(pin)) {
+    res.status(400).json({ error: 'PIN inválido' }); return
+  }
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user || !user.pinHash) { res.status(400).json({ error: 'PIN não configurado' }); return }
+    if (!(await bcrypt.compare(pin, user.pinHash))) {
+      cpRecordFail(key)
+      res.status(401).json({ error: 'PIN incorreto', lockedOut: cpIsLocked(key) }); return
+    }
+    cpClear(key)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('PIN verify failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+router.post('/pin/disable', async (req, res) => {
+  if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
+  const { pin, currentPassword } = req.body ?? {}
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.session.userId } })
+    if (!user) { res.status(401).json({ error: 'Sessão inválida' }); return }
+    // Re-auth via password (password users) OR the current PIN.
+    let allowed = await reauth(user, currentPassword)
+    if (!allowed && user.pinHash && typeof pin === 'string') {
+      allowed = await bcrypt.compare(pin, user.pinHash)
+    }
+    if (!allowed) { res.status(401).json({ error: 'Confirmação inválida' }); return }
+    await prisma.$transaction([
+      prisma.webAuthnCredential.deleteMany({ where: { userId: user.id } }),
+      prisma.user.update({ where: { id: user.id }, data: { pinHash: null } }),
+    ])
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('PIN disable failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ── POST /api/auth/logout ─────────────────────────────────────────
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {

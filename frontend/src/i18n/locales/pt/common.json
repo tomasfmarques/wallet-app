@@ -56,5 +56,16 @@
     "notFound": "Não encontrado.",
     "logout": "Erro ao terminar sessão.",
     "unknown": "Ocorreu um erro inesperado. Tenta novamente."
+  },
+  "lock": {
+    "title": "App bloqueada",
+    "subtitle": "Olá, {{name}}. Introduz o PIN para continuar.",
+    "wrong": "PIN incorreto",
+    "checking": "A verificar…",
+    "delete": "Apagar",
+    "useBiometric": "Usar biometria",
+    "biometricChecking": "A verificar…",
+    "biometricFailed": "Biometria cancelada — usa o PIN.",
+    "signOut": "Terminar sessão"
   }
 }

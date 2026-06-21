@@ -18,8 +18,11 @@ interface GoogleAccountsId {
     client_id: string
     callback: (resp: GoogleCredentialResponse) => void
     auto_select?: boolean
+    use_fedcm_for_prompt?: boolean
     cancel_on_tap_outside?: boolean
   }) => void
+  prompt: () => void
+  disableAutoSelect: () => void
   renderButton: (
     el: HTMLElement,
     config: {
@@ -95,6 +98,11 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
           setErr(apiErrorMessage(e))
         }
       },
+      // Silently sign in a remembered account; show the chooser only when none
+      // is remembered (One Tap). disableAutoSelect() on logout prevents an
+      // instant re-sign right after an explicit logout.
+      auto_select: true,
+      use_fedcm_for_prompt: true,
       cancel_on_tap_outside: true,
     })
     g.renderButton(buttonRef.current, {
@@ -107,6 +115,8 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
       width: 320,
       locale: 'pt',
     })
+    // One Tap: auto-signs a remembered account, else prompts to choose.
+    g.prompt()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, clientId, text])
 

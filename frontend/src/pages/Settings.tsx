@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AccountSection } from '@/components/settings/AccountSection'
+import { SecuritySection } from '@/components/settings/SecuritySection'
 import { EuriborSection } from '@/components/settings/EuriborSection'
 import { ExportSection } from '@/components/settings/ExportSection'
 import { ImportSection } from '@/components/settings/ImportSection'
@@ -8,7 +9,7 @@ import { WatchlistSection } from '@/components/settings/WatchlistSection'
 import { LanguageSection } from '@/components/settings/LanguageSection'
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection'
 
-type Tab = 'account' | 'language' | 'euribor' | 'backup' | 'watchlist' | 'danger'
+type Tab = 'account' | 'security' | 'language' | 'euribor' | 'backup' | 'watchlist' | 'danger'
 
 export function Settings() {
   const { t } = useTranslation('settings')
@@ -25,6 +26,7 @@ export function Settings() {
 
       <div className="subtabs" role="tablist">
         <TabBtn id="account"   label={t('tabs.account')}   tab={tab} set={setTab} />
+        <TabBtn id="security"  label={t('tabs.security')}  tab={tab} set={setTab} />
         <TabBtn id="language"  label={t('tabs.language')}  tab={tab} set={setTab} />
         <TabBtn id="euribor"   label={t('tabs.euribor')}   tab={tab} set={setTab} />
         <TabBtn id="backup"    label={t('tabs.backup')}    tab={tab} set={setTab} />
@@ -33,6 +35,7 @@ export function Settings() {
       </div>
 
       {tab === 'account'   && <AccountSection />}
+      {tab === 'security'  && <SecuritySection />}
       {tab === 'language'  && <LanguageSection />}
       {tab === 'euribor'   && <EuriborSection />}
       {tab === 'backup'    && (

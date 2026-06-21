@@ -6,6 +6,8 @@ export interface User {
   name: string
   createdAt: string
   hasPassword: boolean
+  hasPin: boolean         // a 6-digit app-lock PIN is set
+  hasBiometrics: boolean  // ≥1 WebAuthn credential registered on the account
 }
 
 export interface Loan {

@@ -20,6 +20,10 @@ router.get('/', requireAuth, async (req, res) => {
       return
     }
 
+    const biometricCount = user.pinHash
+      ? await prisma.webAuthnCredential.count({ where: { userId: user.id } })
+      : 0
+
     res.json({
       user: {
         id: user.id,
@@ -27,6 +31,8 @@ router.get('/', requireAuth, async (req, res) => {
         name: user.name,
         createdAt: user.createdAt.toISOString(),
         hasPassword: !!user.passwordHash,
+        hasPin: !!user.pinHash,
+        hasBiometrics: biometricCount > 0,
       },
     })
   } catch (err) {

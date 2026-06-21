@@ -12,6 +12,7 @@ import { initObservability, captureError } from './lib/observability'
 
 import authRouter from './routes/auth'
 import authGoogleRouter from './routes/authGoogle'
+import webauthnRouter from './routes/webauthn'
 import meRouter from './routes/me'
 import loanRouter from './routes/loan'
 import portfolioRouter from './routes/portfolio'
@@ -126,6 +127,8 @@ const authLimiter = rateLimit({
 app.use([
   '/api/auth/login', '/api/auth/signup', '/api/auth/google',
   '/api/auth/change-password', '/api/auth/forgot-password', '/api/auth/reset-password',
+  '/api/auth/pin/set', '/api/auth/pin/verify', '/api/auth/pin/disable',
+  '/api/auth/webauthn/auth/verify', '/api/auth/webauthn/register/verify',
 ], authLimiter)
 
 // General rate limiter applied to all API routes to prevent DoS / API abuse.
@@ -141,6 +144,7 @@ app.use('/api/', apiLimiter)
 // ── API routes ─────────────────────────────────────────────────────
 app.use('/api/auth', authRouter)
 app.use('/api/auth/google', authGoogleRouter)
+app.use('/api/auth/webauthn', webauthnRouter)
 app.use('/api/me', meRouter)
 app.use('/api/loan', loanRouter)
 app.use('/api/portfolio', portfolioRouter)

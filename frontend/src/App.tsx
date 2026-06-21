@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { useTranslation } from 'react-i18next'
 
 import { AuthProvider } from '@/hooks/useAuth'
+import { LockProvider } from '@/hooks/useLock'
 import AuthGuard from '@/components/auth/AuthGuard'
+import LockGate from '@/components/auth/LockGate'
 import Layout from '@/components/layout/Layout'
 
 import SignIn from '@/pages/SignIn'
@@ -39,7 +41,11 @@ function AppRoutes() {
       <Route
         element={
           <AuthGuard>
-            <Layout />
+            <LockProvider>
+              <LockGate>
+                <Layout />
+              </LockGate>
+            </LockProvider>
           </AuthGuard>
         }
       >
