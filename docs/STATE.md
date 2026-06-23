@@ -3,7 +3,7 @@
 _The single source of truth for "where things stand." Replaces manual hand-offs.
 Read at the start of a session with `/catchup`; update at the end with `/handoff`._
 
-**Last updated:** 2026-06-21
+**Last updated:** 2026-06-23
 
 > **Secrets policy:** never put real values (DB password, `SESSION_SECRET`, API keys)
 > in this file or anywhere in the repo — it's public. Secrets live ONLY in Vercel →
@@ -48,8 +48,12 @@ _Done: Neon DB password rotated (2026-06-18) — prod `/api/health` ok; no plain
 **Product / engineering (next build candidates):**
 5. **Activate GoCardless** — still BLOCKED externally (signups disabled at bankaccountdata.gocardless.com). When reopened: create secret `wallet360-production`, add `GOCARDLESS_SECRET_ID/KEY` to Vercel, redeploy. Code built (`backend/src/routes/bank.ts`).
 6. **i18n follow-up (optional, mostly done)** — common backend error messages now map to EN via `apiErrorMessage` (frontend). Remaining: less-common validation strings still fall back to pt; the Google Sign-In button self-localizes via Google's own widget (pass it a locale if it matters).
-7. **Durable plan↔actual link (only if hand-renamed rows bite)** — auto-match is `merchantKey`-based, so a manually-renamed fixed plan row ("Salário") whose bank line differs ("ORDENADO ACME") isn't matched. An id-based link (needs schema) is the real fix; deferred until it actually matters.
+7. ~~**Durable plan↔actual link**~~ — **DONE (`9dce101`)** via symmetric `Income.matchHint`. The hand-renamed "Salário" vs "ORDENADO ACME" case now matches (chose matchHint over a literal id-link — matched actuals are suppressed, so there's no row to hang an id on). See below + [`docs/decisions/budget.md`](docs/decisions/budget.md).
 8. **One-off / 13th-month income type** — first-class subsídio de férias / bonus concept instead of it surfacing as a positive variance (see Open threads). Needs a schema field (frequency or one-off flag) → two-schema + Neon snapshot.
+
+_Done (`9dce101`, on `main`/deployed): **Income.matchHint — closes the hand-renamed plan↔actual gap (next-step #7).** `matchHint` is now symmetric on `Income` (was Expense-only). A fixed income plan row renamed "Salário" whose bank line reads "ORDENADO ACME" now matches via `income|merchantKey(matchHint)` in `processImportItems`, so the import is absorbed instead of double-counting (folded plan + unmatched actual). Additive schema (`add_income_match_hint`, both schemas, `import.ts` whitelist, length-capped 80; `export.ts` carries via full-row dump). UI: matchHint field in `IncomeModal` (fixed income). Verified end-to-end. See [`docs/decisions/budget.md`](docs/decisions/budget.md)._
+
+_Done (`5848d4e`, on `main`/deployed): **Lock screen — fingerprint keypad key + auto-prompt on launch.** The "Use biometrics" text button is now a fingerprint SVG in the keypad's empty bottom-left cell (mirrors ⌫); WebAuthn auto-triggers once on launch when a passkey exists (silent fallback to PIN if the browser needs a gesture). Removed the dead `lock.biometricChecking` key. See [`docs/decisions/auth.md`](docs/decisions/auth.md)._
 
 _Done (`38aa136`, on `main`/deployed): **#9 Mortgage ↔ budget link** (`Expense.loanId` — schema; a fixed expense links to a loan and its amount syncs live from the prestação); **#10 Yahoo failover** (stale last-good cache in `getYahooChart`); **#11 Legal drafts** (`docs/legal/`, with placeholders, not yet published). See [`docs/decisions/budget.md`](docs/decisions/budget.md) + [`portfolio.md`](docs/decisions/portfolio.md)._
 
@@ -81,7 +85,7 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 - **Two Prisma schema files** — `schema.prisma` (SQLite dev) + `schema.prod.prisma` (Postgres prod) must stay in sync on EVERY model change. Also update `backend/src/routes/export.ts` + `import.ts`. No automated guard.
 - **Prisma migrations ARE tracked now** (`backend/prisma/migrations/` was previously gitignored, which hid drift and caused fresh-clone 500s). Keep committing migrations; don't re-ignore them.
-- **Pushing to `main` deploys to prod** and runs `db:push:prod` — destructive on a column rename. Take a Neon snapshot before any rename/drop. All recent schema changes are **additive and already live** on Neon: `User.pinHash` + `WebAuthnCredential` (`add_pin_and_webauthn`), `User.isDemo`, `Expense.loanId`, `Expense.matchHint`, `PortfolioSettings.language`. (This session — `dde91a9` — had no schema change.)
+- **Pushing to `main` deploys to prod** and runs `db:push:prod` — destructive on a column rename. Take a Neon snapshot before any rename/drop. All recent schema changes are **additive**: `User.pinHash` + `WebAuthnCredential` (`add_pin_and_webauthn`), `User.isDemo`, `Expense.loanId`, `Expense.matchHint`, `PortfolioSettings.language`, and **`Income.matchHint`** (`add_income_match_hint`, `9dce101`). All additive → `db:push:prod` adds the column on deploy, no snapshot needed.
 - **Statement imports are NOT UTF-8** — most PT bank CSV/OFX exports are Windows-1252/Latin-1. `ImportStatementModal` reads as ArrayBuffer, tries UTF-8, falls back to windows-1252 when it sees `�`. Don't revert to `readAsText(file, 'utf-8')` (that's what produced "SOLU��O").
 - **`gFY` is "anos sem aumento"** (an int, contribution-growth delay), NOT a return %. Don't use it as the investment return — the wedge default uses the avg per-asset `expectedReturn` (`frontend/src/lib/compareDefaults.ts`).
 - **Plan vs actual is derived from `source`** (`!!source` ⇒ imported actual; `null` ⇒ recurring plan). Changing where `source` is set moves rows between lanes. **But note the deliberate split across views:** the headline KPIs (Início + top of Saldo) and Análise are plan-based / planeado-vs-real, while **"Movimentos do mês" (`VariableMonths`) intentionally shows the month's *real* movements** (actuals + manual) with a real summary. Don't "unify" them by making Movimentos plan-only — that's the regression we fixed earlier.
@@ -99,6 +103,8 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 ## Recent work (newest first)
 
+- `5848d4e` auth — lock screen **fingerprint keypad key** (replaces the "Use biometrics" text button, fills the empty bottom-left cell) + **auto-prompt biometrics on launch** when a passkey exists (silent PIN fallback). **(on `main`, deployed)**
+- `9dce101` budget — **`Income.matchHint`** (symmetric with Expense): a hand-renamed fixed income plan row matches its differently-described bank line on import → closes the long-deferred plan↔actual gap (next-step #7). Additive schema. **(on `main`, deployed)**
 - `dde91a9` compare — fixed the "Risco do investimento" **+1σ overflow** (`flatGross` got percent instead of a fraction → ~1e29 on prod); ÷100. Plus a Settings → Segurança hint so biometric setup is discoverable when no PIN is set yet. **(on `main`, deployed)** Also refreshed the War Room hub (`wallet360-hub/TODO.md`).
 - `c8d6ca6` budget — classifying a movement as **Fixa** promotes it to a recurring plan row (clears `source` + month-scoping in `/classify` + `/bulk-update`), so it shows in Receitas/Despesas Fixas and counts monthly. **(on `main`, deployed)** Decision logged in `docs/decisions/budget.md`.
 - `5723357` **i18n EN+PT complete & deployed** — `react-i18next` infra (type-safe keys, detector, App remount), locale-aware `format.ts` (en-IE/pt-PT, EUR), `categoryLabel`, `PortfolioSettings.language` column + persistence; whole app converted across 5 phases (nav/auth/settings, Overview, Portfolio, Budget, Loan, Compare) — 9 namespaces, 796 keys, pt/en parity. The deploy added the nullable `language` column to Neon. **(on `main`, deployed)**

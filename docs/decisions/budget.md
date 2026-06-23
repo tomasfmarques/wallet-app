@@ -567,3 +567,28 @@ Two follow-ups to the loan link, both in `processImportItems`:
 - **Don't:** make the match kind-specific again — that's what let refunds leak in
   as income.
 
+## 2026-06-23 — `Income.matchHint`: closes the hand-renamed plan↔actual gap (`9dce101`)
+
+- **What:** `matchHint` (the optional bank-statement description that lets a fixed
+  row absorb a differently-named import) is now **symmetric on `Income`**, not just
+  `Expense`. **SCHEMA CHANGE** — both `schema.prisma` + `schema.prod.prisma`,
+  migration `add_income_match_hint` (additive `ADD COLUMN`, safe for prod `db push`),
+  `import.ts` income whitelist (length-capped 80). `export.ts` dumps full rows → carries
+  automatically. `processImportItems` now adds `income|merchantKey(matchHint)` to the
+  suppression set; POST/PUT `/incomes` accept it; `IncomeModal` exposes it for fixed income.
+- **Why:** this is the long-deferred "durable plan↔actual link" (STATE next-step #7). The
+  canonical case — a fixed income plan row hand-renamed to **"Salário"** whose bank line
+  reads **"ORDENADO ACME"** — had a different `merchantKey`, so it was *not* suppressed
+  *and* got folded by `realMonth` → that month's real income double-counted (plan + the
+  unmatched actual). Expense already had `matchHint` (mortgage edges); income did not, even
+  though the canonical example is an income. Setting the hint suppresses the import and the
+  fold shows the plan row once.
+- **Why this over a literal id-based link:** matched actuals are *suppressed* (never created),
+  so there's no actual row to attach an id to. `matchHint` already **is** the durable,
+  user-controlled link mechanism; an id-link would fight the suppression model for no extra
+  user benefit. Verified end-to-end (demo): hint on "Salário" → `ORDENADO ACME` import
+  returns `matchedToPlan:1, incomes:0`; an unrelated line still flows through.
+- **Don't:** reintroduce a `?? rawString` (un-capped) path for `matchHint` in `import.ts` —
+  both income and expense are capped at 80 there now (the CRUD routes already cap via
+  `asOptionalString(…, 80)`).
+

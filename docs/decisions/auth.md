@@ -192,3 +192,25 @@ Banking-style app-lock layered over the session. **Re-lock = launch only.**
 
 ---
 
+
+## 2026-06-23 — Lock screen: fingerprint keypad key + auto-prompt on launch (`5848d4e`)
+
+- **What:** the `LockScreen` biometric affordance moved from a separate "Use
+  biometrics" text button into the **keypad's empty bottom-left cell** as a
+  fingerprint SVG (accent-coloured, mirrors the ⌫ key on the bottom-right). When
+  `user?.hasBiometrics`, WebAuthn is now **auto-triggered once on launch** (a
+  `useRef` one-shot guard + an `auto` flag), so the user doesn't have to tap.
+- **Why:** the text button was easy to miss and required an extra tap; a fingerprint
+  glyph in the pad reads as "biometric unlock" instantly, and auto-prompting matches
+  native banking apps.
+- **Silent auto-fallback:** `tryBiometric(auto)` — on the auto attempt, a failure
+  (browser needs a user gesture, e.g. Safari/iOS; or cancellation) is **swallowed**,
+  no error shown, so the fingerprint key + PIN remain. Only a *manual* tap that fails
+  shows the "use your PIN" hint. The `lock.biometricChecking` i18n key is now unused
+  and was removed (kept pt/en parity).
+- **Verify limitation:** the live passkey path can't be exercised in headless Chrome
+  (registering a passkey needs a real/virtual authenticator). The key render + layout
+  were browser-verified by force-rendering then reverting; the WebAuthn call itself is
+  the unchanged `useWebAuthnAuth`.
+- **Don't:** require a user gesture assumption — auto-trigger on load is best-effort by
+  design; never remove the PIN/manual fallback.
