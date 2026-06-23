@@ -485,3 +485,32 @@ resolution coverage. Live vs practice base URLs are key-scoped.
   price-delta scaling (their qty may be a placeholder — the original rationale).
 - **Don't:** drop the `isin` gate and make refresh always `qty × price` — that
   reintroduces the bug the delta logic guards against for hand-curated assets.
+
+## 2026-06-23 — Trading 212 direct API live-sync (v2) + bank-style import hub (`9542e29`)
+
+- **What:** a "Ligar Trading 212" flow (mirrors GoCardless `bank.ts`) that pulls
+  live positions and folds them into the portfolio via the **same**
+  `processPortfolioImportItems` pipeline as the CSV import. Plus the CSV importer
+  restructured into a platform menu (Trading 212 active; Revolut/DEGIRO/XTB/IBKR
+  "brevemente").
+- **Security (the key difference from bank.ts):** a broker API key is a real
+  credential, so it's **encrypted at rest** — `lib/crypto.ts` (AES-256-GCM,
+  env `BROKER_ENC_KEY`). The integration is **gated**: `brokerEncConfigured()`
+  false → `/status` returns `configured:false` and the UI shows "brevemente"
+  (exactly the GoCardless gate). `BrokerConnection` (additive schema, both files,
+  migration) stores `keyEnc`/`secretEnc` — **excluded from export/import backup**
+  (like `WebAuthnCredential`), so `export.ts`/`import.ts` are intentionally untouched.
+- **Auth model is unconfirmed:** `resolveAuth` (`lib/trading212.ts`) tries raw key,
+  `Bearer key`, then the secret variants against `/equity/account/info` and uses
+  whichever authenticates — so we don't have to pin the header blind. Confirm the
+  winning variant + per-endpoint rate limits once a real key exists.
+- **Mapping decisions:** positions → items reuse the v1 ISIN→Yahoo bridge
+  (`searchTickers`) + Frankfurter EUR conversion. A position whose FX is
+  **unavailable is skipped** (never store a native-currency figure as EUR).
+  Instruments metadata cached 24h **per env** (live/demo lists must not mix).
+  Mapping runs in concurrent batches + a 15s per-user sync cooldown to stay under
+  the serverless timeout and respect T212's per-account rate limits.
+- **Setup to go live:** generate a **read-only** T212 key (Invest/ISA only),
+  set `BROKER_ENC_KEY` in Vercel. See [`docs/trading212-v2-spec.md`](../trading212-v2-spec.md).
+- **Don't:** log/return the key; drop the `brokerEncConfigured` gate; or add
+  `BrokerConnection` to export/import (it holds secrets).
