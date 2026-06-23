@@ -3789,7 +3789,14 @@ body {
 .lock-key:disabled { opacity: 0.5; cursor: default; }
 .lock-key.is-empty { border: none; background: transparent; cursor: default; pointer-events: none; }
 .lock-key-action { font-size: 20px; }
-.lock-bio { margin-top: 20px; }
+.lock-key-bio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+.lock-key-bio:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.lock-bio-hint { font-size: 12px; margin-top: 14px; }
 .lock-signout { margin-top: 14px; color: var(--muted); }
 
 /* ── Settings: biometric devices ───────────────────────────── */

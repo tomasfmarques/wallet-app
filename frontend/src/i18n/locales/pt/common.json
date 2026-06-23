@@ -64,7 +64,6 @@
     "checking": "A verificar…",
     "delete": "Apagar",
     "useBiometric": "Usar biometria",
-    "biometricChecking": "A verificar…",
     "biometricFailed": "Biometria cancelada — usa o PIN.",
     "signOut": "Terminar sessão"
   }

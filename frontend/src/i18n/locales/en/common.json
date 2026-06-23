@@ -64,7 +64,6 @@
     "checking": "Checking…",
     "delete": "Delete",
     "useBiometric": "Use biometrics",
-    "biometricChecking": "Checking…",
     "biometricFailed": "Biometrics cancelled — use your PIN.",
     "signOut": "Sign out"
   }
