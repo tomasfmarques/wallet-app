@@ -427,3 +427,46 @@ real price progression and a range selector (1M / 6M / 1A / 5A / Máx).
 
 ---
 
+
+## 2026-06-23 — Trading212 import v1 (CSV) + `PortfolioAsset.isin`
+
+- **What:** import a Trading212 portfolio from its **transactions CSV** export
+  (Settings → History → Export). `frontend/src/lib/trading212Parser.ts` (pure)
+  parses the order ledger, keeps buy/sell actions, and aggregates per **ISIN**
+  with the **average-cost** method into net positions + monthly `flows`
+  (dividends/deposits/interest ignored). `Trading212ImportModal` resolves each
+  ISIN → a Yahoo-usable symbol via the existing `/api/quotes/search` proxy
+  (Yahoo search accepts ISINs), shows an editable review table, and posts to a
+  new `POST /api/portfolio/import` (bulk-create assets + nested flows in a
+  `$transaction`, dedup by ISIN→ticker vs existing + within batch).
+- **Schema (additive):** `PortfolioAsset.isin String?` — both `schema.prisma` +
+  `schema.prod.prisma`, migration `add_portfolio_asset_isin`, `import.ts`
+  whitelist; `export.ts` carries it via full-row dump. ISIN is the stable
+  cross-broker identity (Yahoo ticker can drift), used for dedup + the v2 API map.
+- **Why CSV first:** no stored broker secret, no rate limits, reuses the
+  client-side parse-and-review pattern; the CSV carries ISIN (clean Yahoo
+  mapping) and full history (cost basis + flows). Direct API live-sync is **v2**.
+- **Key decisions / edge cases (all verified):**
+  - **Average cost** on partial sells: `cost -= avg × soldQty`; closed positions
+    (qty→0) dropped. Transactions are **sorted chronologically** before
+    aggregating (multi-file/yearly exports merge unsorted).
+  - `value` defaults to the **cost basis**; the user then runs "Atualizar
+    valores" for live Yahoo prices. `monthly` (forward-looking contribution) is
+    left 0 on import on purpose — historical buys are not a future plan.
+  - Cost uses the account-currency **Total** column (EUR for EU accounts); rows
+    where no cost can be derived (`total === 0`) are **skipped** so a parse
+    failure can't corrupt the average. Invalid ISINs (not `[A-Z0-9]{12}`) are
+    nulled in the parser. Flows capped at 120 server-side.
+  - **Dedup is "skip if ISIN OR ticker already exists"** (vs existing + within
+    batch) — deliberately conservative to avoid duplicate holdings, even if it
+    means a manually-added ticker isn't ISIN-backfilled.
+- **Don't:** price imported assets off the T212 ticker — the whole quote/CAGR/
+  risk stack uses Yahoo, so the ISIN→Yahoo resolution (editable in the review
+  table) is required.
+
+### Deferred — Trading212 direct API (v2)
+Live sync mirroring `bank.ts`: an **encrypted** per-user T212 API key (new env
+`BROKER_ENC_KEY`, AES-GCM), `GET /equity/portfolio` + cached `/metadata/instruments`
+→ the **same** import pipeline + persisted ISIN. Confirm at build time: current
+auth model (single key vs key+secret), per-endpoint rate limits, and EU-ETF ISIN
+resolution coverage. Live vs practice base URLs are key-scoped.
