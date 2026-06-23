@@ -164,5 +164,33 @@
     "diversification": "Without diversification it would be {{weighted}} %; correlation between your assets saves {{saved}} points.",
     "coverage": "Computed on {{value}} % of portfolio value.",
     "level": { "baixo": "Low", "medio": "Medium", "alto": "High", "muito_alto": "Very high" }
+  },
+  "import212": {
+    "button": "Import from Trading 212",
+    "title": "Import from Trading 212",
+    "intro": "Export your Trading 212 history (<1>Settings → History → Export</1>) and upload the <3>CSV</3> file(s) here. We aggregate the orders into current positions.",
+    "chooseFile": "Choose CSV file(s)",
+    "parsing": "Processing…",
+    "privacy": "The file is read in your browser — nothing is sent until you confirm.",
+    "noPositions": "No positions found in the file. Make sure it's a Trading 212 transactions export.",
+    "fileError": "Couldn't read the file.",
+    "importError": "Import failed. Please try again.",
+    "reviewCount": "{{count}} positions · {{files}} file(s)",
+    "all": "All",
+    "none": "None",
+    "unresolvedHint": "{{count}} without an automatic Yahoo symbol — check/edit the ticker before importing.",
+    "guessPill": "check",
+    "colName": "Asset",
+    "colTicker": "Ticker (Yahoo)",
+    "colQty": "Qty",
+    "colInvested": "Invested (€)",
+    "summary": "{{count}} to import · {{total}} invested",
+    "otherFile": "Other file",
+    "importing": "Importing…",
+    "importN": "Import {{count}}",
+    "doneCreated": "Imported <1>{{count}}</1> assets.",
+    "doneSkipped": "{{count}} skipped (duplicates/invalid).",
+    "doneRefreshHint": "Values were filled with the purchase cost. Use \"Refresh values\" to get the current market price.",
+    "finish": "Done"
   }
 }

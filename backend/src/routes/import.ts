@@ -217,6 +217,7 @@ router.post('/', async (req, res) => {
                 userId,
                 name: raw.name,
                 ticker: (raw.ticker as string).toUpperCase(),
+                isin: isStr(raw.isin) ? (raw.isin as string).toUpperCase() : null,
                 qty: raw.qty,
                 invested: isNum(raw.invested) ? raw.invested : 0,
                 value:    isNum(raw.value)    ? raw.value    : 0,

@@ -223,6 +223,7 @@ model PortfolioAsset {
   userId         String @map("user_id")
   name           String
   ticker         String
+  isin           String?
   qty            Float
   invested       Float
   value          Float

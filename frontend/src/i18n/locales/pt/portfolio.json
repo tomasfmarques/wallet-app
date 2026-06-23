@@ -164,5 +164,33 @@
     "diversification": "Sem diversificação seria {{weighted}} %; a correlação entre os teus ativos poupa {{saved}} pontos.",
     "coverage": "Calculado sobre {{value}} % do valor da carteira.",
     "level": { "baixo": "Baixo", "medio": "Médio", "alto": "Alto", "muito_alto": "Muito alto" }
+  },
+  "import212": {
+    "button": "Importar do Trading 212",
+    "title": "Importar do Trading 212",
+    "intro": "Exporta o teu histórico no Trading 212 (<1>Definições → Histórico → Exportar</1>) e carrega aqui o(s) ficheiro(s) <3>CSV</3>. Juntamos as ordens em posições atuais.",
+    "chooseFile": "Escolher ficheiro(s) CSV",
+    "parsing": "A processar…",
+    "privacy": "O ficheiro é lido no teu navegador — nada é enviado até confirmares.",
+    "noPositions": "Não foram encontradas posições no ficheiro. Confirma que é um export de transações do Trading 212.",
+    "fileError": "Não foi possível ler o ficheiro.",
+    "importError": "A importação falhou. Tenta novamente.",
+    "reviewCount": "{{count}} posições · {{files}} ficheiro(s)",
+    "all": "Todos",
+    "none": "Nenhum",
+    "unresolvedHint": "{{count}} sem símbolo Yahoo automático — confirma/edita o ticker antes de importar.",
+    "guessPill": "verificar",
+    "colName": "Ativo",
+    "colTicker": "Ticker (Yahoo)",
+    "colQty": "Qt.",
+    "colInvested": "Investido (€)",
+    "summary": "{{count}} a importar · {{total}} investido",
+    "otherFile": "Outro ficheiro",
+    "importing": "A importar…",
+    "importN": "Importar {{count}}",
+    "doneCreated": "Importados <1>{{count}}</1> ativos.",
+    "doneSkipped": "{{count}} ignorados (duplicados/inválidos).",
+    "doneRefreshHint": "Os valores foram preenchidos com o custo de aquisição. Usa \"Atualizar valores\" para obter o preço de mercado atual.",
+    "finish": "Concluir"
   }
 }

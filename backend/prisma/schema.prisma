@@ -245,6 +245,10 @@ model PortfolioAsset {
   userId         String @map("user_id")
   name           String
   ticker         String
+  // ISIN — the stable cross-broker identity (e.g. from a Trading212 import).
+  // The Yahoo `ticker` can drift/ambiguate across exchanges; the ISIN doesn't.
+  // Used to dedupe re-imports and (later) to map broker holdings to Yahoo symbols.
+  isin           String?
   qty            Float
   invested       Float
   value          Float

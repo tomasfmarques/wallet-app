@@ -1721,6 +1721,7 @@ body {
   align-items: center;
   margin-bottom: 12px;
 }
+.portfolio-head-actions { display: flex; gap: 8px; align-items: center; }
 .budget-list { padding: 6px 0; }
 .budget-list ul { list-style: none; }
 .budget-row {

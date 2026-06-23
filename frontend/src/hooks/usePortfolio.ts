@@ -112,6 +112,28 @@ export function useAddAsset() {
   )
 }
 
+export interface PortfolioImportItem {
+  name: string
+  ticker: string
+  isin?: string | null
+  qty: number
+  invested: number
+  value?: number
+  expectedReturn?: number
+  flows?: { ym: string; amount: number }[]
+}
+export interface PortfolioImportResult {
+  ok: true
+  summary: { created: number; skipped: number }
+}
+export function useImportPortfolio() {
+  const qc = useQueryClient()
+  return useMutation<PortfolioImportResult, ApiError, PortfolioImportItem[]>(
+    (items) => api.post<PortfolioImportResult>('/api/portfolio/import', { items }),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
 export function useUpdateAsset() {
   const qc = useQueryClient()
   return useMutation<

@@ -204,6 +204,94 @@ router.post('/assets', async (req, res) => {
   }
 })
 
+// ── POST /api/portfolio/import ───────────────────────────────────
+// Bulk-insert positions reviewed in the client (e.g. from a Trading212 CSV
+// export, aggregated into net holdings). Each item: { name, ticker, isin?,
+// qty, invested, value?, expectedReturn?, flows?: [{ ym, amount }] }. Invalid
+// rows are skipped (not fatal). Dedups by ISIN (preferred) then ticker against
+// the user's existing assets AND within the batch, so a re-import is a safe
+// no-op. The client resolves a Yahoo-usable ticker before sending (the whole
+// quote/CAGR/risk stack prices via Yahoo); `value` defaults to the cost basis
+// and the user can then run "Atualizar valores" for live market prices.
+const ISIN_RE = /^[A-Z0-9]{12}$/
+router.post('/import', async (req, res) => {
+  const items = req.body?.items
+  if (!Array.isArray(items)) { res.status(400).json({ error: 'items deve ser um array' }); return }
+  if (items.length === 0) { res.status(400).json({ error: 'Nenhum ativo para importar' }); return }
+  if (items.length > 500) { res.status(400).json({ error: 'Demasiados ativos (máx. 500 por importação)' }); return }
+
+  const userId = req.session.userId!
+  try {
+    const existing = await prisma.portfolioAsset.findMany({ where: { userId }, select: { ticker: true, isin: true } })
+    const haveIsin = new Set(existing.map((e) => e.isin?.toUpperCase()).filter(Boolean) as string[])
+    const haveTicker = new Set(existing.map((e) => e.ticker.toUpperCase()))
+    const seenIsin = new Set<string>()
+    const seenTicker = new Set<string>()
+
+    const toCreate: Array<{
+      name: string; ticker: string; isin: string | null; qty: number
+      invested: number; value: number; expectedReturn: number
+      flows: Array<{ ym: string; amount: number }>
+    }> = []
+    let skipped = 0
+
+    for (const raw of items) {
+      if (typeof raw !== 'object' || raw === null) { skipped++; continue }
+      const it = raw as Record<string, unknown>
+      const errs: Record<string, string> = {}
+      const name = stripFormulaPrefix(asString(it.name, 'name', errs, 1, 80))
+      const ticker = asString(it.ticker, 'ticker', errs, 1, 20).toUpperCase()
+      const qty = asPositiveNumber(it.qty, 'qty', errs)
+      const invested = asNumber(it.invested, 'invested', errs)
+      const value = asNumber(it.value ?? it.invested ?? 0, 'value', errs)
+      const expectedReturn = asNumber(it.expectedReturn ?? 0.07, 'expectedReturn', errs)
+      if (Object.keys(errs).length > 0) { skipped++; continue }
+
+      const isin = typeof it.isin === 'string' && ISIN_RE.test(it.isin.toUpperCase()) ? it.isin.toUpperCase() : null
+
+      // Skip if the ISIN OR the ticker already exists — against existing rows AND
+      // within this batch — so a re-import (or a position already added manually)
+      // never creates a duplicate holding. ISIN is the stable key; ticker is the
+      // fallback for assets that have no ISIN.
+      if ((isin && (haveIsin.has(isin) || seenIsin.has(isin))) || haveTicker.has(ticker) || seenTicker.has(ticker)) {
+        skipped++; continue
+      }
+      if (isin) seenIsin.add(isin)
+      seenTicker.add(ticker)
+
+      const flows = (Array.isArray(it.flows) ? it.flows : [])
+        .filter((f): f is { ym: string; amount: number } =>
+          !!f && typeof f === 'object'
+          && typeof (f as Record<string, unknown>).ym === 'string'
+          && YM_RE.test((f as Record<string, unknown>).ym as string)
+          && Number.isFinite(Number((f as Record<string, unknown>).amount)))
+        .slice(0, 120) // ≤10 years of monthly flows — bound the nested write
+        .map((f) => ({ ym: f.ym, amount: round2(Number(f.amount)) }))
+
+      toCreate.push({ name, ticker, isin, qty, invested: round2(invested), value: round2(value), expectedReturn, flows })
+    }
+
+    if (toCreate.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        for (const a of toCreate) {
+          await tx.portfolioAsset.create({
+            data: {
+              userId, name: a.name, ticker: a.ticker, isin: a.isin,
+              qty: a.qty, invested: a.invested, value: a.value, expectedReturn: a.expectedReturn,
+              ...(a.flows.length > 0 ? { flows: { create: a.flows } } : {}),
+            },
+          })
+        }
+      })
+    }
+
+    res.status(toCreate.length > 0 ? 201 : 200).json({ ok: true, summary: { created: toCreate.length, skipped } })
+  } catch (err) {
+    console.error('POST /api/portfolio/import failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ── PUT /api/portfolio/assets/:id ────────────────────────────────
 router.put('/assets/:id', async (req, res) => {
   const { id } = req.params
