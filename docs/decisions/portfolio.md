@@ -470,3 +470,18 @@ Live sync mirroring `bank.ts`: an **encrypted** per-user T212 API key (new env
 → the **same** import pipeline + persisted ISIN. Confirm at build time: current
 auth model (single key vs key+secret), per-endpoint rate limits, and EU-ETF ISIN
 resolution coverage. Live vs practice base URLs are key-scoped.
+
+### 2026-06-23 — Imported assets refresh via qty×price (`9504f85`)
+
+- **Symptom:** after a Trading212 CSV import, every holding showed `0 € (0,0 %)`
+  gain even after "Atualizar valores" (with the banner reporting them updated).
+- **Cause:** `refresh-value(s)` is **delta-based** — it scales `value` by the
+  price change since `lastPriceEur`. A freshly imported asset has `value = cost
+  basis` and `lastPriceEur = null`, so the first refresh only records the
+  baseline and leaves value at cost → `value − invested = 0`.
+- **Fix:** new `refreshedValue(asset, priceEur)` helper — **imported assets
+  (`isin` set) → `value = qty × priceEur`** (broker qty is reliable, shows real
+  trajectory + self-heals on next refresh); manual/legacy assets keep the
+  price-delta scaling (their qty may be a placeholder — the original rationale).
+- **Don't:** drop the `isin` gate and make refresh always `qty × price` — that
+  reintroduces the bug the delta logic guards against for hand-curated assets.

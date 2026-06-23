@@ -106,6 +106,7 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 ## Recent work (newest first)
 
+- `9504f85` portfolio — **fix:** imported assets now show real gain/loss on "Atualizar valores" (was `0 €` — refresh is delta-based; imported assets with a broker-reliable qty now use `value = qty × price`, gated on `isin`). **(on `main`, deployed)**
 - `fad58ed` portfolio — **Trading212 CSV import (v1)**: parse the transactions export → average-cost net positions + flows, ISIN→Yahoo resolution, review table, `POST /api/portfolio/import`; additive `PortfolioAsset.isin`. Direct API live-sync = v2 (deferred). **(on `main`, deployed)**
 - `5848d4e` auth — lock screen **fingerprint keypad key** (replaces the "Use biometrics" text button, fills the empty bottom-left cell) + **auto-prompt biometrics on launch** when a passkey exists (silent PIN fallback). **(on `main`, deployed)**
 - `9dce101` budget — **`Income.matchHint`** (symmetric with Expense): a hand-renamed fixed income plan row matches its differently-described bank line on import → closes the long-deferred plan↔actual gap (next-step #7). Additive schema. **(on `main`, deployed)**
