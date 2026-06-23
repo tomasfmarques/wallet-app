@@ -205,6 +205,7 @@ router.post('/incomes', async (req, res) => {
   const amount = asPositiveNumber(req.body?.amount, 'amount', errors)
   const type = asBudgetType(req.body?.type, 'fixed')
   const category = asOptionalString(req.body?.category, 40)
+  const matchHint = asOptionalString(req.body?.matchHint, 80)
   const startYm = asOptionalYm(req.body?.startYm, 'startYm', errors)
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
@@ -215,7 +216,7 @@ router.post('/incomes', async (req, res) => {
 
   try {
     const income = await prisma.income.create({
-      data: { userId: req.session.userId!, name, amount, type, category, startYm, endYm, notes, active, pending },
+      data: { userId: req.session.userId!, name, amount, type, category, matchHint, startYm, endYm, notes, active, pending },
     })
     res.status(201).json({ income })
   } catch (err) {
@@ -232,6 +233,7 @@ router.put('/incomes/:id', async (req, res) => {
   if (req.body?.amount !== undefined)   data.amount = asPositiveNumber(req.body.amount, 'amount', errors)
   if (req.body?.type !== undefined)     data.type = asBudgetType(req.body.type, 'fixed')
   if (req.body?.category !== undefined) data.category = asOptionalString(req.body.category, 40)
+  if (req.body?.matchHint !== undefined) data.matchHint = asOptionalString(req.body.matchHint, 80)
   if (req.body?.startYm !== undefined)  data.startYm = asOptionalYm(req.body.startYm, 'startYm', errors)
   if (req.body?.endYm !== undefined)    data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)    data.notes = asOptionalString(req.body.notes, 500)
@@ -359,11 +361,16 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
   // normalization as learned rules. (Frontend folds these plan rows back into the
   // "real" month view so planeado-vs-real stays correct — see lib/budgetReal.ts.)
   const [planIncomes, planExpenses] = await Promise.all([
-    prisma.income.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true } }),
+    prisma.income.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true, matchHint: true } }),
     prisma.expense.findMany({ where: { userId, source: null, type: 'fixed', active: true }, select: { name: true, matchHint: true } }),
   ])
   const recurringFixed = new Set<string>()
-  for (const r of planIncomes) { const k = merchantKey(r.name); if (k) recurringFixed.add(`income|${k}`) }
+  for (const r of planIncomes) {
+    const k = merchantKey(r.name); if (k) recurringFixed.add(`income|${k}`)
+    // A fixed income's bank-statement description also matches (so a salary line
+    // "ORDENADO ACME" links to an income named "Salário" — the hand-renamed case).
+    if (r.matchHint) { const h = merchantKey(r.matchHint); if (h) recurringFixed.add(`income|${h}`) }
+  }
   for (const r of planExpenses) {
     const k = merchantKey(r.name); if (k) recurringFixed.add(`expense|${k}`)
     // A fixed expense's bank-statement description also matches (so a mortgage line

@@ -186,7 +186,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
               <label htmlFor="ex-hint">{t('expense.matchHintLabel')}</label>
               <input
                 id="ex-hint" value={matchHint} onChange={(e) => setMatchHint(e.target.value)}
-                placeholder={t('expense.matchHintPlaceholder')}
+                placeholder={t('expense.matchHintPlaceholder')} maxLength={80}
               />
               <span className="muted" style={{ fontSize: 12 }}>{t('expense.matchHintHelp')}</span>
             </div>

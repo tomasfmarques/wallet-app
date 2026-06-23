@@ -32,6 +32,7 @@ export interface IncomeInput {
   startYm?: string | null
   endYm?: string | null
   notes?: string | null
+  matchHint?: string | null // bank-statement description → matches imports to this row
 }
 
 export interface ExpenseInput {

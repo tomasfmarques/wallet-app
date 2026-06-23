@@ -89,6 +89,7 @@ export interface Income {
   pending: boolean           // true = imported, awaiting fixed/variable classification
   dayOfMonth: number | null  // set on statement import; used for dedup
   source: string | null      // origin bank/import label; null = manual
+  matchHint: string | null   // bank-statement description → matches imports to this row
   startYm: string | null
   endYm: string | null
   notes: string | null

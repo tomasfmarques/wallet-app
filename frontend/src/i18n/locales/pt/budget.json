@@ -113,6 +113,9 @@
     "uncategorizedOption": "— por classificar —",
     "startLabel": "Início (opcional)",
     "monthPlaceholder": "AAAA-MM",
+    "matchHintLabel": "Descrição no extrato (opcional)",
+    "matchHintPlaceholder": "ex: ORDENADO ACME",
+    "matchHintHelp": "Associa as importações a esta linha (mesmo com nome diferente), p. ex. \"ORDENADO ACME\" → \"Salário\".",
     "activeLabel": "Ativa (conta para os totais)",
     "errRequired": "Obrigatório",
     "errGt0": "> 0"

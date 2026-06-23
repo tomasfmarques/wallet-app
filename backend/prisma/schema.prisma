@@ -121,6 +121,11 @@ model Income {
   pending   Boolean  @default(false)        // true = imported, awaiting fixed/variable classification
   dayOfMonth Int?    @map("day_of_month")    // 1-31, set on statement import
   source    String?                          // origin: "Banco CTT", "Millennium BCP", null = manual
+  // Optional bank-statement description for this fixed income. Imports whose
+  // merchant normalizes to this (or to `name`) are matched to this plan row, so a
+  // salary line like "ORDENADO ACME" links to an income you named "Salário".
+  // Symmetric with Expense.matchHint — see merchantKey matching in routes/budget.ts.
+  matchHint String?  @map("match_hint")
   startYm   String?  @map("start_ym")       // "AAAA-MM" — when it started
   endYm     String?  @map("end_ym")         // "AAAA-MM" — null = ongoing
   notes     String?

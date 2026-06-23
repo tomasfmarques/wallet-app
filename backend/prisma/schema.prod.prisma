@@ -117,6 +117,7 @@ model Income {
   pending   Boolean  @default(false)
   dayOfMonth Int?    @map("day_of_month")
   source    String?
+  matchHint String?  @map("match_hint")
   startYm   String?  @map("start_ym")
   endYm     String?  @map("end_ym")
   notes     String?

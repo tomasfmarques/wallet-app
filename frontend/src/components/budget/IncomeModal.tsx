@@ -30,6 +30,7 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
   const [endYm, setEndYm] = useState('')
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
+  const [matchHint, setMatchHint] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const userPickedCategory = useRef(false)
 
@@ -43,6 +44,7 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
     setEndYm(income?.endYm ?? '')
     setNotes(income?.notes ?? '')
     setActive(income?.active ?? true)
+    setMatchHint(income?.matchHint ?? '')
     setErrors({})
     userPickedCategory.current = !!income?.category  // don't overwrite an existing category
   }, [open, income, defaultStartYm])
@@ -84,6 +86,7 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
       endYm: effectiveType === 'variable' ? (startYm.trim() || null) : (endYm.trim() || null),
       notes: notes.trim() || null,
       active,
+      matchHint: effectiveType === 'fixed' ? (matchHint.trim() || null) : null,
     }
     try {
       if (isEdit && income) await upd.mutateAsync({ id: income.id, patch: body })
@@ -130,6 +133,16 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
             <input id="in-start" type="text" placeholder={t('income.monthPlaceholder')} value={startYm} onChange={(e) => setStartYm(e.target.value)} />
             {errors.startYm && <span className="field-error">{errors.startYm}</span>}
           </div>
+          {effectiveType === 'fixed' && (
+            <div className="field">
+              <label htmlFor="in-hint">{t('income.matchHintLabel')}</label>
+              <input
+                id="in-hint" value={matchHint} onChange={(e) => setMatchHint(e.target.value)}
+                placeholder={t('income.matchHintPlaceholder')} maxLength={80}
+              />
+              <span className="muted" style={{ fontSize: 12 }}>{t('income.matchHintHelp')}</span>
+            </div>
+          )}
         </div>
         <label className="checkbox" style={{ marginBottom: 12 }}>
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />

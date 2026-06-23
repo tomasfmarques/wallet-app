@@ -113,6 +113,9 @@
     "uncategorizedOption": "— uncategorized —",
     "startLabel": "Start (optional)",
     "monthPlaceholder": "YYYY-MM",
+    "matchHintLabel": "Bank statement description (optional)",
+    "matchHintPlaceholder": "e.g. ORDENADO ACME",
+    "matchHintHelp": "Matches imports to this row (even with a different name), e.g. \"ORDENADO ACME\" → \"Salário\".",
     "activeLabel": "Active (counts toward totals)",
     "errRequired": "Required",
     "errGt0": "> 0"
