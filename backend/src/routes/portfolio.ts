@@ -432,9 +432,26 @@ router.post('/assets/:id/reforcar', async (req, res) => {
   }
 })
 
+// Compute an asset's refreshed EUR value from the current market price.
+// Imported assets (`isin` set) carry a broker-accurate `qty`, so their market
+// value is simply qty × price — they show real gain/loss immediately instead of
+// staying anchored to their imported cost basis. Manually-entered/legacy assets
+// instead scale the user-curated value by the price change since the last
+// refresh (their `qty` may be an unreliable placeholder); the first refresh has
+// no baseline, so the value is kept as-is.
+function refreshedValue(
+  asset: { qty: number; value: number; lastPriceEur: number | null; isin: string | null },
+  priceEur: number,
+): number {
+  if (asset.isin) return round2(asset.qty * priceEur)
+  return asset.lastPriceEur && asset.lastPriceEur > 0
+    ? round2(asset.value * (priceEur / asset.lastPriceEur))
+    : round2(asset.value)
+}
+
 // ── POST /api/portfolio/assets/:id/refresh-value ────────────────
-// Fetches the current market price from Yahoo and updates the asset's `value`
-// to `qty * currentPrice`. Returns the updated asset plus diagnostic info.
+// Fetches the current market price from Yahoo and updates the asset's `value`.
+// Imported assets → qty × price; manual/legacy → scaled by price movement.
 router.post('/assets/:id/refresh-value', async (req, res) => {
   const { id } = req.params
   try {
@@ -460,13 +477,7 @@ router.post('/assets/:id/refresh-value', async (req, res) => {
       })
       return
     }
-    // Move `value` by the market's price change since the last refresh, rather
-    // than recomputing qty*price (qty is often an unreliable placeholder, which
-    // made refresh wildly break the user-curated value). First refresh has no
-    // baseline → keep value as-is and just record the price.
-    const newValue = asset.lastPriceEur && asset.lastPriceEur > 0
-      ? round2(asset.value * (converted.price / asset.lastPriceEur))
-      : round2(asset.value)
+    const newValue = refreshedValue(asset, converted.price)
     const updated = await prisma.portfolioAsset.update({
       where: { id },
       data: { value: newValue, lastPriceEur: converted.price },
@@ -507,10 +518,7 @@ router.post('/refresh-values', async (req, res) => {
           error: `No FX ${chart.currency}→${PORTFOLIO_CCY}`,
         }
       }
-      // Scale value by price movement (see single-refresh route for rationale).
-      const newValue = asset.lastPriceEur && asset.lastPriceEur > 0
-        ? round2(asset.value * (converted.price / asset.lastPriceEur))
-        : round2(asset.value)
+      const newValue = refreshedValue(asset, converted.price)
       await prisma.portfolioAsset.update({
         where: { id: asset.id },
         data: { value: newValue, lastPriceEur: converted.price },
