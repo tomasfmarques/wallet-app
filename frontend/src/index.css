@@ -1721,7 +1721,9 @@ body {
   align-items: center;
   margin-bottom: 12px;
 }
-.portfolio-head-actions { display: flex; gap: 8px; align-items: center; }
+.portfolio-head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.broker-steps { margin: 0 0 14px; padding-left: 20px; font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.broker-steps li { margin-bottom: 4px; }
 .budget-list { padding: 6px 0; }
 .budget-list ul { list-style: none; }
 .budget-row {

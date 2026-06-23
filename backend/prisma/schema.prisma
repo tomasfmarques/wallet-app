@@ -35,10 +35,33 @@ model User {
   expenses          Expense[]
   classificationRules ClassificationRule[]
   bankConnections   BankConnection[]
+  brokerConnections BrokerConnection[]
   passwordResetTokens PasswordResetToken[]
   webauthnCredentials WebAuthnCredential[]
 
   @@map("users")
+}
+
+// A connected brokerage (e.g. Trading 212) for live portfolio sync. The API
+// key/secret are stored ENCRYPTED (AES-256-GCM via lib/crypto.ts) — never in
+// plaintext. Deliberately EXCLUDED from export/import backup (secrets are
+// account+origin-bound and must not travel), like WebAuthnCredential.
+model BrokerConnection {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  broker     String    // "trading212"
+  env        String    @default("live") // "live" | "demo" (practice)
+  keyEnc     String    @map("key_enc")
+  secretEnc  String?   @map("secret_enc")
+  accountCcy String?   @map("account_ccy")  // account currency reported on connect
+  lastSyncAt DateTime? @map("last_sync_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, broker])
+  @@index([userId])
+  @@map("broker_connections")
 }
 
 // A registered WebAuthn (passkey/biometric) credential for the PIN lock's

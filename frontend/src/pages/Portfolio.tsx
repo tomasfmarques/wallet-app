@@ -6,7 +6,8 @@ import { AssetTable } from '@/components/portfolio/AssetTable'
 import { MonthlyContribTable } from '@/components/portfolio/MonthlyContribTable'
 import { ProjectionPanel } from '@/components/portfolio/ProjectionPanel'
 import { AssetModal, type AssetPreset } from '@/components/portfolio/AssetModal'
-import { Trading212ImportModal } from '@/components/portfolio/Trading212ImportModal'
+import { FileImportModal } from '@/components/portfolio/FileImportModal'
+import { BrokerConnectModal } from '@/components/portfolio/BrokerConnectModal'
 import { Watchlist } from '@/components/portfolio/Watchlist'
 import { RiskCard } from '@/components/portfolio/RiskCard'
 import { StateBlock } from '@/components/ui/StateBlock'
@@ -17,7 +18,8 @@ export function Portfolio() {
   const { data, isLoading, error, refetch } = usePortfolio()
   const updateSettings = useUpdateSettings()
   const [addOpen, setAddOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
+  const [fileOpen, setFileOpen] = useState(false)
+  const [brokerOpen, setBrokerOpen] = useState(false)
   const [preset, setPreset] = useState<AssetPreset | undefined>(undefined)
 
   const openAdd = (p?: AssetPreset) => {
@@ -74,8 +76,11 @@ export function Portfolio() {
         <div className="budget-section-head">
           <h2 className="section-label" style={{ margin: 0 }}>{t('myPortfolioLabel')}</h2>
           <div className="portfolio-head-actions">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setImportOpen(true)}>
-              {t('import212.button')}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBrokerOpen(true)}>
+              {t('broker.button')}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFileOpen(true)}>
+              {t('fileImport.button')}
             </button>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => openAdd()}>
               + {t('asset.addTitle')}
@@ -100,7 +105,8 @@ export function Portfolio() {
       )}
 
       <AssetModal open={addOpen} onClose={closeAdd} preset={preset} />
-      <Trading212ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <FileImportModal open={fileOpen} onClose={() => setFileOpen(false)} />
+      <BrokerConnectModal open={brokerOpen} onClose={() => setBrokerOpen(false)} />
     </div>
   )
 }
