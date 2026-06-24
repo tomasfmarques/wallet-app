@@ -124,8 +124,10 @@ _Working through these as focused, safe-first commits._
 - [x] **CSV/Excel export** — `lib/csvExport.ts` (formula-injection-guarded) + Export CSV buttons on the portfolio holdings table and the Saldo header.
 - [x] **Actual-vs-budget overlay** — dashed "Planeado" net line over the real net on `BudgetTimeline` (shown once a month has imported actuals).
 - [x] **Loan-milestone table** — `MilestoneTable` (outstanding/amortised/interest/paid at year marks + payoff) in the Loan → Tabela tab.
-- [ ] **Email verification on signup (S3/F7)** — `User.emailVerified` + token reuse; two-schema + migration + export/import + signup gating. Own commit.
-- [ ] **Non-monthly cadences** — `frequency` on Income/Expense (weekly/annual); touches `summarize`/timeline/KPI math throughout. Two-schema + migration. Own commit.
+- [~] **Email verification on signup (S3/F7)** — **DEFERRED to ~launch** (decision in [`../docs/decisions/auth.md`](../docs/decisions/auth.md)): `User.emailVerified` + token reuse + signup gating. Pairs with the pre-public legal/launch push.
+- [x] **Non-monthly cadences** — `Income.frequency`/`Expense.frequency` (`add_budget_frequency`, `bb6058c`). `amount` stays the monthly-equivalent so budget math is untouched; frequency is entry/display metadata. Fixed items only; loan-linked forces monthly.
+
+_Step-10 batch: 7/8 shipped; email verification intentionally deferred to ~launch._
 
 ---
 

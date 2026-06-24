@@ -592,3 +592,31 @@ Two follow-ups to the loan link, both in `processImportItems`:
   both income and expense are capped at 80 there now (the CRUD routes already cap via
   `asOptionalString(…, 80)`).
 
+
+## 2026-06-24 — Non-monthly cadences (`Income.frequency` / `Expense.frequency`)
+
+- **What:** incomes/expenses can be entered at a cadence other than monthly
+  (weekly/biweekly/quarterly/annual). **SCHEMA CHANGE** — `frequency String
+  @default("monthly")` on BOTH `Income` and `Expense` (both schemas, migration
+  `add_budget_frequency`, `import.ts` whitelist; `export.ts` full-row dump carries it).
+- **Key decision — `amount` stays the MONTHLY-equivalent.** The budget is a monthly
+  model, so rather than ripple a cadence through `summarize`/timeline/donuts/KPIs,
+  the stored `amount` is always the monthly-equivalent and `frequency` is **entry +
+  display metadata only**. A €2400/yr bonus saves `amount=200, frequency=annual`.
+  Result: **zero changes to any budget math** — KPIs/timeline/realMonth all keep
+  using `amount` and are correctly normalized for free (verified: a €200/mo annual
+  bonus lifts `incomeTotal` by exactly 200).
+- **Conversion lives in the modals.** `lib/budgetFrequency.ts` `toMonthly(period,
+  freq)` on save, `fromMonthly(monthly, freq)` to reconstruct the period amount on
+  edit. Factors: weekly ×52/12, biweekly ×26/12, quarterly ÷3, annual ÷12.
+- **Scope:** the frequency selector shows for **fixed** items only (variable are
+  one-off/budget lines). A **loan-linked** expense forces `monthly` (the prestação
+  is monthly) and hides the selector. Imported actuals default `monthly`.
+- **Display:** the Fixas list shows the monthly-equivalent `amount` (consistent with
+  the monthly totals) plus a cadence sub-text "Anual · €2.400,00"; the modal label
+  adapts ("Valor anual (€)") with a "≈ €200/mês" hint. CSV export gained a Frequency column.
+- **Backward-compat:** existing rows get `frequency='monthly'` → `fromMonthly` is
+  identity → identical behaviour, no data migration of `amount` needed.
+- **Don't:** start storing the period amount in `amount` — that reintroduces the
+  ripple this design avoids. The lump-in-one-month case (subsídio de férias) is the
+  separate **one-off / 13th-month income** thread, still deferred.

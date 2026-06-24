@@ -214,3 +214,21 @@ Banking-style app-lock layered over the session. **Re-lock = launch only.**
   the unchanged `useWebAuthnAuth`.
 - **Don't:** require a user gesture assumption — auto-trigger on load is best-effort by
   design; never remove the PIN/manual fallback.
+
+## 2026-06-24 — Deferred: email verification on signup (until ~launch)
+
+- **Status: PENDING / deferred on purpose.** Not built. Decision: hold it until
+  shortly before opening the app to the public — it adds signup friction with no
+  benefit while the user base is just the owner + demo.
+- **Scope when picked up (S3/F7):** add `User.emailVerified` (Boolean, default
+  false) + reuse the existing password-reset token plumbing (`PasswordResetToken`
+  + `lib/email.ts` console-fallback) for a verification token; a
+  `GET /verify-email?token=…` route + a small confirmation page; gate sensitive
+  actions until verified. **Two-schema change + migration + export/import** —
+  treat as its own focused PR with a Neon snapshot beforehand.
+- **Why deferred over the cadences work:** email verification is contained but
+  launch-gating (only matters with real external users); non-monthly cadences
+  delivers immediate value to the owner now. Done: cadences (`add_budget_frequency`).
+- **Trigger to revisit:** the pre-public legal/launch push (pairs with the
+  privacy-policy + account-deletion URL work in [`../legal/`](../legal/) and
+  STATE next-step #4).
