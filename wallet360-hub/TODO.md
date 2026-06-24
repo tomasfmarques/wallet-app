@@ -19,8 +19,8 @@ _Done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/p
   Correction: the migration history was **not** "only `migration_lock.toml`" — the 4 folders existed; the drift was missing columns (`bonificacao_mensal/meses`, `taeg`, `last_price_eur`) **and** 3 whole tables (`password_reset_tokens`, `bank_connections`, `classification_rules`) + `pending`/`source`/`day_of_month` on incomes/expenses. All now in the one catch-up migration.
 - [x] **F10** 🟡 Fixed the `:3001`→`:4000` + Render→Vercel doc drift. Only `CLAUDE.md` was affected (line 29 port comment + line 23 deploy row); `docs/STATE.md` was already clean.
   → `CLAUDE.md`
-- [ ] **S6** 🟠 Rotate the Neon DB password (shared in plaintext across old handoff files), update `DATABASE_URL` in Vercel, confirm no secret is committed. **(External console action — still open.)**
-  → Vercel env vars · also `docs/STATE.md` next-step #5
+- [x] **S6** 🟠 Rotated the Neon DB password (2026-06-18); `DATABASE_URL` updated in Vercel, prod `/api/health` ok, no plaintext creds in repo.
+  → Vercel env vars · `docs/STATE.md`
 - [x] **F4 / FX1 (minimum)** 🔴 Imported income no longer shows a false `0 €`/deficit on Visão geral. Added a presentation-only guard: when income is 0 but lines are pending, the SALDO/RECEITAS cards show a neutral "Classifica N importações" / "N por classificar" state instead of a red deficit. Frontend-only (no KPI/DB change); full planned-vs-actuals split remains FX1 in Phase 3.
   ✅ Verified in the live UI both ways (pending → neutral; classified → real green numbers return).
   → `frontend/src/components/overview/HeroKpis.tsx`, `frontend/src/pages/Overview.tsx`
@@ -32,7 +32,7 @@ _Done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/p
 _Pragmatic slice done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (plan: `~/.claude/plans/crispy-jumping-fairy.md`). Account/schema-coupled items (S2, S3) deferred to their own PRs._
 
 - [x] **S1 / F2** 🔴 Sentry error monitor + a real Express error handler. New `backend/src/lib/observability.ts` (inert unless `SENTRY_DSN` set, mirrors the SMTP-optional pattern); final error middleware in `index.ts` stamps every unhandled error with a `requestId`, console-logs it, and captures to Sentry when configured. ✅ Verified: boots clean with no DSN; malformed-JSON request returns `{error, requestId}`.
-  Deferred: frontend Sentry (behind `VITE_SENTRY_DSN`) — skipped to keep the bundle lean (the >500 kB `pdfStatementParser` chunk is already a concern). Add when wanted.
+  Frontend Sentry now wired (`frontend/src/lib/observability.ts`, behind `VITE_SENTRY_DSN`) — **lazy + tree-shaken**: with no DSN set at build time the SDK is eliminated entirely (zero bundle cost), so the original bundle concern is moot. Set `VITE_SENTRY_DSN` in the Vercel build env to include + init it.
 - [ ] **S2 / F6** 🟠 Replace in-memory counters with a shared store (Upstash Redis). Move rate-limiting + the change-password lockout (`cpAttempts` Map) off per-instance memory. **(Deferred — needs Upstash account; do behind `REDIS_URL` with in-memory fallback.)**
   → `backend/src/routes/auth.ts`, rate-limiter middleware in `backend/src/index.ts`
 - [ ] **S3 / F7** 🟠 Email verification on signup — reuse the password-reset token plumbing; gate sensitive actions until verified. **(Deferred — touches BOTH Prisma schemas + a migration + export/import + signup gating; warrants a focused PR. `lib/email.ts` console-fallback pattern is ready to reuse.)**
@@ -43,8 +43,8 @@ _Pragmatic slice done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (pl
   → `backend/src/routes/loan.ts`, `portfolio.ts`, `budget.ts`
 - [x] **F8** 🟠 Yahoo failover for valuation — **shipped** (`38aa136`): the Finnhub backup is wired into the valuation path so a Yahoo outage falls back instead of breaking quotes.
   → `backend/src/lib/` (yahoo + fx engines), `backend/src/routes/quotes.ts`, `backend/src/routes/portfolio.ts`
-- [ ] **S8** 🟡 CI audit gate — `npm audit --production` (fail on high) + a secret-scan (gitleaks). Pairs with S6.
-  → CI config (GitHub Actions)
+- [x] **S8** 🟡 CI gate — `.github/workflows/ci.yml`: build + `npm audit --omit=dev --audit-level=high` + gitleaks (working-tree scan). Cleared the surfaced high vuln (nodemailer 8→9).
+  → `.github/workflows/ci.yml`
 - [x] **P1** 🟠 Sliding sessions — `rolling: true`, `maxAge` 30 days, `sameSite` `strict`→`lax` (mobile-wrapper friendly). Active users never silently re-log. ✅ Verified: 30-day cookie, expiry advances on each response.
   → `backend/src/index.ts` (session config)
 - [x] **P2** 🟠 "Lembrar-me" — default 30-day rolling cookie; unchecking issues a 1-day session for shared devices. Checkbox on the sign-in screen (default checked). ✅ Verified both cookie lifetimes + UI renders.
@@ -107,6 +107,25 @@ _Post-launch features landed straight on `main` (each push auto-deploys to walle
 - [x] **Currency-aware "Adicionar ativo"** (`8c62cef`): currency badge + readable exchange name in ticker search; prices FX-converted to EUR before auto-fill.
 - [x] **Mortgage ↔ budget link** (`38aa136`) + budget import edges (`724cd5e`); asset-flow history view + drag-to-reorder watchlist + bundle split (`394226b`).
 - [x] **Demo mode** (`3a01d2c`): ephemeral seeded sandbox account so new visitors can explore with sample data.
+- [x] **Plan↔actual: `Income.matchHint`** (`9dce101`): symmetric with Expense — a hand-renamed fixed income matches its differently-described bank line on import.
+- [x] **Lock screen polish** (`5848d4e`): fingerprint keypad key + auto-prompt biometrics on launch.
+- [x] **Trading 212 import** — CSV (`fad58ed`) + **direct API live-sync** (`9542e29`, gated on `BROKER_ENC_KEY`) + imported-asset refresh fix (`9504f85`); bank-style import hub (API connect + CSV platform menu).
+- [x] **Infra/security** — frontend Sentry (lazy/gated, S1 follow-up), CI audit+secret-scan gate (S8), nodemailer 8→9 (high-sev fix).
+
+---
+
+## Backlog — "smaller / deferred" batch (STATE step 10, in progress)
+
+_Working through these as focused, safe-first commits._
+
+- [x] **Frontend Sentry** — done (above).
+- [x] **CI audit + secret-scan gate (S8)** — done (above).
+- [ ] **Redis shared store (S2/F6)** — move rate-limit + change-password lockout off per-instance memory; behind `UPSTASH_REDIS_REST_URL`/`_TOKEN` with in-memory fallback. Needs an Upstash account to verify the Redis path.
+- [ ] **CSV/Excel export** — export budget + portfolio (with the S4 formula-injection sanitisation).
+- [ ] **Actual-vs-budget overlay** — bands on the budget timeline (plan vs real lanes already exist from FX1).
+- [ ] **Loan-milestone table** — value/balance at year milestones on the Loan page.
+- [ ] **Email verification on signup (S3/F7)** — `User.emailVerified` + token reuse; two-schema + migration + export/import + signup gating. Own commit.
+- [ ] **Non-monthly cadences** — `frequency` on Income/Expense (weekly/annual); touches `summarize`/timeline/KPI math throughout. Two-schema + migration. Own commit.
 
 ---
 

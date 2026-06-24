@@ -1,0 +1,40 @@
+name: CI
+
+# Quality gate on PRs and pushes to main: a full build, a production-dependency
+# vulnerability audit (fails on high+), and a secret scan. Complements deploy.yml
+# (which only pushes the Neon schema). Keep this green before merging.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-audit:
+    name: Build + dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build (frontend + backend)
+        run: npm run build
+      - name: Audit production dependencies (fail on high)
+        run: npm audit --omit=dev --audit-level=high
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Scan the checked-out working tree only (no git history, no node_modules):
+      # catches a secret committed in the current source without false positives
+      # from already-rotated credentials in old commits.
+      - name: gitleaks
+        run: >
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest
+          detect --source=/repo --no-git --redact --no-banner

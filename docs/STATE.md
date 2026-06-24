@@ -108,6 +108,7 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 ## Recent work (newest first)
 
+- (infra/security) frontend **Sentry** (lazy + gated on `VITE_SENTRY_DSN` — tree-shaken to zero when unset; set it in the Vercel build env to enable), **CI gate** (`.github/workflows/ci.yml`: build + prod `npm audit` fail-on-high + gitleaks), **nodemailer 8→9** (cleared a high-sev advisory). **(on `main`, deployed)**
 - `9542e29` portfolio — **Trading 212 API live-sync (v2)** + bank-style import hub (API connect modal + CSV platform menu). Encrypted key (`lib/crypto.ts`), `BrokerConnection`, `routes/broker.ts`, gated on `BROKER_ENC_KEY`. **(on `main`, deployed — gated off until env set)**
 - `9504f85` portfolio — **fix:** imported assets now show real gain/loss on "Atualizar valores" (was `0 €` — refresh is delta-based; imported assets with a broker-reliable qty now use `value = qty × price`, gated on `isin`). **(on `main`, deployed)**
 - `fad58ed` portfolio — **Trading212 CSV import (v1)**: parse the transactions export → average-cost net positions + flows, ISIN→Yahoo resolution, review table, `POST /api/portfolio/import`; additive `PortfolioAsset.isin`. Direct API live-sync = v2 (deferred). **(on `main`, deployed)**
