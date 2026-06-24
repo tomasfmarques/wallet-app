@@ -58,6 +58,8 @@ export function BudgetTimeline({
     const fixedSeries: number[] = []
     const variableSeries: number[] = []
     const netSeries: number[] = []
+    const plannedNetSeries: number[] = []  // plan-only net, for the actual-vs-budget overlay
+    const hasAnyActuals = actualIncomes.length > 0 || actualExpenses.length > 0
 
     for (let i = 0; i < totalMonths; i++) {
       const ym = ymAddMonths(start, i)
@@ -76,6 +78,11 @@ export function BudgetTimeline({
       fixedSeries.push(fixed)
       variableSeries.push(variable)
       netSeries.push(inc - fixed - variable)
+      // Plan-only net (the budget baseline) for the overlay line.
+      const planInc = sumAmt(incomes.filter((x) => isActiveInMonth(x, ym)))
+      const planFixed = sumAmt(expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)))
+      const planVar = sumAmt(expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)))
+      plannedNetSeries.push(planInc - planFixed - planVar)
     }
 
     const data: ChartData<'bar'> = {
@@ -121,6 +128,23 @@ export function BudgetTimeline({
           order: 1,
         } as unknown as ChartData<'bar'>['datasets'][number],
       ],
+    }
+
+    // Actual-vs-budget overlay: a dashed "Planeado" net line over the real net,
+    // shown only once the month has imported actuals (otherwise it'd just trace
+    // the same line). The divergence between the two is the plan-vs-real story.
+    if (hasAnyActuals) {
+      data.datasets.push({
+        type: 'line' as unknown as 'bar',
+        label: t('timeline.planned'),
+        data: plannedNetSeries,
+        borderColor: '#94A3B8',
+        borderDash: [5, 4],
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        order: 1,
+      } as unknown as ChartData<'bar'>['datasets'][number])
     }
 
     const opts: ChartOptions<'bar'> = {

@@ -13,6 +13,16 @@
   "capitalEvolution": "CAPITAL OVER TIME",
   "payments": "PAYMENTS",
   "capitalSeries": "Outstanding capital",
+  "milestones": {
+    "title": "Loan milestones",
+    "marker": "Milestone",
+    "yearN": "Year {{year}}",
+    "payoff": "Payoff",
+    "outstanding": "Outstanding",
+    "paidOff": "Paid off",
+    "interest": "Interest (cum.)",
+    "totalPaid": "Paid (cum.)"
+  },
   "kpis": {
     "debtLabel": "OUTSTANDING DEBT",
     "paidAria": "{{pct}}% paid",

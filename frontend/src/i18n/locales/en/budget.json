@@ -99,8 +99,22 @@
     "fixedExpenses": "Fixed expenses",
     "variableExpenses": "Variable expenses",
     "balance": "Balance",
-    "footer": "Expenses shown as negative bars. Blue line = final balance (income − expenses) per month. Months with an imported statement show real values; the rest show the plan.",
+    "planned": "Planned",
+    "footer": "Expenses shown as negative bars. Blue line = final balance (income − expenses) per month. The dashed grey line is the planned balance. Months with an imported statement show real values; the rest show the plan.",
     "footerClick": " Click a month to analyse it in detail."
+  },
+  "csv": {
+    "button": "Export CSV",
+    "kind": "Type",
+    "name": "Name",
+    "category": "Category",
+    "class": "Class",
+    "amount": "Amount (€)",
+    "month": "Month",
+    "source": "Source",
+    "income": "Income",
+    "expense": "Expense",
+    "manual": "Manual"
   },
   "income": {
     "title": "{{action}} {{kind}} income",

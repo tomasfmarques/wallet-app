@@ -15,6 +15,7 @@ import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, currentYm } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
+import { exportCsv } from '@/lib/csvExport'
 import type { Income, Expense, ExpenseType } from '@/types'
 
 type Tab = 'tables' | 'analysis'
@@ -63,6 +64,26 @@ export function Budget() {
   const sumActive = <T extends { active: boolean; amount: number }>(rows: T[]) =>
     rows.filter((r) => r.active).reduce((s, r) => s + r.amount, 0)
 
+  // Export every budget line (plan + imported actuals) as a CSV — raw amounts so
+  // it opens cleanly in a spreadsheet; formula-injection-guarded in csvExport.
+  const handleExportCsv = () => {
+    const line = (kind: string) => (r: Income | Expense) => [
+      kind, r.name, r.category ? categoryLabel(r.category) : '',
+      r.type === 'fixed' ? t('kind.fixed') : t('kind.variable'),
+      r.amount, r.startYm ?? '', r.source ?? t('csv.manual'),
+    ]
+    const rows = [
+      ...[...incomes, ...actualIncomes].map(line(t('csv.income'))),
+      ...[...expenses, ...actualExpenses].map(line(t('csv.expense'))),
+    ]
+    if (rows.length === 0) return
+    exportCsv(
+      `wallet360-saldo-${currentYm()}`,
+      [t('csv.kind'), t('csv.name'), t('csv.category'), t('csv.class'), t('csv.amount'), t('csv.month'), t('csv.source')],
+      rows,
+    )
+  }
+
   return (
     <div className="budget-page">
       <header className="page-header">
@@ -71,6 +92,9 @@ export function Budget() {
           <p className="muted">{t('subtitle')}</p>
         </div>
         <div className="page-header-actions">
+          <button type="button" className="btn btn-ghost" onClick={handleExportCsv}>
+            {t('csv.button')}
+          </button>
           <button type="button" className="btn btn-ghost" onClick={() => setBankOpen(true)}>
             🏦 {t('connectBank')}
           </button>

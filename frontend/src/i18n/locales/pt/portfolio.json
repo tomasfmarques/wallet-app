@@ -165,6 +165,16 @@
     "coverage": "Calculado sobre {{value}} % do valor da carteira.",
     "level": { "baixo": "Baixo", "medio": "Médio", "alto": "Alto", "muito_alto": "Muito alto" }
   },
+  "csv": {
+    "button": "Exportar CSV",
+    "name": "Nome",
+    "ticker": "Ticker",
+    "isin": "ISIN",
+    "qty": "Quantidade",
+    "invested": "Investido (€)",
+    "value": "Valor (€)",
+    "gain": "Ganho (€)"
+  },
   "import212": {
     "button": "Importar do Trading 212",
     "title": "Importar do Trading 212",

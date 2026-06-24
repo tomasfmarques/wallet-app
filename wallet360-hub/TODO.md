@@ -121,9 +121,9 @@ _Working through these as focused, safe-first commits._
 - [x] **Frontend Sentry** — done (above).
 - [x] **CI audit + secret-scan gate (S8)** — done (above).
 - [x] **Redis shared store (S2/F6)** — done (gated on Upstash env, in-memory fallback verified). Set the Upstash env vars in Vercel to activate the shared path.
-- [ ] **CSV/Excel export** — export budget + portfolio (with the S4 formula-injection sanitisation).
-- [ ] **Actual-vs-budget overlay** — bands on the budget timeline (plan vs real lanes already exist from FX1).
-- [ ] **Loan-milestone table** — value/balance at year milestones on the Loan page.
+- [x] **CSV/Excel export** — `lib/csvExport.ts` (formula-injection-guarded) + Export CSV buttons on the portfolio holdings table and the Saldo header.
+- [x] **Actual-vs-budget overlay** — dashed "Planeado" net line over the real net on `BudgetTimeline` (shown once a month has imported actuals).
+- [x] **Loan-milestone table** — `MilestoneTable` (outstanding/amortised/interest/paid at year marks + payoff) in the Loan → Tabela tab.
 - [ ] **Email verification on signup (S3/F7)** — `User.emailVerified` + token reuse; two-schema + migration + export/import + signup gating. Own commit.
 - [ ] **Non-monthly cadences** — `frequency` on Income/Expense (weekly/annual); touches `summarize`/timeline/KPI math throughout. Two-schema + migration. Own commit.
 

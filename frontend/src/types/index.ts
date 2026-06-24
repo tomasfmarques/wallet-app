@@ -55,6 +55,7 @@ export interface PortfolioAsset {
   userId: string
   name: string
   ticker: string
+  isin?: string | null           // stable cross-broker identity (set on broker/CSV import)
   qty: number
   invested: number
   value: number

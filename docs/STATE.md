@@ -108,6 +108,7 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 ## Recent work (newest first)
 
+- (budget/portfolio/loan) **CSV export** (holdings + budget lines, formula-injection-guarded `lib/csvExport.ts`), **loan milestone table** (outstanding/interest/paid at year marks, in the Tabela tab), **actual-vs-budget overlay** (dashed planned-net line on the timeline when actuals exist). Frontend-only, no schema. **(on `main`, deployed)**
 - (infra/security) **Redis shared store** — rate-limit + brute-force lockout (change-password + PIN) now use a shared counter store (`backend/src/lib/kvStore.ts`): Upstash when `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set, in-memory fallback otherwise (matters on serverless — per-instance memory barely throttles). Lockout verified end-to-end on the fallback path (fires at 5, clears on success). **(on `main`, deployed — uses in-memory until Upstash env set)**
 - (infra/security) frontend **Sentry** (lazy + gated on `VITE_SENTRY_DSN` — tree-shaken to zero when unset; set it in the Vercel build env to enable), **CI gate** (`.github/workflows/ci.yml`: build + prod `npm audit` fail-on-high + gitleaks), **nodemailer 8→9** (cleared a high-sev advisory). **(on `main`, deployed)**
 - `9542e29` portfolio — **Trading 212 API live-sync (v2)** + bank-style import hub (API connect modal + CSV platform menu). Encrypted key (`lib/crypto.ts`), `BrokerConnection`, `routes/broker.ts`, gated on `BROKER_ENC_KEY`. **(on `main`, deployed — gated off until env set)**

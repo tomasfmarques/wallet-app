@@ -6,6 +6,7 @@ import { LoanSetupForm } from '@/components/loan/LoanSetupForm'
 import { YearAccordion } from '@/components/loan/YearAccordion'
 import { CapitalChart } from '@/components/loan/CapitalChart'
 import { AnnualTable } from '@/components/loan/AnnualTable'
+import { MilestoneTable } from '@/components/loan/MilestoneTable'
 import { SimulatorPanel } from '@/components/loan/SimulatorPanel'
 import { AmortizationModal } from '@/components/loan/AmortizationModal'
 import { StateBlock } from '@/components/ui/StateBlock'
@@ -205,6 +206,7 @@ export function Loan() {
 
       {tab === 'tabela' && (
         <section>
+          <MilestoneTable rows={schedule.rows} capitalInicial={loan.capital} />
           <AnnualTable rows={schedule.rows} />
         </section>
       )}

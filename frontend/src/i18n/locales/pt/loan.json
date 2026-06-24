@@ -13,6 +13,16 @@
   "capitalEvolution": "EVOLUÇÃO DO CAPITAL",
   "payments": "PAGAMENTOS",
   "capitalSeries": "Capital em dívida",
+  "milestones": {
+    "title": "Marcos do crédito",
+    "marker": "Marco",
+    "yearN": "Ano {{year}}",
+    "payoff": "Liquidação",
+    "outstanding": "Em dívida",
+    "paidOff": "Amortizado",
+    "interest": "Juros acum.",
+    "totalPaid": "Pago acum."
+  },
   "kpis": {
     "debtLabel": "CAPITAL EM DÍVIDA",
     "paidAria": "{{pct}}% pago",

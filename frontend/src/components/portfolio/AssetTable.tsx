@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { eur, eurSigned, pctSigned, num } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/apiError'
+import { exportCsv } from '@/lib/csvExport'
 import {
   useDeleteAsset, useRefreshAssetValue, useRefreshAllValues,
   type AssetWithFlows,
@@ -45,6 +46,17 @@ export function AssetTable({ assets }: Props) {
     }
   }
 
+  // Export holdings as CSV (raw amounts; formula-injection-guarded in csvExport).
+  const handleExportCsv = () => {
+    if (assets.length === 0) return
+    const rows = assets.map((a) => [a.name, a.ticker, a.isin ?? '', a.qty, a.invested, a.value, a.value - a.invested])
+    exportCsv(
+      'wallet360-carteira',
+      [t('csv.name'), t('csv.ticker'), t('csv.isin'), t('csv.qty'), t('csv.invested'), t('csv.value'), t('csv.gain')],
+      rows,
+    )
+  }
+
   if (assets.length === 0) {
     return (
       <div className="card card-pad-lg muted">
@@ -73,6 +85,9 @@ export function AssetTable({ assets }: Props) {
           </div>
           <div className="asset-totals-spacer" />
           <div className="asset-totals-actions">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
+              {t('csv.button')}
+            </button>
             <button
               type="button"
               className="btn btn-ghost btn-sm"

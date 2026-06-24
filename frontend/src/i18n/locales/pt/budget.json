@@ -99,8 +99,22 @@
     "fixedExpenses": "Despesas fixas",
     "variableExpenses": "Despesas variáveis",
     "balance": "Saldo",
-    "footer": "Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês. Meses com extrato importado mostram valores reais; os restantes mostram o planeado.",
+    "planned": "Planeado",
+    "footer": "Despesas mostradas como barras negativas. Linha azul = saldo final (receitas − despesas) por mês. A linha tracejada cinzenta é o saldo planeado. Meses com extrato importado mostram valores reais; os restantes mostram o planeado.",
     "footerClick": " Clica num mês para o analisar em detalhe."
+  },
+  "csv": {
+    "button": "Exportar CSV",
+    "kind": "Tipo",
+    "name": "Nome",
+    "category": "Categoria",
+    "class": "Classe",
+    "amount": "Valor (€)",
+    "month": "Mês",
+    "source": "Origem",
+    "income": "Receita",
+    "expense": "Despesa",
+    "manual": "Manual"
   },
   "income": {
     "title": "{{action}} receita {{kind}}",

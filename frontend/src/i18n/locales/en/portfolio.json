@@ -165,6 +165,16 @@
     "coverage": "Computed on {{value}} % of portfolio value.",
     "level": { "baixo": "Low", "medio": "Medium", "alto": "High", "muito_alto": "Very high" }
   },
+  "csv": {
+    "button": "Export CSV",
+    "name": "Name",
+    "ticker": "Ticker",
+    "isin": "ISIN",
+    "qty": "Quantity",
+    "invested": "Invested (€)",
+    "value": "Value (€)",
+    "gain": "Gain (€)"
+  },
   "import212": {
     "button": "Import from Trading 212",
     "title": "Import from Trading 212",
