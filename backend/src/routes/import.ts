@@ -14,6 +14,7 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 const isBool = (v: unknown): v is boolean => typeof v === 'boolean'
 
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
+const FREQUENCIES = ['monthly', 'weekly', 'biweekly', 'quarterly', 'annual']
 
 // ── Prototype format detector + transformer ─────────────────────
 // The localStorage-based prototype ("investimentos.tracker.v1") stores data
@@ -277,6 +278,7 @@ router.post('/', async (req, res) => {
               pending: isBool(i.pending) ? i.pending : false,
               source: isStr(i.source) ? i.source : null,
               matchHint: isStr(i.matchHint) && i.matchHint.length <= 80 ? i.matchHint : null,
+              frequency: FREQUENCIES.includes(i.frequency as string) ? i.frequency as string : 'monthly',
               startYm: isValidYm(i.startYm) ? i.startYm as string : null,
               endYm:   isValidYm(i.endYm)   ? i.endYm as string   : null,
               notes:   isStr(i.notes)        ? i.notes             : null,
@@ -300,6 +302,7 @@ router.post('/', async (req, res) => {
               source: isStr(e.source) ? e.source : null,
               loanId:  isStr(e.loanId)       ? e.loanId            : null,
               matchHint: isStr(e.matchHint) && e.matchHint.length <= 80 ? e.matchHint : null,
+              frequency: FREQUENCIES.includes(e.frequency as string) ? e.frequency as string : 'monthly',
               startYm: isValidYm(e.startYm) ? e.startYm as string : null,
               endYm:   isValidYm(e.endYm)   ? e.endYm as string   : null,
               notes:   isStr(e.notes)        ? e.notes             : null,

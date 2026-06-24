@@ -137,7 +137,11 @@ model Income {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   name      String                          // e.g. "Salário", "Freelance"
-  amount    Float                           // EUR per month
+  amount    Float                           // EUR per month (the MONTHLY-equivalent)
+  // Entry cadence: monthly|weekly|biweekly|quarterly|annual. `amount` is always
+  // stored as the monthly-equivalent; frequency only records how it was entered
+  // (so a €2400/yr bonus saves amount=200, frequency=annual) and drives display.
+  frequency String   @default("monthly")
   type      String   @default("fixed")      // 'fixed' | 'variable'
   category  String?                         // free-text bucket
   active    Boolean  @default(true)
@@ -164,7 +168,8 @@ model Expense {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
   name        String                        // e.g. "Renda", "Netflix", "Comida"
-  amount      Float                         // EUR per month (planned/typical)
+  amount      Float                         // EUR per month (the monthly-equivalent)
+  frequency   String   @default("monthly")  // monthly|weekly|biweekly|quarterly|annual (see Income.frequency)
   // 'fixed'    → predictable recurring (rent, subscriptions)
   // 'variable' → fluctuates monthly (food, entertainment)
   type        String                        // 'fixed' | 'variable'

@@ -24,7 +24,8 @@ export interface BudgetResponse {
 
 export interface IncomeInput {
   name: string
-  amount: number
+  amount: number             // monthly-equivalent
+  frequency?: string         // entry cadence (monthly|weekly|biweekly|quarterly|annual)
   type?: ExpenseType
   category?: string | null
   active?: boolean
@@ -37,7 +38,8 @@ export interface IncomeInput {
 
 export interface ExpenseInput {
   name: string
-  amount: number
+  amount: number             // monthly-equivalent
+  frequency?: string         // entry cadence (monthly|weekly|biweekly|quarterly|annual)
   type: ExpenseType
   category?: string | null
   dayOfMonth?: number | null

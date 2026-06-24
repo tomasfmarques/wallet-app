@@ -116,6 +116,18 @@
     "expense": "Despesa",
     "manual": "Manual"
   },
+  "freq": {
+    "label": "Frequência",
+    "monthly": "Mensal",
+    "weekly": "Semanal",
+    "biweekly": "Quinzenal",
+    "quarterly": "Trimestral",
+    "annual": "Anual",
+    "amountLabel": "Valor {{unit}} (€)",
+    "unit": { "monthly": "mensal", "weekly": "semanal", "biweekly": "quinzenal", "quarterly": "trimestral", "annual": "anual" },
+    "monthlyEquiv": "≈ {{value}}/mês",
+    "meta": "{{label}} · {{period}}"
+  },
   "income": {
     "title": "{{action}} receita {{kind}}",
     "nameLabel": "Nome",

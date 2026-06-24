@@ -8,6 +8,7 @@ import { useLoan } from '@/hooks/useLoan'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { inferCategory, categoryLabel, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
 import { eur2 } from '@/lib/format'
+import { FREQUENCIES, asFrequency, toMonthly, fromMonthly, type Frequency } from '@/lib/budgetFrequency'
 import type { Expense, ExpenseType } from '@/types'
 
 interface Props {
@@ -37,13 +38,17 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const [active, setActive] = useState(true)
   const [loanId, setLoanId] = useState('')
   const [matchHint, setMatchHint] = useState('')
+  const [frequency, setFrequency] = useState<Frequency>('monthly')
   const [errors, setErrors] = useState<FieldErrors>({})
   const userPickedCategory = useRef(false)
 
   useEffect(() => {
     if (!open) return
     setName(expense?.name ?? '')
-    setAmount(expense ? String(expense.amount) : '')
+    const freq = asFrequency(expense?.frequency)
+    setFrequency(freq)
+    // Field holds the per-PERIOD amount; `amount` is stored as the monthly-equiv.
+    setAmount(expense ? String(Math.round(fromMonthly(expense.amount, freq) * 100) / 100) : '')
     setCategory(expense?.category ?? '')
     setAutoSuggested(false)
     setDayOfMonth(expense?.dayOfMonth != null ? String(expense.dayOfMonth) : '')
@@ -81,6 +86,8 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
   const linkedLoan = loans.find((l) => l.loan.id === loanId) ?? null
   const linkedPrestacao = linkedLoan?.kpis.proximaPrestacao ?? null
   const linked = effectiveType === 'fixed' && !!loanId && linkedPrestacao != null
+  // Cadence applies to fixed expenses that AREN'T loan-linked (a prestação is monthly).
+  const freqApplies = effectiveType === 'fixed' && !linked
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -96,8 +103,9 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
       else dayNum = d
     }
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    const freq: Frequency = freqApplies ? frequency : 'monthly'
     const body: ExpenseInput = {
-      name: name.trim(), amount: n, type: effectiveType,
+      name: name.trim(), amount: linked ? n : toMonthly(n, freq), frequency: freq, type: effectiveType,
       category: category.trim() || null,
       dayOfMonth: dayNum,
       startYm: startYm.trim() || null,
@@ -135,7 +143,7 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
             {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
           <div className="field">
-            <label htmlFor="ex-amount">{t('expense.amountLabel')}</label>
+            <label htmlFor="ex-amount">{freqApplies ? t('freq.amountLabel', { unit: t(`freq.unit.${frequency}`) }) : t('expense.amountLabel')}</label>
             <input
               id="ex-amount" type="number" inputMode="decimal" step="any" min="0"
               value={linked ? String(linkedPrestacao) : amount}
@@ -145,7 +153,18 @@ export function ExpenseModal({ open, onClose, type, expense, defaultStartYm }: P
             {linked
               ? <span className="muted" style={{ fontSize: 12 }}>{t('expense.loanSynced')}</span>
               : errors.amount && <span className="field-error">{errors.amount}</span>}
+            {freqApplies && frequency !== 'monthly' && Number(amount) > 0 && (
+              <span className="muted" style={{ fontSize: 12 }}>{t('freq.monthlyEquiv', { value: eur2(toMonthly(Number(amount), frequency)) })}</span>
+            )}
           </div>
+          {freqApplies && (
+            <div className="field">
+              <label htmlFor="ex-freq">{t('freq.label')}</label>
+              <select id="ex-freq" value={frequency} onChange={(e) => setFrequency(asFrequency(e.target.value))}>
+                {FREQUENCIES.map((f) => <option key={f} value={f}>{t(`freq.${f}`)}</option>)}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="ex-category">
               {t('expense.categoryLabel')}

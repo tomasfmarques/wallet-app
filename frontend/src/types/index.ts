@@ -83,7 +83,8 @@ export interface Income {
   id: string
   userId: string
   name: string
-  amount: number
+  amount: number             // monthly-equivalent (see frequency)
+  frequency?: string         // entry cadence: monthly|weekly|biweekly|quarterly|annual
   type: ExpenseType          // fixed | variable (shared axis with expenses)
   category: string | null
   active: boolean
@@ -103,7 +104,8 @@ export interface Expense {
   id: string
   userId: string
   name: string
-  amount: number
+  amount: number             // monthly-equivalent (see frequency)
+  frequency?: string         // entry cadence: monthly|weekly|biweekly|quarterly|annual
   type: ExpenseType
   category: string | null
   dayOfMonth: number | null

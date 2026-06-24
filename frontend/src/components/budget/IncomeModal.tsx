@@ -6,6 +6,8 @@ import {
 } from '@/hooks/useBudget'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { inferCategory, categoryLabel, INCOME_CATEGORIES } from '@/lib/categoryDictionary'
+import { eur2 } from '@/lib/format'
+import { FREQUENCIES, asFrequency, toMonthly, fromMonthly, type Frequency } from '@/lib/budgetFrequency'
 import type { Income, ExpenseType } from '@/types'
 
 interface Props {
@@ -31,13 +33,17 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
   const [matchHint, setMatchHint] = useState('')
+  const [frequency, setFrequency] = useState<Frequency>('monthly')
   const [errors, setErrors] = useState<FieldErrors>({})
   const userPickedCategory = useRef(false)
 
   useEffect(() => {
     if (!open) return
     setName(income?.name ?? '')
-    setAmount(income ? String(income.amount) : '')
+    const freq = asFrequency(income?.frequency)
+    setFrequency(freq)
+    // The field holds the per-PERIOD amount; `amount` is stored as monthly-equiv.
+    setAmount(income ? String(Math.round(fromMonthly(income.amount, freq) * 100) / 100) : '')
     setCategory(income?.category ?? '')
     setAutoSuggested(false)
     setStartYm(income?.startYm ?? defaultStartYm ?? '')
@@ -78,8 +84,9 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
     const n = Number(amount)
     if (!Number.isFinite(n) || n <= 0) errs.amount = t('income.errGt0')
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    const freq: Frequency = effectiveType === 'fixed' ? frequency : 'monthly'
     const body: IncomeInput = {
-      name: name.trim(), amount: n, type: effectiveType,
+      name: name.trim(), amount: toMonthly(n, freq), frequency: freq, type: effectiveType,
       category: category.trim() || null,
       startYm: startYm.trim() || null,
       // Variable = one-off → scope it to a single month (endYm = startYm).
@@ -111,13 +118,24 @@ export function IncomeModal({ open, onClose, type, income, defaultStartYm }: Pro
             {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
           <div className="field">
-            <label htmlFor="in-amount">{t('income.amountLabel')}</label>
+            <label htmlFor="in-amount">{effectiveType === 'fixed' ? t('freq.amountLabel', { unit: t(`freq.unit.${frequency}`) }) : t('income.amountLabel')}</label>
             <input
               id="in-amount" type="number" inputMode="decimal" step="any" min="0"
               value={amount} onChange={(e) => setAmount(e.target.value)}
             />
             {errors.amount && <span className="field-error">{errors.amount}</span>}
+            {effectiveType === 'fixed' && frequency !== 'monthly' && Number(amount) > 0 && (
+              <span className="muted" style={{ fontSize: 12 }}>{t('freq.monthlyEquiv', { value: eur2(toMonthly(Number(amount), frequency)) })}</span>
+            )}
           </div>
+          {effectiveType === 'fixed' && (
+            <div className="field">
+              <label htmlFor="in-freq">{t('freq.label')}</label>
+              <select id="in-freq" value={frequency} onChange={(e) => setFrequency(asFrequency(e.target.value))}>
+                {FREQUENCIES.map((f) => <option key={f} value={f}>{t(`freq.${f}`)}</option>)}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="in-category">
               {t('income.categoryLabel')}

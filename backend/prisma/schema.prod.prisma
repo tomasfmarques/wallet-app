@@ -130,6 +130,7 @@ model Income {
   userId    String   @map("user_id")
   name      String
   amount    Float
+  frequency String   @default("monthly")
   type      String   @default("fixed")
   category  String?
   active    Boolean  @default(true)
@@ -153,6 +154,7 @@ model Expense {
   userId      String   @map("user_id")
   name        String
   amount      Float
+  frequency   String   @default("monthly")
   type        String
   category    String?
   dayOfMonth  Int?     @map("day_of_month")

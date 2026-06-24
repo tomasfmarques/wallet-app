@@ -64,6 +64,12 @@ function asBudgetType(v: unknown, fallback: 'fixed' | 'variable'): 'fixed' | 'va
   return v === 'fixed' || v === 'variable' ? v : fallback
 }
 
+// Entry cadence. `amount` is always the monthly-equivalent; frequency is metadata.
+const FREQUENCIES = ['monthly', 'weekly', 'biweekly', 'quarterly', 'annual'] as const
+function asFrequency(v: unknown): string {
+  return typeof v === 'string' && (FREQUENCIES as readonly string[]).includes(v) ? v : 'monthly'
+}
+
 function asOptionalDay(v: unknown, errors: Record<string, string>): number | null {
   if (v === undefined || v === null || v === '') return null
   const n = typeof v === 'number' ? v : Number(v)
@@ -206,6 +212,7 @@ router.post('/incomes', async (req, res) => {
   const type = asBudgetType(req.body?.type, 'fixed')
   const category = asOptionalString(req.body?.category, 40)
   const matchHint = asOptionalString(req.body?.matchHint, 80)
+  const frequency = asFrequency(req.body?.frequency)
   const startYm = asOptionalYm(req.body?.startYm, 'startYm', errors)
   const endYm = asOptionalYm(req.body?.endYm, 'endYm', errors)
   const notes = asOptionalString(req.body?.notes, 500)
@@ -216,7 +223,7 @@ router.post('/incomes', async (req, res) => {
 
   try {
     const income = await prisma.income.create({
-      data: { userId: req.session.userId!, name, amount, type, category, matchHint, startYm, endYm, notes, active, pending },
+      data: { userId: req.session.userId!, name, amount, type, category, matchHint, frequency, startYm, endYm, notes, active, pending },
     })
     res.status(201).json({ income })
   } catch (err) {
@@ -234,6 +241,7 @@ router.put('/incomes/:id', async (req, res) => {
   if (req.body?.type !== undefined)     data.type = asBudgetType(req.body.type, 'fixed')
   if (req.body?.category !== undefined) data.category = asOptionalString(req.body.category, 40)
   if (req.body?.matchHint !== undefined) data.matchHint = asOptionalString(req.body.matchHint, 80)
+  if (req.body?.frequency !== undefined) data.frequency = asFrequency(req.body.frequency)
   if (req.body?.startYm !== undefined)  data.startYm = asOptionalYm(req.body.startYm, 'startYm', errors)
   if (req.body?.endYm !== undefined)    data.endYm = asOptionalYm(req.body.endYm, 'endYm', errors)
   if (req.body?.notes !== undefined)    data.notes = asOptionalString(req.body.notes, 500)
@@ -602,6 +610,7 @@ router.post('/expenses', async (req, res) => {
   const notes = asOptionalString(req.body?.notes, 500)
   const loanId = asOptionalString(req.body?.loanId, 40)
   const matchHint = asOptionalString(req.body?.matchHint, 80)
+  const frequency = asFrequency(req.body?.frequency)
   const active = typeof req.body?.active === 'boolean' ? req.body.active : true
   const pending = typeof req.body?.pending === 'boolean' ? req.body.pending : false
 
@@ -609,7 +618,7 @@ router.post('/expenses', async (req, res) => {
 
   try {
     const expense = await prisma.expense.create({
-      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, loanId, matchHint, active, pending },
+      data: { userId: req.session.userId!, name, amount, type, category, dayOfMonth, startYm, endYm, notes, loanId, matchHint, frequency, active, pending },
     })
     res.status(201).json({ expense })
   } catch (err) {
@@ -632,6 +641,7 @@ router.put('/expenses/:id', async (req, res) => {
   if (req.body?.notes !== undefined)       data.notes = asOptionalString(req.body.notes, 500)
   if (req.body?.loanId !== undefined)      data.loanId = asOptionalString(req.body.loanId, 40)
   if (req.body?.matchHint !== undefined)   data.matchHint = asOptionalString(req.body.matchHint, 80)
+  if (req.body?.frequency !== undefined)   data.frequency = asFrequency(req.body.frequency)
   if (req.body?.active !== undefined && typeof req.body.active === 'boolean') data.active = req.body.active
   if (req.body?.pending !== undefined && typeof req.body.pending === 'boolean') data.pending = req.body.pending
 

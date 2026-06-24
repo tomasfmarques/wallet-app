@@ -13,8 +13,9 @@ import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
 import { StateBlock } from '@/components/ui/StateBlock'
-import { eur, currentYm } from '@/lib/format'
+import { eur, eur2, currentYm } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
+import { asFrequency, fromMonthly } from '@/lib/budgetFrequency'
 import { exportCsv } from '@/lib/csvExport'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -64,12 +65,20 @@ export function Budget() {
   const sumActive = <T extends { active: boolean; amount: number }>(rows: T[]) =>
     rows.filter((r) => r.active).reduce((s, r) => s + r.amount, 0)
 
+  // Cadence sub-text for non-monthly rows: e.g. "Anual · €2.400,00" (the period
+  // amount, reconstructed from the stored monthly-equivalent).
+  const freqMeta = (r: { frequency?: string; amount: number }): string | null => {
+    const f = asFrequency(r.frequency)
+    return f === 'monthly' ? null : t('freq.meta', { label: t(`freq.${f}`), period: eur2(fromMonthly(r.amount, f)) })
+  }
+
   // Export every budget line (plan + imported actuals) as a CSV — raw amounts so
   // it opens cleanly in a spreadsheet; formula-injection-guarded in csvExport.
   const handleExportCsv = () => {
     const line = (kind: string) => (r: Income | Expense) => [
       kind, r.name, r.category ? categoryLabel(r.category) : '',
       r.type === 'fixed' ? t('kind.fixed') : t('kind.variable'),
+      t(`freq.${asFrequency(r.frequency)}`),
       r.amount, r.startYm ?? '', r.source ?? t('csv.manual'),
     ]
     const rows = [
@@ -79,7 +88,7 @@ export function Budget() {
     if (rows.length === 0) return
     exportCsv(
       `wallet360-saldo-${currentYm()}`,
-      [t('csv.kind'), t('csv.name'), t('csv.category'), t('csv.class'), t('csv.amount'), t('csv.month'), t('csv.source')],
+      [t('csv.kind'), t('csv.name'), t('csv.category'), t('csv.class'), t('freq.label'), t('csv.amount'), t('csv.month'), t('csv.source')],
       rows,
     )
   }
@@ -150,7 +159,7 @@ export function Budget() {
             <BudgetList
               rows={fixedIncomes.map((i) => ({
                 id: i.id, name: i.name, amount: i.amount, category: i.category, active: i.active,
-                meta: i.startYm ? t('list.sinceMeta', { ym: i.startYm }) : undefined,
+                meta: [freqMeta(i), i.startYm ? t('list.sinceMeta', { ym: i.startYm }) : null].filter(Boolean).join(' · ') || undefined,
                 onEdit: () => setIncomeModal({ open: true, type: 'fixed', income: i }),
                 onDelete: () => { if (confirm(t('list.removeConfirm', { name: i.name }))) delIncome.mutate(i.id) },
               }))}
@@ -170,7 +179,7 @@ export function Budget() {
             <BudgetList
               rows={fixedExpenses.map((e) => ({
                 id: e.id, name: e.name, amount: e.amount, category: e.category, active: e.active,
-                meta: [e.loanId ? t('list.loanLinked') : null, e.dayOfMonth ? t('list.dayMeta', { day: e.dayOfMonth }) : null]
+                meta: [freqMeta(e), e.loanId ? t('list.loanLinked') : null, e.dayOfMonth ? t('list.dayMeta', { day: e.dayOfMonth }) : null]
                   .filter(Boolean).join(' · ') || undefined,
                 onEdit: () => setExpenseModal({ open: true, type: 'fixed', expense: e }),
                 onDelete: () => { if (confirm(t('list.removeConfirm', { name: e.name }))) delExpense.mutate(e.id) },

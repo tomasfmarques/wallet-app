@@ -116,6 +116,18 @@
     "expense": "Expense",
     "manual": "Manual"
   },
+  "freq": {
+    "label": "Frequency",
+    "monthly": "Monthly",
+    "weekly": "Weekly",
+    "biweekly": "Biweekly",
+    "quarterly": "Quarterly",
+    "annual": "Annual",
+    "amountLabel": "{{unit}} amount (€)",
+    "unit": { "monthly": "Monthly", "weekly": "Weekly", "biweekly": "Biweekly", "quarterly": "Quarterly", "annual": "Annual" },
+    "monthlyEquiv": "≈ {{value}}/mo",
+    "meta": "{{label}} · {{period}}"
+  },
   "income": {
     "title": "{{action}} {{kind}} income",
     "nameLabel": "Name",
