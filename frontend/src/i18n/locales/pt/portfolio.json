@@ -2,6 +2,9 @@
   "title": "Investimentos",
   "loadError": "Não foi possível carregar a tua carteira.",
   "trendingLabel": "EM ALTA · NASDAQ",
+  "trendingWatch": "{{count}} para acompanhar",
+  "trendingShow": "Mostrar",
+  "trendingHide": "Ocultar",
   "myPortfolioLabel": "A MINHA CARTEIRA",
   "monthlyContribLabel": "REFORÇO MENSAL POR ATIVO",
   "projectionSection": "PROJEÇÃO",
@@ -13,9 +16,7 @@
     "gainLabel": "GANHO / PERDA ATUAL",
     "gainMeta": "{{pct}} sobre o investido",
     "contribLabel": "REFORÇO MENSAL",
-    "contribMeta": "contribuições automáticas",
-    "projectionLabel": "PROJEÇÃO A {{years}} ANOS",
-    "projectionMeta": "com reforços crescentes"
+    "contribMeta": "contribuições automáticas"
   },
   "watchlist": {
     "empty": "Watchlist vazia. Adiciona tickers em <1>Configurações → Watchlist</1>.",

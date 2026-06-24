@@ -2,6 +2,9 @@
   "title": "Investments",
   "loadError": "Couldn't load your portfolio.",
   "trendingLabel": "TRENDING · NASDAQ",
+  "trendingWatch": "{{count}} to watch",
+  "trendingShow": "Show",
+  "trendingHide": "Hide",
   "myPortfolioLabel": "MY PORTFOLIO",
   "monthlyContribLabel": "MONTHLY CONTRIBUTION PER ASSET",
   "projectionSection": "PROJECTION",
@@ -13,9 +16,7 @@
     "gainLabel": "CURRENT GAIN / LOSS",
     "gainMeta": "{{pct}} on invested",
     "contribLabel": "MONTHLY CONTRIBUTION",
-    "contribMeta": "automatic contributions",
-    "projectionLabel": "PROJECTION OVER {{years}} YEARS",
-    "projectionMeta": "with growing contributions"
+    "contribMeta": "automatic contributions"
   },
   "watchlist": {
     "empty": "Watchlist empty. Add tickers in <1>Settings → Watchlist</1>.",

@@ -21,6 +21,18 @@ export function Portfolio() {
   const [fileOpen, setFileOpen] = useState(false)
   const [brokerOpen, setBrokerOpen] = useState(false)
   const [preset, setPreset] = useState<AssetPreset | undefined>(undefined)
+  // "EM ALTA" watchlist is collapsed by default to keep the page compact; the
+  // user's open/closed preference persists across visits.
+  const [trendingOpen, setTrendingOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem('w360:trendingOpen') === '1' } catch { return false }
+  })
+  const toggleTrending = () => {
+    setTrendingOpen((open) => {
+      const next = !open
+      try { localStorage.setItem('w360:trendingOpen', next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const openAdd = (p?: AssetPreset) => {
     setPreset(p)
@@ -47,6 +59,7 @@ export function Portfolio() {
 
   const { assets, settings, projection, kpis } = data
   const hasAssets = assets.length > 0
+  const watchItems = resolveWatchlist((settings as { watchlistSymbols?: string | null }).watchlistSymbols ?? null)
 
   return (
     <div className="portfolio-page">
@@ -55,15 +68,43 @@ export function Portfolio() {
       </header>
 
       <section>
-        <h2 className="section-label">{t('trendingLabel')}</h2>
-        <Watchlist
-          items={resolveWatchlist((settings as { watchlistSymbols?: string | null }).watchlistSymbols ?? null)}
-          onAdd={openAdd}
-          onReorder={(symbols) => updateSettings.mutate({ watchlistSymbols: symbols.join(',') })}
-        />
+        <button
+          type="button"
+          className={`watchlist-toggle${trendingOpen ? ' is-open' : ''}`}
+          onClick={toggleTrending}
+          aria-expanded={trendingOpen}
+        >
+          <span className="watchlist-toggle-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+          </span>
+          <span className="watchlist-toggle-text">
+            <span className="watchlist-toggle-title">{t('trendingLabel')}</span>
+            <span className="watchlist-toggle-sub">{t('trendingWatch', { count: watchItems.length })}</span>
+          </span>
+          <span className="watchlist-toggle-cta">
+            {trendingOpen ? t('trendingHide') : t('trendingShow')}
+            <span className="watchlist-toggle-chevron" aria-hidden>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </span>
+        </button>
+        {trendingOpen && (
+          <Watchlist
+            items={watchItems}
+            onAdd={openAdd}
+            onReorder={(symbols) => updateSettings.mutate({ watchlistSymbols: symbols.join(',') })}
+          />
+        )}
       </section>
 
-      {hasAssets && <PortfolioKpis kpis={kpis} horizonYears={settings.gH} />}
+      {hasAssets && <PortfolioKpis kpis={kpis} />}
 
       {hasAssets && (
         <section>
@@ -73,19 +114,19 @@ export function Portfolio() {
       )}
 
       <section>
-        <div className="budget-section-head">
+        <div className="budget-section-head portfolio-head">
           <h2 className="section-label" style={{ margin: 0 }}>{t('myPortfolioLabel')}</h2>
-          <div className="portfolio-head-actions">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBrokerOpen(true)}>
-              {t('broker.button')}
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFileOpen(true)}>
-              {t('fileImport.button')}
-            </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => openAdd()}>
-              + {t('asset.addTitle')}
-            </button>
-          </div>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => openAdd()}>
+            + {t('asset.addTitle')}
+          </button>
+        </div>
+        <div className="portfolio-import-actions">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBrokerOpen(true)}>
+            {t('broker.button')}
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFileOpen(true)}>
+            {t('fileImport.button')}
+          </button>
         </div>
         <AssetTable assets={assets} />
       </section>

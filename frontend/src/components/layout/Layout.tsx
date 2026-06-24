@@ -69,8 +69,8 @@ export function Layout() {
             <NavLink to="/overview" className="nav-link" end>{t('items.overview')}</NavLink>
             <NavLink to="/loan" className="nav-link">{t('items.loan')}</NavLink>
             <NavLink to="/investments" className="nav-link">{t('items.investments')}</NavLink>
-            <NavLink to="/budget" className="nav-link">{t('items.budget')}</NavLink>
             <NavLink to="/comparar" className="nav-link">{t('compareShort')}</NavLink>
+            <NavLink to="/budget" className="nav-link">{t('items.budget')}</NavLink>
             <NavLink to="/settings" className="nav-link">{t('items.settings')}</NavLink>
           </nav>
 
