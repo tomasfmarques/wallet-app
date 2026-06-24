@@ -33,8 +33,8 @@ _Pragmatic slice done 2026-06-12 on branch `docs/public-launch-plan-and-hub` (pl
 
 - [x] **S1 / F2** 🔴 Sentry error monitor + a real Express error handler. New `backend/src/lib/observability.ts` (inert unless `SENTRY_DSN` set, mirrors the SMTP-optional pattern); final error middleware in `index.ts` stamps every unhandled error with a `requestId`, console-logs it, and captures to Sentry when configured. ✅ Verified: boots clean with no DSN; malformed-JSON request returns `{error, requestId}`.
   Frontend Sentry now wired (`frontend/src/lib/observability.ts`, behind `VITE_SENTRY_DSN`) — **lazy + tree-shaken**: with no DSN set at build time the SDK is eliminated entirely (zero bundle cost), so the original bundle concern is moot. Set `VITE_SENTRY_DSN` in the Vercel build env to include + init it.
-- [ ] **S2 / F6** 🟠 Replace in-memory counters with a shared store (Upstash Redis). Move rate-limiting + the change-password lockout (`cpAttempts` Map) off per-instance memory. **(Deferred — needs Upstash account; do behind `REDIS_URL` with in-memory fallback.)**
-  → `backend/src/routes/auth.ts`, rate-limiter middleware in `backend/src/index.ts`
+- [x] **S2 / F6** 🟠 Shared counter store (`backend/src/lib/kvStore.ts`): rate-limiting + the change-password/PIN lockout now use Upstash Redis when `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set, in-memory fallback otherwise. Lockout verified (fires at 5, clears on success). **To activate the shared path: set the two Upstash env vars in Vercel.**
+  → `backend/src/lib/kvStore.ts`, `backend/src/routes/auth.ts`, `backend/src/index.ts`
 - [ ] **S3 / F7** 🟠 Email verification on signup — reuse the password-reset token plumbing; gate sensitive actions until verified. **(Deferred — touches BOTH Prisma schemas + a migration + export/import + signup gating; warrants a focused PR. `lib/email.ts` console-fallback pattern is ready to reuse.)**
   → `backend/src/routes/auth.ts`
 - [x] **S4 / F5** 🟠 CSV/formula-injection sanitisation. New `backend/src/lib/sanitize.ts` `stripFormulaPrefix()` strips leading `= + - @ \t \r` at the write boundary; applied to `budget.ts` `asName` (covers the statement-import path), plus loan/portfolio names. ✅ Verified: imported `=HYPERLINK(...)` stored as `HYPERLINK(...)`.
@@ -120,7 +120,7 @@ _Working through these as focused, safe-first commits._
 
 - [x] **Frontend Sentry** — done (above).
 - [x] **CI audit + secret-scan gate (S8)** — done (above).
-- [ ] **Redis shared store (S2/F6)** — move rate-limit + change-password lockout off per-instance memory; behind `UPSTASH_REDIS_REST_URL`/`_TOKEN` with in-memory fallback. Needs an Upstash account to verify the Redis path.
+- [x] **Redis shared store (S2/F6)** — done (gated on Upstash env, in-memory fallback verified). Set the Upstash env vars in Vercel to activate the shared path.
 - [ ] **CSV/Excel export** — export budget + portfolio (with the S4 formula-injection sanitisation).
 - [ ] **Actual-vs-budget overlay** — bands on the budget timeline (plan vs real lanes already exist from FX1).
 - [ ] **Loan-milestone table** — value/balance at year milestones on the Loan page.

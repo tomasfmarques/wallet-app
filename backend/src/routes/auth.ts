@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma'
 import { sendPasswordResetEmail } from '../lib/email'
 import { seedDemoAccount } from '../lib/demoSeed'
+import { hit, peek, clear } from '../lib/kvStore'
 
 const router = Router()
 
@@ -17,26 +18,22 @@ function sessionMaxAge(remember: unknown): number {
   return remember === false ? ONE_DAY : THIRTY_DAYS
 }
 
-// ── Per-account lockout for change-password ──────────────────────
-// Simple in-memory store: works for single-instance and serverless cold
-// starts. Replace with a Redis counter for multi-instance deployments.
+// ── Per-account lockout for change-password / PIN verify ─────────
+// Backed by the shared counter store (kvStore): Upstash Redis when configured,
+// in-memory otherwise. The shared store matters on serverless, where per-instance
+// memory wouldn't throttle a brute-force spread across invocations.
 const CP_MAX = 5
 const CP_WINDOW_MS = 15 * 60 * 1000
-const cpAttempts = new Map<string, { count: number; resetAt: number }>()
 
-function cpIsLocked(userId: string): boolean {
-  const e = cpAttempts.get(userId)
-  if (!e) return false
-  if (Date.now() > e.resetAt) { cpAttempts.delete(userId); return false }
-  return e.count >= CP_MAX
+async function cpIsLocked(key: string): Promise<boolean> {
+  return (await peek(`lock:${key}`)) >= CP_MAX
 }
-function cpRecordFail(userId: string): void {
-  const now = Date.now()
-  const e = cpAttempts.get(userId)
-  if (!e || now > e.resetAt) { cpAttempts.set(userId, { count: 1, resetAt: now + CP_WINDOW_MS }); return }
-  e.count++
+async function cpRecordFail(key: string): Promise<void> {
+  await hit(`lock:${key}`, CP_WINDOW_MS)
 }
-function cpClear(userId: string): void { cpAttempts.delete(userId) }
+async function cpClear(key: string): Promise<void> {
+  await clear(`lock:${key}`)
+}
 
 // ── Validation helpers ───────────────────────────────────────────
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -182,7 +179,7 @@ router.post('/change-password', async (req, res) => {
   }
 
   const userId = req.session.userId!
-  if (cpIsLocked(userId)) {
+  if (await cpIsLocked(userId)) {
     res.status(429).json({ error: 'Demasiadas tentativas falhadas. Tenta novamente em 15 minutos.' })
     return
   }
@@ -201,12 +198,12 @@ router.post('/change-password', async (req, res) => {
     }
     const ok = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!ok) {
-      cpRecordFail(userId)
+      await cpRecordFail(userId)
       res.status(401).json({ errors: { currentPassword: 'Password atual incorreta' } })
       return
     }
 
-    cpClear(userId)
+    await cpClear(userId)
     const passwordHash = await bcrypt.hash(newPassword, 12)
     await prisma.user.update({
       where: { id: user.id },
@@ -258,7 +255,7 @@ router.post('/pin/verify', async (req, res) => {
   if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
   const userId = req.session.userId
   const key = `pin:${userId}`
-  if (cpIsLocked(key)) {
+  if (await cpIsLocked(key)) {
     res.status(429).json({ error: 'Demasiadas tentativas falhadas.', lockedOut: true }); return
   }
   const { pin } = req.body ?? {}
@@ -269,10 +266,10 @@ router.post('/pin/verify', async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user || !user.pinHash) { res.status(400).json({ error: 'PIN não configurado' }); return }
     if (!(await bcrypt.compare(pin, user.pinHash))) {
-      cpRecordFail(key)
-      res.status(401).json({ error: 'PIN incorreto', lockedOut: cpIsLocked(key) }); return
+      await cpRecordFail(key)
+      res.status(401).json({ error: 'PIN incorreto', lockedOut: await cpIsLocked(key) }); return
     }
-    cpClear(key)
+    await cpClear(key)
     res.json({ ok: true })
   } catch (err) {
     console.error('PIN verify failed:', err)

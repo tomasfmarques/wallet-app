@@ -4,11 +4,12 @@ import { randomBytes } from 'crypto'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
 import session from 'express-session'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { type Store } from 'express-rate-limit'
 import pgSession from 'connect-pg-simple'
 import helmet from 'helmet'
 
 import { initObservability, captureError } from './lib/observability'
+import { kvConfigured, hit as kvHit, clear as kvClear } from './lib/kvStore'
 
 import authRouter from './routes/auth'
 import authGoogleRouter from './routes/authGoogle'
@@ -117,6 +118,25 @@ app.use(session({
 }))
 
 // ── Rate limiting ──────────────────────────────────────────────────
+// On serverless, express-rate-limit's default MemoryStore is per-invocation, so
+// it barely throttles. When Upstash is configured, back each limiter with the
+// shared counter store (kvStore); otherwise pass no store → the default memory
+// store (unchanged local/single-instance behaviour). A distinct key prefix per
+// limiter keeps their windows separate.
+function sharedStore(prefix: string): Store | undefined {
+  if (!kvConfigured()) return undefined
+  let windowMs = 15 * 60 * 1000
+  return {
+    init: (opts) => { windowMs = opts.windowMs },
+    increment: async (key: string) => {
+      const { count, resetAt } = await kvHit(prefix + key, windowMs)
+      return { totalHits: count, resetTime: new Date(resetAt) }
+    },
+    decrement: async () => { /* unused: no skipFailed/SuccessfulRequests */ },
+    resetKey: async (key: string) => { await kvClear(prefix + key) },
+  }
+}
+
 // Strict limiter for auth/sensitive endpoints.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -124,6 +144,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiadas tentativas. Tenta novamente em 15 minutos.' },
+  store: sharedStore('rl:auth:'),
 })
 app.use([
   '/api/auth/login', '/api/auth/signup', '/api/auth/google',
@@ -140,6 +161,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiados pedidos. Tenta novamente em 15 minutos.' },
+  store: sharedStore('rl:api:'),
 })
 app.use('/api/', apiLimiter)
 
