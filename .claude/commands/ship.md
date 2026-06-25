@@ -9,6 +9,6 @@ Run the Wallet360 release checklist. Stop and report if any step fails; don't pu
 3. **Build:** run `npm run build`. Report any TypeScript or build errors.
 4. **Review:** invoke the `code-reviewer` agent on the staged diff. Surface blocking findings.
 5. **State:** confirm `docs/STATE.md` reflects what shipped (offer to run `/handoff`).
-6. **Commit & push:** only after I approve — `git add -A`, a clear commit message, `git push`. Pushing to `main` auto-deploys to Render via GitHub Actions, so treat it as production.
+6. **Commit & push:** only after I approve — `git add -A`, a clear commit message, `git push`. Pushing to `main` auto-deploys to production on **Vercel** (the `vercel-build` step runs `db:push:prod`), so treat it as production. (Render is retired.)
 
 Never run destructive Prisma prod commands here; that's the db-prisma agent's job with a Neon snapshot first.

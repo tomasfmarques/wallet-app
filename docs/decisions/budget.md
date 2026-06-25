@@ -391,6 +391,30 @@ balance** (Saldo) — they're identical as numbers. Solved positionally.
 
 ### Bank connect (GoCardless Bank Account Data, PSD2)
 
+> **STATUS — 2026-06-25: GoCardless is permanently abandoned for this app.**
+> Support reply (ticket 4350188) confirmed GoCardless **no longer offers Bank
+> Account Data as a standalone product to new customers** — no waitlist, no plans
+> to change. AIS is now only available via Sales, *bundled with actively using
+> their payments products (PIS + Direct Debit)*, and **"personal use accounts are
+> not considered."** A finance *tracker* doesn't take payments, so this door is
+> closed. **Do not set `GOCARDLESS_SECRET_ID/KEY`** or reopen a signup.
+>
+> **Replacement candidates** — pick an aggregator that is *itself* the licensed
+> AISP (so we don't need our own PSD2 license), with Portuguese bank coverage:
+> - **Enable Banking** *(evaluate first)* — open-banking aggregator with a
+>   genuinely generous free developer tier and the most indie/solo-friendly
+>   onboarding; acts as AISP; covers PT. Closest in spirit to the old Nordigen
+>   free tier this scaffold was built against.
+> - **Salt Edge** *(backup)* — broad PT coverage and an established
+>   "AISP-as-a-service"/partner program that's reachable for small developers.
+> - **Tink / TrueLayer / Plaid** — all cover PT AIS but skew enterprise; expect
+>   the same "personal use / registered company" gate GoCardless hit us with.
+>
+> The flow below (institutions → consent link → accounts → transactions →
+> shared import pipeline) is provider-agnostic, so swapping `bank.ts`'s upstream
+> client + auth onto Enable Banking / Salt Edge is contained, not a rewrite.
+> **Interim supported path: manual CSV/OFX statement import** (already shipped).
+
 - **Full backend flow built** in `backend/src/routes/bank.ts`: `/status`,
   `/institutions` (full PT list, 24h cache), `/connect` (creates requisition →
   returns the bank's consent link), `/sync` (pulls booked transactions for all
