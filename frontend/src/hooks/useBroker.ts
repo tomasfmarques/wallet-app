@@ -11,7 +11,13 @@ export interface BrokerStatus {
   } | null
 }
 
-export interface BrokerSyncResult { ok: true; summary: { created: number; skipped: number } }
+export interface BrokerSyncResult {
+  ok: true
+  // `preview: true` means the sync would CLOSE positions and is awaiting an
+  // explicit confirm (call sync again with confirm:true to apply).
+  preview?: boolean
+  summary: { created: number; updated: number; closed: number; closing?: string[] }
+}
 export type BrokerEnv = 'live' | 'demo'
 
 const STATUS_KEY = ['broker', 'status'] as const
@@ -38,12 +44,12 @@ export function useBrokerConnect() {
 
 export function useBrokerSync() {
   const qc = useQueryClient()
-  return useMutation<BrokerSyncResult, ApiError, void>(
-    () => api.post('/api/broker/sync', {}),
+  return useMutation<BrokerSyncResult, ApiError, { confirm?: boolean } | void>(
+    (vars) => api.post('/api/broker/sync', { confirm: vars && 'confirm' in vars ? vars.confirm : false }),
     {
       onSuccess: () => {
         qc.invalidateQueries(STATUS_KEY)
-        qc.invalidateQueries(['portfolio']) // new holdings should appear
+        qc.invalidateQueries(['portfolio']) // changed holdings should appear
       },
     },
   )

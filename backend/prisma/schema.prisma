@@ -38,6 +38,7 @@ model User {
   brokerConnections BrokerConnection[]
   passwordResetTokens PasswordResetToken[]
   webauthnCredentials WebAuthnCredential[]
+  importedTxns      ImportedTxn[]
 
   @@map("users")
 }
@@ -286,11 +287,32 @@ model PortfolioAsset {
   // move `value` by the market's price change instead of recomputing qty*price
   // (qty is often an unreliable placeholder). Null until first refresh.
   lastPriceEur   Float? @map("last_price_eur")
+  // Origin of the holding: "manual" (hand-added/legacy) or a broker id
+  // ("trading212"). The broker snapshot-reconcile only auto-closes holdings
+  // whose source is the broker — manual holdings are never auto-removed.
+  source         String @default("manual")
 
   user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   flows PortfolioFlow[]
 
   @@map("portfolio_assets")
+}
+
+// Records each broker transaction (by its external order ID) that has already
+// been applied to the portfolio, so re-importing a Trading 212 CSV is
+// idempotent — orders already applied are skipped instead of double-counted.
+model ImportedTxn {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  source     String   // "trading212"
+  externalId String   @map("external_id") // broker order id, e.g. EOF53208567774
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, externalId])
+  @@index([userId])
+  @@map("imported_txns")
 }
 
 model PortfolioFlow {

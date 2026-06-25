@@ -2564,6 +2564,7 @@ body {
 }
 .import-summary { padding: 10px 2px; font-size: 12.5px; }
 .import-done p { font-size: 14px; line-height: 1.5; }
+.import-done-list { margin: 6px 0 14px; padding-left: 18px; font-size: 14px; line-height: 1.8; }
 .import-dup-hint {
   display: flex;
   align-items: center;

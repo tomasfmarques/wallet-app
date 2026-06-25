@@ -141,6 +141,7 @@ router.post('/', async (req, res) => {
       await tx.expense.deleteMany({ where: { userId } })
       await tx.classificationRule.deleteMany({ where: { userId } })
       await tx.bankConnection.deleteMany({ where: { userId } })
+      await tx.importedTxn.deleteMany({ where: { userId } })
 
       // ── Loans (multiple credits) ───────────────────────────────
       const loanList: Record<string, unknown>[] = isArr(payload.loans)
@@ -225,6 +226,7 @@ router.post('/', async (req, res) => {
                 monthly:  isNum(raw.monthly)  ? raw.monthly  : 0,
                 expectedReturn: isNum(raw.expectedReturn) ? raw.expectedReturn : 0.07,
                 lastPriceEur: isNum(raw.lastPriceEur) ? raw.lastPriceEur : null,
+                source: isStr(raw.source) ? raw.source : 'manual',
               },
             })
 
@@ -340,6 +342,19 @@ router.post('/', async (req, res) => {
             category: isStr(r.category) ? r.category : null,
           }))
         if (rules.length > 0) await tx.classificationRule.createMany({ data: rules })
+      }
+
+      // ── Applied broker order ids (CSV re-import dedup) ─────────
+      if (isArr(payload.importedTxns)) {
+        const seen = new Set<string>()
+        const txns = (payload.importedTxns as unknown[]).slice(0, 50_000)
+          .filter(isObj)
+          .filter((t) => isStr(t.source) && isStr(t.externalId))
+          .map((t) => ({ userId, source: t.source as string, externalId: t.externalId as string }))
+          // The table was just wiped, so only intra-payload dups matter
+          // (skipDuplicates isn't supported on SQLite dev).
+          .filter((t) => { const k = `${t.source}|${t.externalId}`; if (seen.has(k)) return false; seen.add(k); return true })
+        if (txns.length > 0) await tx.importedTxn.createMany({ data: txns })
       }
     }, { timeout: 30_000 })
 

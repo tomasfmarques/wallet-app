@@ -202,6 +202,16 @@
     "doneCreated": "Importados <1>{{count}}</1> ativos.",
     "doneSkipped": "{{count}} ignorados (duplicados/inválidos).",
     "doneRefreshHint": "Os valores foram preenchidos com o custo de aquisição. Usa \"Atualizar valores\" para obter o preço de mercado atual.",
+    "reviewDeltaHint": "As vendas reduzem ou fecham a posição existente; as compras reforçam-na.",
+    "colDelta": "Δ Qt.",
+    "colEffect": "Efeito",
+    "sellTag": "venda",
+    "txnDoneTitle": "Movimentos aplicados",
+    "txnCreated": "{{count}} criados",
+    "txnUpdated": "{{count}} atualizados",
+    "txnClosed": "{{count}} fechados",
+    "txnSkipped": "{{count}} já aplicados (ignorados)",
+    "txnNoChange": "Sem alterações — já estava tudo aplicado.",
     "finish": "Concluir"
   },
   "broker": {
@@ -235,7 +245,14 @@
     "syncing": "A sincronizar…",
     "syncOk": "{{count}} ativos importados.",
     "syncSkipped": "{{count}} ignorados (já existiam).",
-    "syncError": "Falha na sincronização."
+    "syncError": "Falha na sincronização.",
+    "syncCreated": "{{count}} adicionados",
+    "syncUpdated": "{{count}} atualizados",
+    "syncClosed": "{{count}} fechados",
+    "syncNoChange": "Já estava sincronizado.",
+    "syncConfirmTitle": "Isto vai fechar {{count}} posição(ões) já vendida(s):",
+    "syncConfirm": "Confirmar",
+    "syncCancel": "Cancelar"
   },
   "fileImport": {
     "title": "Importar de ficheiro",

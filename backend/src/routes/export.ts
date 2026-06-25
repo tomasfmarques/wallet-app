@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const [loans, assets, settings, incomes, expenses, classificationRules, bankConnections] = await Promise.all([
+    const [loans, assets, settings, incomes, expenses, classificationRules, bankConnections, importedTxns] = await Promise.all([
       prisma.loan.findMany({
         where: { userId },
         orderBy: { name: 'asc' },
@@ -55,6 +55,11 @@ router.post('/', async (req, res) => {
         select: { id: true, userId: true, institutionId: true, institutionName: true, logo: true, status: true, createdAt: true },
         // requisitionId excluded — it is a live bank-access handle, not backup data
       }),
+      // Applied broker order ids — carried so CSV re-import dedup survives a restore.
+      prisma.importedTxn.findMany({
+        where: { userId }, orderBy: { createdAt: 'asc' },
+        select: { source: true, externalId: true, createdAt: true },
+      }),
     ])
 
     const payload = {
@@ -69,6 +74,7 @@ router.post('/', async (req, res) => {
       budget: { incomes, expenses },
       classificationRules,
       bankConnections,
+      importedTxns,
     }
 
     const stamp = new Date().toISOString().slice(0, 10)

@@ -31,6 +31,7 @@ export interface T212Transaction {
   total: number        // absolute account-currency total (cost for buy, proceeds for sell)
   ym: string | null    // YYYY-MM of the transaction
   time: string         // raw "Time" cell — sortable so average-cost stays chronological
+  orderId: string | null // CSV "ID" cell — used to dedup applied orders (idempotent re-import)
 }
 
 export interface T212Position {
@@ -92,6 +93,7 @@ export function parseT212Transactions(text: string): T212Transaction[] {
     price:  find((h) => h.includes('price') && h.includes('share')),
     total:  find((h) => h === 'total'),
     time:   find((h) => h === 'time'),
+    id:     find((h) => h === 'id'),
   }
   // Not a Trading212 export if the key columns are missing.
   if (col.action === -1 || col.shares === -1) return []
@@ -117,6 +119,7 @@ export function parseT212Transactions(text: string): T212Transaction[] {
     const time = at(row, col.time)
     const date = parseDate(time)
     const isinRaw = at(row, col.isin).toUpperCase()
+    const orderId = at(row, col.id).trim()
     txns.push({
       side,
       isin: ISIN_RE.test(isinRaw) ? isinRaw : null,
@@ -126,6 +129,7 @@ export function parseT212Transactions(text: string): T212Transaction[] {
       total,
       ym: date ? date.slice(0, 7) : null,
       time,
+      orderId: orderId || null,
     })
   }
   return txns
@@ -187,4 +191,70 @@ export function aggregatePositions(txns: T212Transaction[]): T212Position[] {
   }
   // Largest holdings first.
   return positions.sort((x, y) => y.invested - x.invested)
+}
+
+// ── Per-instrument deltas (keeps sells) for the reconciling import ───
+// Unlike `aggregatePositions` (which nets within the file and drops anything
+// that closes), this keeps EVERY buy/sell so the backend can apply them as a
+// delta against the user's existing holdings. The net figures are display-only;
+// the carried `txns` (with `orderId`) are what's sent to the server.
+export interface T212Delta {
+  isin: string | null
+  t212Ticker: string
+  guessTicker: string
+  name: string
+  buyQty: number          // shares bought in-file
+  buyCost: number         // EUR cost of in-file buys
+  sellQty: number         // shares sold in-file
+  netQty: number          // buyQty − sellQty (display)
+  flows: { ym: string; amount: number }[]  // buy contributions, by month
+  txns: T212Transaction[] // every underlying order, carries orderId + time
+}
+
+export function aggregateDeltas(txns: T212Transaction[]): T212Delta[] {
+  interface Acc {
+    isin: string | null; ticker: string; name: string
+    buyQty: number; buyCost: number; sellQty: number
+    flows: Map<string, number>; txns: T212Transaction[]
+  }
+  const accs = new Map<string, Acc>()
+  const keyOf = (t: T212Transaction) => t.isin ?? `TK:${t.ticker.toUpperCase()}`
+  const round2 = (n: number) => Math.round(n * 100) / 100
+
+  const ordered = [...txns].sort((a, b) => (a.time || '9999').localeCompare(b.time || '9999'))
+  for (const t of ordered) {
+    const key = keyOf(t)
+    let a = accs.get(key)
+    if (!a) {
+      a = { isin: t.isin, ticker: t.ticker, name: t.name, buyQty: 0, buyCost: 0, sellQty: 0, flows: new Map(), txns: [] }
+      accs.set(key, a)
+    }
+    if (t.name && t.name.length > a.name.length) a.name = t.name
+    if (t.ticker) a.ticker = t.ticker
+    a.txns.push(t)
+    if (t.side === 'buy') {
+      a.buyQty += t.shares; a.buyCost += t.total
+      if (t.ym) a.flows.set(t.ym, (a.flows.get(t.ym) ?? 0) + t.total)
+    } else {
+      a.sellQty += t.shares
+    }
+  }
+
+  const deltas: T212Delta[] = []
+  for (const a of accs.values()) {
+    deltas.push({
+      isin: a.isin,
+      t212Ticker: a.ticker,
+      guessTicker: guessYahooTicker(a.ticker),
+      name: a.name.slice(0, 80),
+      buyQty: round2(a.buyQty),
+      buyCost: round2(a.buyCost),
+      sellQty: round2(a.sellQty),
+      netQty: round2(a.buyQty - a.sellQty),
+      flows: [...a.flows.entries()].map(([ym, amount]) => ({ ym, amount: round2(amount) })).sort((x, y) => x.ym.localeCompare(y.ym)),
+      txns: a.txns,
+    })
+  }
+  // Sells/closures first, then by magnitude — surfaces the destructive rows.
+  return deltas.sort((x, y) => (y.sellQty > 0 ? 1 : 0) - (x.sellQty > 0 ? 1 : 0) || y.buyCost - x.buyCost)
 }

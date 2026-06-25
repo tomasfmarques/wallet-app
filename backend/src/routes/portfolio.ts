@@ -19,8 +19,15 @@ const PORTFOLIO_CCY = 'EUR'
 const router = Router()
 router.use(requireAuth)
 
-// Round to 2 decimals — keeps stored/displayed values clean (no 45.86789…).
+// Round to 2 decimals — keeps stored/displayed MONEY clean (no 45.86789…).
 const round2 = (n: number) => Math.round(n * 100) / 100
+// Share quantities need finer precision than money (fractional shares like
+// 0.57510927) — round to 8 dp, matching the live broker snapshot.
+const round8 = (n: number) => Math.round(n * 1e8) / 1e8
+
+// `PortfolioAsset.source` value for broker-originated holdings. The broker
+// snapshot-reconcile only auto-closes holdings tagged with this.
+const BROKER_SOURCE = 'trading212'
 
 // ── Validation helpers ───────────────────────────────────────────
 const YM_RE = /^\d{4}-(0[1-9]|1[0-2])$/
@@ -302,6 +309,195 @@ router.post('/import', async (req, res) => {
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
+
+// ── Reconciling transaction-delta import (Trading 212 CSV) ────────
+// Applies a broker order ledger (buys AND sells) as a DELTA on top of the
+// user's *existing* holdings — the fix for "the import ignored my sell". Per
+// instrument it seeds (qty, cost, value) from the current holding, replays the
+// not-yet-applied orders chronologically (sell reduces at the holding's running
+// average), and: a sell that empties a holding REMOVES it; a buy tops it up or
+// creates it. Idempotent — orders already applied (by external order id) are
+// skipped, so re-importing a file is safe.
+export async function applyPortfolioTransactions(
+  userId: string,
+  items: unknown[],
+): Promise<{ created: number; updated: number; closed: number; skipped: number }> {
+  const existing = await prisma.portfolioAsset.findMany({ where: { userId } })
+  const byIsin = new Map<string, (typeof existing)[number]>()
+  const byTicker = new Map<string, (typeof existing)[number]>()
+  for (const a of existing) {
+    if (a.isin) byIsin.set(a.isin.toUpperCase(), a)
+    byTicker.set(a.ticker.toUpperCase(), a)
+  }
+  const appliedRows = await prisma.importedTxn.findMany({
+    where: { userId, source: BROKER_SOURCE }, select: { externalId: true },
+  })
+  const applied = new Set(appliedRows.map((r) => r.externalId))
+
+  interface Plan {
+    action: 'update' | 'create' | 'delete'
+    assetId?: string
+    name: string; ticker: string; isin: string | null
+    qty: number; invested: number; value: number
+    newFlows: { ym: string; amount: number }[]
+  }
+  const plans: Plan[] = []
+  const newOrderIds: string[] = []
+  let skipped = 0
+
+  for (const raw of items) {
+    if (typeof raw !== 'object' || raw === null) { skipped++; continue }
+    const it = raw as Record<string, unknown>
+    const name = stripFormulaPrefix(typeof it.name === 'string' ? it.name.trim().slice(0, 80) : '')
+    const ticker = typeof it.ticker === 'string' ? it.ticker.trim().toUpperCase().slice(0, 20) : ''
+    const isin = typeof it.isin === 'string' && ISIN_RE.test(it.isin.toUpperCase()) ? it.isin.toUpperCase() : null
+    if (!ticker || !Array.isArray(it.txns)) { skipped++; continue }
+
+    const match = (isin ? byIsin.get(isin) : undefined) ?? byTicker.get(ticker) ?? null
+
+    // Seed running state from the existing holding (or empty for a new one).
+    let qty = match ? match.qty : 0
+    let cost = match ? match.invested : 0
+    let value = match ? match.value : 0
+
+    const orders = (it.txns as unknown[])
+      .map((t) => (typeof t === 'object' && t ? (t as Record<string, unknown>) : {}))
+      .filter((t) => t.side === 'buy' || t.side === 'sell')
+      .map((t) => ({
+        side: t.side as 'buy' | 'sell',
+        shares: Math.abs(Number(t.shares)) || 0,
+        total: Math.abs(Number(t.total)) || 0,
+        ym: typeof t.ym === 'string' && YM_RE.test(t.ym) ? t.ym : null,
+        orderId: typeof t.orderId === 'string' && t.orderId.trim() ? t.orderId.trim().slice(0, 64) : null,
+        time: typeof t.time === 'string' ? t.time : '',
+      }))
+      .filter((t) => t.shares > 0)
+      .sort((a, b) => (a.time || '9999').localeCompare(b.time || '9999'))
+
+    const flowByYm = new Map<string, number>()
+    let appliedAny = false
+    for (const o of orders) {
+      if (o.orderId && applied.has(o.orderId)) { skipped++; continue } // already applied → idempotent
+      if (o.side === 'buy') {
+        qty += o.shares; cost += o.total; value += o.total
+        if (o.ym) flowByYm.set(o.ym, (flowByYm.get(o.ym) ?? 0) + o.total)
+      } else if (qty > 1e-9) {
+        const sold = Math.min(o.shares, qty)
+        cost -= (cost / qty) * sold
+        value -= (value / qty) * sold
+        qty -= sold
+      }
+      appliedAny = true
+      if (o.orderId) { newOrderIds.push(o.orderId); applied.add(o.orderId) }
+    }
+    if (!appliedAny) continue // every order already applied → no change for this instrument
+
+    const newFlows = [...flowByYm.entries()].map(([ym, amount]) => ({ ym, amount: round2(amount) }))
+    if (match) {
+      if (qty <= 1e-6) {
+        plans.push({ action: 'delete', assetId: match.id, name, ticker, isin, qty: 0, invested: 0, value: 0, newFlows: [] })
+      } else {
+        plans.push({ action: 'update', assetId: match.id, name, ticker, isin, qty: round8(qty), invested: Math.max(0, round2(cost)), value: Math.max(0, round2(value)), newFlows })
+      }
+    } else if (qty > 1e-6) {
+      plans.push({ action: 'create', name, ticker, isin, qty: round8(qty), invested: Math.max(0, round2(cost)), value: Math.max(0, round2(value)), newFlows })
+    }
+    // else: sell of an un-held instrument → no holding to touch; orders are still recorded below.
+  }
+
+  let created = 0, updated = 0, closed = 0
+  if (plans.length > 0 || newOrderIds.length > 0) {
+    await prisma.$transaction(async (tx) => {
+      for (const p of plans) {
+        if (p.action === 'delete') {
+          await tx.portfolioAsset.delete({ where: { id: p.assetId } }); closed++
+        } else if (p.action === 'update') {
+          await tx.portfolioAsset.update({ where: { id: p.assetId }, data: { qty: p.qty, invested: p.invested, value: p.value, source: BROKER_SOURCE } })
+          if (p.newFlows.length > 0) await tx.portfolioFlow.createMany({ data: p.newFlows.map((f) => ({ assetId: p.assetId!, ym: f.ym, amount: f.amount })) })
+          updated++
+        } else {
+          await tx.portfolioAsset.create({ data: { userId, name: p.name || p.ticker, ticker: p.ticker, isin: p.isin, qty: p.qty, invested: p.invested, value: p.value, source: BROKER_SOURCE, ...(p.newFlows.length > 0 ? { flows: { create: p.newFlows } } : {}) } })
+          created++
+        }
+      }
+      if (newOrderIds.length > 0) {
+        // Already-applied ids were filtered out and the batch is de-duped above,
+        // so no constraint clash. (skipDuplicates isn't supported on SQLite dev.)
+        await tx.importedTxn.createMany({
+          data: [...new Set(newOrderIds)].map((externalId) => ({ userId, source: BROKER_SOURCE, externalId })),
+        })
+      }
+    })
+  }
+  return { created, updated, closed, skipped }
+}
+
+// POST /api/portfolio/transactions — reconciling CSV import (buys + sells).
+router.post('/transactions', async (req, res) => {
+  const items = req.body?.items
+  if (!Array.isArray(items)) { res.status(400).json({ error: 'items deve ser um array' }); return }
+  if (items.length === 0) { res.status(400).json({ error: 'Nada para importar' }); return }
+  if (items.length > 500) { res.status(400).json({ error: 'Demasiados ativos (máx. 500 por importação)' }); return }
+  try {
+    const summary = await applyPortfolioTransactions(req.session.userId!, items)
+    const changed = summary.created + summary.updated + summary.closed
+    res.status(changed > 0 ? 201 : 200).json({ ok: true, summary })
+  } catch (err) {
+    console.error('POST /api/portfolio/transactions failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── Snapshot reconcile (live broker sync) ────────────────────────
+// The live API returns the AUTHORITATIVE current snapshot, so a position's
+// absence means it was sold. Updates each holding to match the snapshot, creates
+// new ones, and CLOSES broker-sourced holdings no longer present. Manual
+// holdings are never auto-removed. With `apply:false` it only computes the plan
+// (for a confirm step) — nothing is written.
+export async function reconcileBrokerSnapshot(
+  userId: string,
+  items: unknown[],
+  opts: { apply: boolean },
+): Promise<{ created: number; updated: number; closed: number; closing: string[] }> {
+  const existing = await prisma.portfolioAsset.findMany({ where: { userId } })
+  const byIsin = new Map<string, (typeof existing)[number]>()
+  const byTicker = new Map<string, (typeof existing)[number]>()
+  for (const a of existing) {
+    if (a.isin) byIsin.set(a.isin.toUpperCase(), a)
+    byTicker.set(a.ticker.toUpperCase(), a)
+  }
+
+  const matchedIds = new Set<string>()
+  const toUpdate: Array<{ id: string; qty: number; invested: number; value: number }> = []
+  const toCreate: Array<{ name: string; ticker: string; isin: string | null; qty: number; invested: number; value: number }> = []
+
+  for (const raw of items) {
+    if (typeof raw !== 'object' || raw === null) continue
+    const it = raw as Record<string, unknown>
+    const ticker = typeof it.ticker === 'string' ? it.ticker.trim().toUpperCase().slice(0, 20) : ''
+    const qty = Number(it.qty)
+    if (!ticker || !Number.isFinite(qty) || qty <= 0) continue
+    const isin = typeof it.isin === 'string' && ISIN_RE.test(it.isin.toUpperCase()) ? it.isin.toUpperCase() : null
+    const name = stripFormulaPrefix(typeof it.name === 'string' ? it.name.trim().slice(0, 80) : ticker)
+    const invested = Math.max(0, round2(Number(it.invested) || 0))
+    const value = Math.max(0, round2(Number(it.value ?? it.invested) || 0))
+    const match = (isin ? byIsin.get(isin) : undefined) ?? byTicker.get(ticker) ?? null
+    if (match) { matchedIds.add(match.id); toUpdate.push({ id: match.id, qty: round8(qty), invested, value }) }
+    else toCreate.push({ name, ticker, isin, qty: round8(qty), invested, value })
+  }
+
+  // Broker-sourced holdings absent from the snapshot → fully sold → close.
+  const toClose = existing.filter((a) => a.source === BROKER_SOURCE && !matchedIds.has(a.id))
+
+  if (opts.apply && (toUpdate.length || toCreate.length || toClose.length)) {
+    await prisma.$transaction(async (tx) => {
+      for (const u of toUpdate) await tx.portfolioAsset.update({ where: { id: u.id }, data: { qty: u.qty, invested: u.invested, value: u.value, source: BROKER_SOURCE } })
+      for (const c of toCreate) await tx.portfolioAsset.create({ data: { userId, name: c.name || c.ticker, ticker: c.ticker, isin: c.isin, qty: c.qty, invested: c.invested, value: c.value, source: BROKER_SOURCE } })
+      for (const a of toClose) await tx.portfolioAsset.delete({ where: { id: a.id } })
+    })
+  }
+  return { created: toCreate.length, updated: toUpdate.length, closed: toClose.length, closing: toClose.map((a) => a.name) }
+}
 
 // ── PUT /api/portfolio/assets/:id ────────────────────────────────
 router.put('/assets/:id', async (req, res) => {

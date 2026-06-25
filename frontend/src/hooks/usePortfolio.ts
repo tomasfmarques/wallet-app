@@ -134,6 +134,26 @@ export function useImportPortfolio() {
   )
 }
 
+// Reconciling transaction-delta import (Trading 212 CSV): applies buys AND sells
+// against existing holdings. One order = one txn; an order id makes re-import idempotent.
+export interface PortfolioTxnItem {
+  name: string
+  ticker: string
+  isin?: string | null
+  txns: { side: 'buy' | 'sell'; shares: number; total: number; ym: string | null; orderId: string | null; time: string }[]
+}
+export interface PortfolioTxnResult {
+  ok: true
+  summary: { created: number; updated: number; closed: number; skipped: number }
+}
+export function useApplyPortfolioTransactions() {
+  const qc = useQueryClient()
+  return useMutation<PortfolioTxnResult, ApiError, PortfolioTxnItem[]>(
+    (items) => api.post<PortfolioTxnResult>('/api/portfolio/transactions', { items }),
+    { onSuccess: () => { qc.invalidateQueries(PORTFOLIO_KEY) } },
+  )
+}
+
 export function useUpdateAsset() {
   const qc = useQueryClient()
   return useMutation<

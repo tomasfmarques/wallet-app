@@ -202,6 +202,16 @@
     "doneCreated": "Imported <1>{{count}}</1> assets.",
     "doneSkipped": "{{count}} skipped (duplicates/invalid).",
     "doneRefreshHint": "Values were filled with the purchase cost. Use \"Refresh values\" to get the current market price.",
+    "reviewDeltaHint": "Sells reduce or close your existing position; buys add to it.",
+    "colDelta": "Δ Qty",
+    "colEffect": "Effect",
+    "sellTag": "sell",
+    "txnDoneTitle": "Movements applied",
+    "txnCreated": "{{count}} created",
+    "txnUpdated": "{{count}} updated",
+    "txnClosed": "{{count}} closed",
+    "txnSkipped": "{{count}} already applied (skipped)",
+    "txnNoChange": "No changes — everything was already applied.",
     "finish": "Done"
   },
   "broker": {
@@ -235,7 +245,14 @@
     "syncing": "Syncing…",
     "syncOk": "{{count}} assets imported.",
     "syncSkipped": "{{count}} skipped (already existed).",
-    "syncError": "Sync failed."
+    "syncError": "Sync failed.",
+    "syncCreated": "{{count}} added",
+    "syncUpdated": "{{count}} updated",
+    "syncClosed": "{{count}} closed",
+    "syncNoChange": "Already in sync.",
+    "syncConfirmTitle": "This will close {{count}} sold position(s):",
+    "syncConfirm": "Confirm",
+    "syncCancel": "Cancel"
   },
   "fileImport": {
     "title": "Import from file",

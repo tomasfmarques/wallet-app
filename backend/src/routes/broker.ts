@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { brokerEncConfigured, encryptSecret, decryptSecret } from '../lib/crypto'
 import { validateT212, fetchT212ImportItems, T212Error, type T212Creds, type T212Env } from '../lib/trading212'
-import { processPortfolioImportItems } from './portfolio'
+import { reconcileBrokerSnapshot } from './portfolio'
 
 // ── Broker live-sync (Trading 212) ───────────────────────────────
 // Mirrors the GoCardless bank-connect flow: /status, /connect (validate + store
@@ -93,9 +93,19 @@ router.post('/sync', async (req, res) => {
       env: asEnv(conn.env),
     }
     const items = await fetchT212ImportItems(creds)
-    const summary = await processPortfolioImportItems(userId, items)
+    const confirm = req.body?.confirm === true
+
+    // The live snapshot is authoritative, so reconciling it can CLOSE holdings
+    // that are no longer present (i.e. sold). Don't do that silently: a dry run
+    // first, and if it would close anything, return a preview and require an
+    // explicit confirm before applying.
+    const preview = await reconcileBrokerSnapshot(userId, items, { apply: false })
+    if (preview.closed > 0 && !confirm) {
+      res.json({ ok: true, preview: true, summary: preview }); return
+    }
+    const summary = await reconcileBrokerSnapshot(userId, items, { apply: true })
     await prisma.brokerConnection.update({ where: { id: conn.id }, data: { lastSyncAt: new Date() } })
-    res.json({ ok: true, summary })
+    res.json({ ok: true, preview: false, summary })
   } catch (err) {
     if (err instanceof T212Error) {
       const msg = err.status === 401 || err.status === 403

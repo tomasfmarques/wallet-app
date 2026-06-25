@@ -26,6 +26,9 @@ export function BrokerConnectModal({ open, onClose }: Props) {
   const [env, setEnv] = useState<BrokerEnv>('live')
   const [err, setErr] = useState<string | null>(null)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
+  // Names of positions a sync would close (sold) — shown for confirmation
+  // before the destructive apply.
+  const [pendingClose, setPendingClose] = useState<string[] | null>(null)
 
   const doConnect = async (e: FormEvent) => {
     e.preventDefault(); setErr(null); setSyncMsg(null)
@@ -36,16 +39,22 @@ export function BrokerConnectModal({ open, onClose }: Props) {
     } catch (e2) { setErr(apiErrorMessage(e2, t('broker.connectError'))) }
   }
 
-  const doSync = async () => {
-    setErr(null); setSyncMsg(null)
+  const runSync = async (confirm: boolean) => {
+    setErr(null); setSyncMsg(null); setPendingClose(null)
     try {
-      const r = await sync.mutateAsync()
-      setSyncMsg(
-        t('broker.syncOk', { count: r.summary.created }) +
-        (r.summary.skipped > 0 ? ' ' + t('broker.syncSkipped', { count: r.summary.skipped }) : ''),
-      )
+      const r = await sync.mutateAsync({ confirm })
+      // A preview means the sync would close sold positions — ask first.
+      if (r.preview && r.summary.closing && r.summary.closing.length > 0) {
+        setPendingClose(r.summary.closing); return
+      }
+      const parts: string[] = []
+      if (r.summary.created) parts.push(t('broker.syncCreated', { count: r.summary.created }))
+      if (r.summary.updated) parts.push(t('broker.syncUpdated', { count: r.summary.updated }))
+      if (r.summary.closed) parts.push(t('broker.syncClosed', { count: r.summary.closed }))
+      setSyncMsg(parts.length > 0 ? parts.join(' · ') : t('broker.syncNoChange'))
     } catch (e2) { setErr(apiErrorMessage(e2, t('broker.syncError'))) }
   }
+  const doSync = () => runSync(false)
 
   return (
     <Modal open={open} onClose={onClose} title={t('broker.title')} maxWidth={600}>
@@ -85,11 +94,26 @@ export function BrokerConnectModal({ open, onClose }: Props) {
               {t('broker.disconnect')}
             </button>
           </div>
-          <div className="form-actions">
-            <button type="button" className="btn btn-primary" onClick={doSync} disabled={sync.isLoading}>
-              {sync.isLoading ? t('broker.syncing') : t('broker.syncBtn')}
-            </button>
-          </div>
+          {pendingClose ? (
+            <div className="import-dup-hint" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+              <strong>{t('broker.syncConfirmTitle', { count: pendingClose.length })}</strong>
+              <span className="muted" style={{ fontSize: 13 }}>{pendingClose.join(', ')}</span>
+              <div className="form-actions" style={{ marginTop: 4 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setPendingClose(null)} disabled={sync.isLoading}>
+                  {t('broker.syncCancel')}
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => runSync(true)} disabled={sync.isLoading}>
+                  {sync.isLoading ? t('broker.syncing') : t('broker.syncConfirm')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="form-actions">
+              <button type="button" className="btn btn-primary" onClick={doSync} disabled={sync.isLoading}>
+                {sync.isLoading ? t('broker.syncing') : t('broker.syncBtn')}
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <>
