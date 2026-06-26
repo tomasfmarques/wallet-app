@@ -11,7 +11,7 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g transform="translate(256 256) scale(2.4) translate(-90 -90)">
+  <g transform="translate(256 256) scale(1.9) translate(-90 -90)">
     <g stroke="#FFFFFF" stroke-opacity="0.32" stroke-width="3" stroke-linecap="round">
       <line x1="90" y1="28" x2="90" y2="62"/>
       <line x1="143.7" y1="59" x2="114.25" y2="76"/>
