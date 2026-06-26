@@ -455,7 +455,7 @@ export function Compare() {
 
           {/* Break-even callout */}
           <div className="compare-breakeven card">
-            <span className="compare-breakeven-label">{t('breakEvenLabel')}</span>
+            <span className="compare-breakeven-label"><Icon name="scale" size={16} /> {t('breakEvenLabel')}</span>
             <span className="compare-breakeven-value">
               {result.breakEvenReturn < 0.05
                 ? t('breakEvenAny')

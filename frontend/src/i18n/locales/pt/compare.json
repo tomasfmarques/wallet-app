@@ -72,7 +72,7 @@
   "beforeTax": "antes de impostos",
   "annualReturnLabel": "RETORNO ANUAL",
   "afterTaxPct": "{{value}} % após imposto",
-  "breakEvenLabel": "⚖️ Ponto de equilíbrio",
+  "breakEvenLabel": "Ponto de equilíbrio",
   "breakEvenAny": "Qualquer rentabilidade positiva favorece investir",
   "breakEvenValue": "{{value}} % ao ano",
   "breakEvenAbove": "Com {{value}} % superas o ponto de equilíbrio — investir vence.",

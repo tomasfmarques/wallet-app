@@ -72,7 +72,7 @@
   "beforeTax": "before tax",
   "annualReturnLabel": "ANNUAL RETURN",
   "afterTaxPct": "{{value}} % after tax",
-  "breakEvenLabel": "⚖️ Break-even point",
+  "breakEvenLabel": "Break-even point",
   "breakEvenAny": "Any positive return favours investing",
   "breakEvenValue": "{{value}} % per year",
   "breakEvenAbove": "At {{value}} % you beat the break-even point — investing wins.",
