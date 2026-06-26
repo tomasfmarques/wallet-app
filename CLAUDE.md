@@ -62,9 +62,9 @@ npm run db:studio    # Prisma Studio
   - `frontend` — React/Vite/TS UI work (bilingual pt+en via i18n).
 - **Slash commands** in `.claude/commands/`:
   - `/catchup` — load current state at the start of a session.
-  - `/handoff` — update `docs/STATE.md` before ending a session.
+  - `/handoff` — update `docs/STATE.md`, then commit and push to prod (ends a session).
   - `/caveat` — log a decision into the right `docs/decisions/` file.
-  - `/ship` — pre-deploy checklist (build, schema-sync check, commit, push).
+  - `/ship` — commit and push to prod, with pre-deploy guards (schema-sync, build, review).
 - **Working style:** keep ONE main chat as orchestrator. Delegate specialized or
   large-context work to subagents so the main thread stays small. Read only the
   decision file for the module you're in — not the whole `docs/decisions/` set.
