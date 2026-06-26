@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { BrandMark } from '@/components/ui/BrandMark'
 import { api } from '@/lib/api'
 import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 
@@ -53,8 +54,8 @@ export function ResetPassword() {
       <div className="auth-screen">
         <div className="auth-card">
           <div className="brand brand-lg">
-            <span className="brand-emoji" aria-hidden>💸</span>
-            <span className="brand-text">Wallet<span className="brand-360">360</span></span>
+            <BrandMark size={44} />
+            <span className="brand-text">wallet<span className="brand-360">360</span></span>
           </div>
           <h1 className="auth-title">{t('reset.doneTitle')}</h1>
           <div className="form-success" role="status">
@@ -70,8 +71,8 @@ export function ResetPassword() {
     <div className="auth-screen">
       <div className="auth-card">
         <div className="brand brand-lg">
-          <span className="brand-emoji" aria-hidden>💸</span>
-          <span className="brand-text">Wallet<span className="brand-360">360</span></span>
+          <BrandMark size={44} />
+          <span className="brand-text">wallet<span className="brand-360">360</span></span>
         </div>
 
         <h1 className="auth-title">{t('reset.title')}</h1>

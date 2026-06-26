@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { useLanguageSync } from '@/hooks/useLanguage'
 import { BottomNav } from './BottomNav'
+import { BrandMark } from '@/components/ui/BrandMark'
 
 // Map route → translation key for the navbar section subtitle
 type NavItemKey =
@@ -51,9 +52,9 @@ export function Layout() {
         <div className="navbar-inner">
           <div className="navbar-left">
             <NavLink to="/overview" className="brand brand-light" aria-label={t('brandHome')}>
-              <span className="brand-emoji" aria-hidden>💸</span>
+              <BrandMark size={26} tone="dark" />
               <span className="brand-text">
-                Wallet<span className="brand-360">360</span>
+                wallet<span className="brand-360">360</span>
               </span>
             </NavLink>
             {section && (

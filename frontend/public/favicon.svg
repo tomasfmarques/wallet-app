@@ -1,16 +1,31 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wallet360">
-  <!-- App-icon: white card. Temporary logo (Take B) — to be revised later. -->
-  <rect width="512" height="512" rx="112" fill="#FFFFFF"/>
-  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="#E2E8F0" stroke-width="4"/>
-  <!-- 360 ring -->
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#334155" stroke-width="18"/>
-  <path d="M232 92 L268 108 L232 124" fill="none" stroke="#334155" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Leather wallet -->
-  <rect x="150" y="196" width="212" height="140" rx="22" fill="#8B5E3C"/>
-  <rect x="150" y="196" width="212" height="140" rx="22" fill="none" stroke="#5E3D27" stroke-width="5"/>
-  <!-- Two stripes: blue + green -->
-  <rect x="166" y="238" width="180" height="20" rx="4" fill="#2563EB"/>
-  <rect x="166" y="266" width="180" height="20" rx="4" fill="#059669"/>
-  <!-- Snap -->
-  <circle cx="330" cy="306" r="11" fill="#E8C79A"/>
+  <!-- Wallet360 "Converge" app icon — navy tile + convergence mark -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11314F"/>
+      <stop offset="1" stop-color="#0A1A2C"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#46A3FF"/>
+      <stop offset="1" stop-color="#3FD08A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(2.05) translate(-90 -90)">
+    <g stroke="#FFFFFF" stroke-opacity="0.32" stroke-width="3" stroke-linecap="round">
+      <line x1="90" y1="28" x2="90" y2="62"/>
+      <line x1="143.7" y1="59" x2="114.25" y2="76"/>
+      <line x1="143.7" y1="121" x2="114.25" y2="104"/>
+      <line x1="90" y1="152" x2="90" y2="118"/>
+      <line x1="36.3" y1="121" x2="65.75" y2="104"/>
+      <line x1="36.3" y1="59" x2="65.75" y2="76"/>
+    </g>
+    <circle cx="90" cy="18" r="9.5" fill="#46A3FF"/>
+    <circle cx="152.35" cy="54" r="9.5" fill="#3FD08A"/>
+    <circle cx="152.35" cy="126" r="9.5" fill="#46A3FF"/>
+    <circle cx="90" cy="162" r="9.5" fill="#3FD08A"/>
+    <circle cx="27.65" cy="126" r="9.5" fill="#46A3FF"/>
+    <circle cx="27.65" cy="54" r="9.5" fill="#3FD08A"/>
+    <circle cx="90" cy="90" r="23" fill="url(#core)"/>
+  </g>
 </svg>

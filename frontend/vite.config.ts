@@ -15,13 +15,13 @@ export default defineConfig({
       manifest: {
         name: 'Wallet360 — Finanças pessoais',
         short_name: 'Wallet360',
-        description: 'Wallet360 — empréstimo, investimentos e orçamento num só sítio.',
+        description: 'As tuas finanças, de todos os ângulos. Créditos, investimentos e orçamento num só sítio.',
         lang: 'pt-PT',
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        theme_color: '#2563EB',
-        background_color: '#F0F4F9',
+        theme_color: '#0D2740',
+        background_color: '#FAF9F7',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

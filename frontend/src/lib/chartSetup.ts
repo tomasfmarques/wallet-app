@@ -27,11 +27,11 @@ Chart.register(
   Filler,
 )
 
-// Global defaults — match the design's typography + colours
-Chart.defaults.font.family = "'Outfit', sans-serif"
+// Global defaults — match the brand typography + colours
+Chart.defaults.font.family = "'Manrope', sans-serif"
 Chart.defaults.font.size = 12
-Chart.defaults.color = '#64748B'
-Chart.defaults.plugins.tooltip.backgroundColor = '#0B1120'
+Chart.defaults.color = '#6B6E73'
+Chart.defaults.plugins.tooltip.backgroundColor = '#0D2740'
 Chart.defaults.plugins.tooltip.padding = 10
 Chart.defaults.plugins.tooltip.cornerRadius = 8
 Chart.defaults.plugins.tooltip.titleFont = { weight: 600, size: 12 }

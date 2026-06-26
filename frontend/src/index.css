@@ -1,21 +1,28 @@
-/* ── Design tokens (from design_app/styles.css) ──────────────── */
+/* ── Design tokens (Wallet360 brand system) ──────────────────── */
 :root {
-  /* Backgrounds */
-  --bg: #F0F4F9;
+  /* Backgrounds — "Paper" */
+  --bg: #FAF9F7;
   --surface: #FFFFFF;
-  --surface-2: #F8FAFC;
+  --surface-2: #F7F8FA;
 
-  /* Text */
-  --text: #0F172A;
-  --muted: #64748B;
-  --muted-l: #94A3B8;
+  /* Text — brand ink */
+  --text: #1C1F23;
+  --muted: #6B6E73;
+  --muted-l: #9A9DA3;
 
-  /* Accent (blue — can be swapped via settings) */
-  --accent: #2563EB;
-  --accent-d: #1D4ED8;
-  --accent-l: #EFF6FF;
-  --accent-m: #DBEAFE;
-  --accent-b: #BFDBFE;
+  /* Accent — brand Blue */
+  --accent: #2F74D8;
+  --accent-d: #245FB0;
+  --accent-l: #EAF1FB;
+  --accent-m: #CFE0F6;
+  --accent-b: #A9C8EE;
+
+  /* Brand — convergence palette (blue → green) */
+  --ink: #0D2740;            /* dark navy — navbar, deep surfaces */
+  --brand-green: #2FAA6A;
+  --brand-green-d: #258854;
+  --brand-grad: linear-gradient(95deg, #2F74D8, #2FAA6A);
+  --brand-grad-bright: linear-gradient(95deg, #46A3FF, #3FD08A); /* on dark */
 
   /* Semantic colours */
   --green: #059669;
@@ -39,12 +46,22 @@
   --r-xl: 16px;
 
   /* Typography */
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 14px;
   color: var(--text);
   background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "tnum";
+}
+
+/* Display type — Sora for the wordmark, headings and page titles */
+h1, h2, h3,
+.brand-text,
+.page-header h1,
+.auth-card h1,
+.hero-greeting {
+  font-family: 'Sora', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 *, *::before, *::after {
@@ -73,11 +90,10 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
-.brand-emoji { font-size: 20px; line-height: 1; }
 .brand-text { font-size: 16px; }
-.brand-lg .brand-emoji { font-size: 28px; }
-.brand-lg .brand-text  { font-size: 20px; }
+.brand-lg .brand-text  { font-size: 22px; }
 .brand-lg {
+  gap: 12px;
   justify-content: center;
   margin-bottom: 18px;
 }
@@ -94,8 +110,8 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #0B1120;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: var(--ink);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .navbar-inner {
   max-width: 1200px;
@@ -3163,17 +3179,22 @@ body {
    Wallet360 — brand wordmark + mobile-first refinements
    ═══════════════════════════════════════════════════════════════ */
 
-/* Brand "360" superscript-ish in accent colour */
+/* Brand "360" — convergence gradient (blue → green) clipped to the text */
 .brand-360 {
-  color: #60A5FA;          /* lighter blue against dark navbar */
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   font-weight: 700;
-  margin-left: 1px;
-  letter-spacing: 0.01em;
+  margin-left: 0.5px;
 }
-.brand-lg .brand-360 {
-  color: var(--accent);    /* on light auth screen */
+.brand-light .brand-360 {
+  background: var(--brand-grad-bright); /* brighter against the dark navbar */
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.brand-light .brand-text { letter-spacing: 0.005em; }
+.brand-light .brand-text { letter-spacing: -0.02em; }
 
 /* ── Bottom navigation (mobile only) ──────────────────────── */
 /* Hidden by default; revealed by media query below */
@@ -3238,7 +3259,6 @@ body {
   }
   .navbar-left { gap: 8px; flex: 1; min-width: 0; }
   .brand-text { display: inline; font-size: 14px; }
-  .brand-emoji { font-size: 18px; }
   .nav-user-name { display: none; }
   .btn-navbar {
     padding: 6px 10px;
