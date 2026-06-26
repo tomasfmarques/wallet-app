@@ -81,10 +81,10 @@
   "chartAmortizar": "Juros poupados (amortizar)",
   "chartInvestir": "Ganho líquido após imposto (investir)",
   "risk": {
-    "label": "RISCO DO INVESTIMENTO (±1σ)",
+    "label": "RISCO DO INVESTIMENTO",
     "vol": "volatilidade {{value}} %/ano",
-    "pessimistic": "Ano mau (−1σ): {{value}}",
-    "optimistic": "Ano bom (+1σ): {{value}}",
+    "pessimistic": "Ano mau: {{value}}",
+    "optimistic": "Ano bom: {{value}}",
     "robustInvest": "Mesmo num ano mau, investir supera o que pouparias a amortizar.",
     "fragileInvest": "Investir vence em média, mas num ano mau a poupança garantida de {{saved}} ao amortizar pode ser melhor.",
     "robustAmortize": "Amortizar vence — e sem o risco de mercado.",

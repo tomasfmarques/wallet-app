@@ -189,19 +189,24 @@ router.post('/compare', async (req, res) => {
     }
     const breakEvenReturn = ((lo + hi) / 2) * 100  // %
 
-    // ── Risk band (±1σ) ──────────────────────────────────────────
-    // If the caller passes the portfolio's annualized volatility, bracket the
-    // expected net gain by re-pricing the investment at effectiveReturn ∓ σ — a
-    // plain "bad year / good year" range that sets the investment's uncertainty
-    // against the GUARANTEED interest saved by amortizing.
-    // NOTE: `flatGross` takes the annual rate as a FRACTION (the break-even
-    // search feeds it 0..2). `effectiveReturn` and `riskVolN` are PERCENT
-    // (e.g. 8.8 and 16.0), so divide by 100 — otherwise rr = 24.8/12 ≈ 2.07
-    // compounds to ~1e30 and the "good year" figure overflows.
+    // ── Risk band (±1σ over the horizon) ─────────────────────────
+    // If the caller passes the portfolio's annualized volatility (σ), bracket
+    // the projected net gain against the GUARANTEED interest saved by amortizing.
+    //
+    // σ is the std-dev of a SINGLE year's return. The uncertainty of the
+    // *terminal* gain over T years does NOT grow by applying ±σ to every year —
+    // compounding (mean ± σ) for T years produces absurd extremes (a "good year"
+    // of millions, a perpetual-loss "bad year"). Under the usual lognormal model
+    // the terminal value's ±1σ in log-space is σ·√T, so the band on the
+    // ANNUALIZED return is σ/√T. We shift the rate by that and compound over the
+    // horizon. (`flatGross` takes a FRACTION; effectiveReturn/riskVolN are
+    // PERCENT, hence /100.)
     const riskVolN = Number(riskVolatility)
     const hasRisk = Number.isFinite(riskVolN) && riskVolN > 0 && riskVolN <= 200
-    const pessimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn - riskVolN) / 100)) : null
-    const optimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn + riskVolN) / 100)) : null
+    const horizonYears = Math.max(horizonMonths / 12, 1 / 12)
+    const sigmaBand = riskVolN / Math.sqrt(horizonYears)  // σ of the annualized return over T years
+    const pessimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn - sigmaBand) / 100)) : null
+    const optimisticNet = hasRisk ? netFromGross(flatGross((effectiveReturn + sigmaBand) / 100)) : null
 
     // ── Curves for chart (sampled to keep payload small) ─────────
     const baseJuroByYm = new Map(base.rows.map((r2) => [r2.ym, r2.juros]))

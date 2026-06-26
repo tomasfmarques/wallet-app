@@ -81,10 +81,10 @@
   "chartAmortizar": "Interest saved (pay down)",
   "chartInvestir": "Net gain after tax (invest)",
   "risk": {
-    "label": "INVESTMENT RISK (±1σ)",
+    "label": "INVESTMENT RISK",
     "vol": "volatility {{value}} %/yr",
-    "pessimistic": "Bad year (−1σ): {{value}}",
-    "optimistic": "Good year (+1σ): {{value}}",
+    "pessimistic": "Bad year: {{value}}",
+    "optimistic": "Good year: {{value}}",
     "robustInvest": "Even in a bad year, investing beats what you'd save by paying down.",
     "fragileInvest": "Investing wins on average, but in a bad year the guaranteed {{saved}} saved by paying down could be better.",
     "robustAmortize": "Paying down wins — and with no market risk.",

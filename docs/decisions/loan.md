@@ -156,3 +156,27 @@ of per-asset expected returns. Two upgrades:
   stays fast and the dashboard `WedgeInsight` (which doesn't pass it) shows no
   band — by design.
 
+### 2026-06-26 — Risk band corrected: scale σ by √T (terminal ±1σ, not per-year)
+
+- **Bug:** the band above re-priced at `effectiveReturn ∓ σ` and compounded that
+  rate over the WHOLE horizon — i.e. "what if *every* year were a ±1σ year",
+  which over ~25 years gave a nonsensical **€8.7M "Ano bom"** beside a −€787
+  "Ano mau". (The earlier `dde91a9` ÷100 fix only stopped a numeric overflow; the
+  conceptual per-year error remained — it was never actually sane.)
+- **Fix:** σ is the std-dev of a SINGLE year's return. The uncertainty of the
+  **terminal** gain over T years is σ·√T in log-space, so the band on the
+  ANNUALIZED return is **σ/√T**. `simulate.ts` now shifts the rate by
+  `riskVolN / Math.sqrt(horizonYears)` before compounding. Verified numerically
+  (old ≈ €6.3M good-year / new band ≈ €28k–€198k straddling the ~€78k mean).
+- **Consequences:** (a) the corrected bad case is solidly positive for long
+  horizons, so the robustness verdict often flips "fragile" → "robust" — the
+  honest result; (b) the "Ano mau/bom" copy implies a single year but the figure
+  is a *horizon outcome* → "Cenário mau/bom" reads truer (open copy decision);
+  (c) for recurring contributions the full-horizon √T is applied to the whole
+  stream — a reasonable approximation (late contributions truly have a shorter
+  horizon).
+- Also: the **σ/Σ symbols were stripped from the user-facing labels**
+  (`compare.json` pt+en) as statistics jargon — now plain "RISCO DO INVESTIMENTO
+  / Ano mau: / Ano bom:". (Status: both changes shipped to `main`/prod this
+  session; the "Cenário mau/bom" rewording remains an open follow-up.)
+
