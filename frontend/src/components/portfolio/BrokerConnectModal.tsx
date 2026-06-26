@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
+import { Icon } from '@/components/ui/Icon'
 import { apiErrorMessage } from '@/lib/apiError'
 import {
   useBrokerStatus, useBrokerConnect, useBrokerSync, useBrokerDisconnect, type BrokerEnv,
@@ -59,7 +60,7 @@ export function BrokerConnectModal({ open, onClose }: Props) {
   return (
     <Modal open={open} onClose={onClose} title={t('broker.title')} maxWidth={600}>
       <div className="bank-secure">
-        <span className="bank-secure-icon" aria-hidden>🔒</span>
+        <span className="bank-secure-icon"><Icon name="lock" size={18} /></span>
         <div>
           <strong>{t('broker.secureTitle')}</strong>
           <ul className="bank-secure-list">

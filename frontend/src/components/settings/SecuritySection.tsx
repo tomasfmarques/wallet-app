@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -156,7 +157,7 @@ export function SecuritySection() {
             <ul className="bio-list">
               {credentials.map((c) => (
                 <li key={c.id} className="bio-row">
-                  <span>👤 {c.deviceName || t('security.bioDevice')}</span>
+                  <span className="bio-device"><Icon name="user" size={15} /> {c.deviceName || t('security.bioDevice')}</span>
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => bioDelete.mutate(c.id)} disabled={bioDelete.isLoading}>
                     {t('security.remove')}
                   </button>

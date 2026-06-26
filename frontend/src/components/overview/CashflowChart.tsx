@@ -139,7 +139,7 @@ export function CashflowChart({ incomes, expenses }: Props) {
     return (
       <StateBlock
         variant="empty"
-        icon="📊"
+        icon="barChart"
         message={t('cashflow.empty')}
       />
     )

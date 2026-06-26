@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Modal } from '@/components/ui/Modal'
@@ -36,7 +37,7 @@ export function UncategorizedBanner({ incomes, expenses }: Props) {
   return (
     <>
       <div className="uncat-banner" role="status">
-        <span className="uncat-banner-icon" aria-hidden>📌</span>
+        <span className="uncat-banner-icon"><Icon name="tag" size={18} /></span>
         <div className="uncat-banner-text">
           <strong>{total === 1 ? t('uncat.bannerOne', { count: total }) : t('uncat.bannerMany', { count: total })}</strong>
           <span className="muted">{t('uncat.bannerHint')}</span>

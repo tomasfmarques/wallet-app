@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation } from 'react-i18next'
 import { useTickerSearch, type TickerSearchResult } from '@/hooks/useQuotes'
 
@@ -71,7 +72,7 @@ export function TickerSearch({ onSelect }: Props) {
   return (
     <div className="ticker-search" ref={boxRef}>
       <div className="ticker-search-input-wrap">
-        <span className="ticker-search-icon">🔍</span>
+        <span className="ticker-search-icon"><Icon name="search" size={15} /></span>
         <input
           type="text"
           className="ticker-search-input"

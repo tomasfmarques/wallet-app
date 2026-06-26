@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLoan } from '@/hooks/useLoan'
@@ -355,8 +356,8 @@ export function Compare() {
         <>
           {/* Recommendation banner */}
           <div className={`compare-rec compare-rec-${rec}`} role="status">
-            <span className="compare-rec-icon" aria-hidden>
-              {rec === 'amortizar' ? '🏠' : rec === 'investir' ? '📈' : '⚖️'}
+            <span className="compare-rec-icon">
+              <Icon name={rec === 'amortizar' ? 'home' : rec === 'investir' ? 'trendingUp' : 'scale'} size={24} />
             </span>
             <div>
               <div className="compare-rec-title">
@@ -379,7 +380,7 @@ export function Compare() {
           <div className="compare-columns">
             <div className="card card-pad-lg compare-col compare-col-amortizar">
               <div className="compare-col-header">
-                <span className="compare-col-icon" aria-hidden>🏠</span>
+                <span className="compare-col-icon"><Icon name="home" size={19} /></span>
                 <h3>{t('amortizar')}</h3>
               </div>
               <div className="kpi-grid compare-kpis">
@@ -416,7 +417,7 @@ export function Compare() {
 
             <div className="card card-pad-lg compare-col compare-col-investir">
               <div className="compare-col-header">
-                <span className="compare-col-icon" aria-hidden>📈</span>
+                <span className="compare-col-icon"><Icon name="trendingUp" size={19} /></span>
                 <h3>{t('investir')}</h3>
               </div>
               <div className="kpi-grid compare-kpis">

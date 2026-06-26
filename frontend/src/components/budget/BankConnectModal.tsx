@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
+import { Icon } from '@/components/ui/Icon'
 import { apiErrorMessage } from '@/lib/apiError'
 import {
   useBankStatus, useBankInstitutions, useBankConnect, useBankSync, useBankDisconnect,
@@ -91,7 +92,7 @@ export function BankConnectModal({ open, onClose }: Props) {
     <Modal open={open} onClose={onClose} title={t('bank.title')} maxWidth={620}>
       {/* Security disclaimer */}
       <div className="bank-secure">
-        <span className="bank-secure-icon" aria-hidden>🔒</span>
+        <span className="bank-secure-icon"><Icon name="lock" size={18} /></span>
         <div>
           <strong>{t('bank.secureTitle')}</strong>
           <ul className="bank-secure-list">

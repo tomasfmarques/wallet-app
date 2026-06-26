@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { useBudget, useDeleteIncome, useDeleteExpense, useCleanupEncoding } from '@/hooks/useBudget'
 import { BudgetKpis } from '@/components/budget/BudgetKpis'
@@ -105,7 +106,7 @@ export function Budget() {
             {t('csv.button')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setBankOpen(true)}>
-            🏦 {t('connectBank')}
+            <Icon name="bank" size={15} />{t('connectBank')}
           </button>
           <button type="button" className="btn btn-primary" onClick={() => setImportOpen(true)}>
             {t('importStatement')}

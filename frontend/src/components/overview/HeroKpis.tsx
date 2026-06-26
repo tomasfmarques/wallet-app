@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { eur, eurSigned } from '@/lib/format'
+import { Icon } from '@/components/ui/Icon'
 
 interface Props {
   portfolioValue: number | null
@@ -30,7 +31,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
       <Link to="/investments" className="hero-card hero-card-primary">
         <div className="hero-card-top">
           <div className="hero-label">{t('hero.portfolioLabel')}</div>
-          <span className="hero-icon" aria-hidden>📈</span>
+          <span className="hero-icon"><Icon name="trendingUp" size={17} /></span>
         </div>
         <div className="hero-value">{portfolioValue != null ? eur(portfolioValue) : '—'}</div>
         <div className="hero-meta">{t('hero.portfolioMeta')}</div>
@@ -39,7 +40,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
       <Link to="/budget" className={`hero-card ${awaitingClassification ? '' : netPositive ? 'hero-card-good' : monthlyNet != null ? 'hero-card-bad' : ''}`}>
         <div className="hero-card-top">
           <div className="hero-label">{t('hero.balanceLabel')}</div>
-          <span className="hero-icon" aria-hidden>{awaitingClassification ? '⚖️' : netPositive ? '🟢' : monthlyNet != null ? '🔴' : '⚖️'}</span>
+          <span className="hero-icon"><Icon name={awaitingClassification ? 'scale' : netPositive ? 'trendingUp' : monthlyNet != null ? 'trendingDown' : 'scale'} size={17} /></span>
         </div>
         <div className="hero-value">
           {awaitingClassification ? '—' : monthlyNet != null ? eurSigned(monthlyNet) : '—'}
@@ -56,7 +57,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
       <Link to="/budget" className="hero-card">
         <div className="hero-card-top">
           <div className="hero-label">{t('hero.incomeLabel')}</div>
-          <span className="hero-icon" aria-hidden>💸</span>
+          <span className="hero-icon"><Icon name="banknote" size={17} /></span>
         </div>
         <div className="hero-value">{awaitingClassification ? '—' : monthlyIncome != null ? eur(monthlyIncome) : '—'}</div>
         <div className="hero-meta">
@@ -67,7 +68,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
       <Link to="/loan" className="hero-card">
         <div className="hero-card-top">
           <div className="hero-label">{t('hero.loanLabel')}</div>
-          <span className="hero-icon" aria-hidden>🏠</span>
+          <span className="hero-icon"><Icon name="home" size={17} /></span>
         </div>
         <div className="hero-value">{loanRemaining != null ? eur(loanRemaining) : '—'}</div>
         <div className="hero-meta">{t('hero.loanMeta')}</div>

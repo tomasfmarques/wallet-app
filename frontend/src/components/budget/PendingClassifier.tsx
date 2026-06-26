@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { useClassifyPending } from '@/hooks/useBudget'
 import { eur } from '@/lib/format'
@@ -27,7 +28,7 @@ export function PendingClassifier({ pendingIncomes, pendingExpenses }: Props) {
   return (
     <section className="pending-box">
       <div className="pending-head">
-        <span className="pending-icon" aria-hidden>📥</span>
+        <span className="pending-icon"><Icon name="inbox" size={18} /></span>
         <div className="pending-head-text">
           <strong>{total === 1 ? t('pending.headOne', { count: total }) : t('pending.headMany', { count: total })}</strong>
           <span className="muted"><Trans i18nKey="pending.headHint" ns="budget" components={{ 1: <b />, 2: <b /> }} /></span>

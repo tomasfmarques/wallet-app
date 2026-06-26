@@ -216,6 +216,10 @@ body {
 
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -1105,8 +1109,11 @@ body {
 .hold-row.is-clickable:hover { background: var(--surface-2); }
 .hold-row.is-clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .hold-chart-hint {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -2px;
   margin-left: 6px;
-  font-size: 11px;
+  color: var(--muted-l);
   opacity: 0;
   transition: opacity 0.12s;
 }
@@ -1528,7 +1535,7 @@ body {
   border-color: var(--accent-d);
   box-shadow: 0 0 0 3px var(--accent-l);
 }
-.ticker-search-icon { font-size: 14px; flex-shrink: 0; }
+.ticker-search-icon { display: inline-flex; align-items: center; color: var(--muted-l); flex-shrink: 0; }
 .ticker-search-input {
   flex: 1;
   border: none;
@@ -2051,7 +2058,7 @@ body {
   padding: 12px 16px;
   margin-bottom: 18px;
 }
-.uncat-banner-icon { font-size: 20px; }
+.uncat-banner-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .uncat-banner-text { flex: 1; font-size: 13.5px; color: #78350F; }
 .uncat-banner-text strong { color: #92400E; }
 .uncat-banner .btn {
@@ -2279,7 +2286,7 @@ body {
   margin-bottom: 14px;
   font-size: 13px;
 }
-.bank-secure-icon { font-size: 20px; }
+.bank-secure-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .bank-secure-list { margin: 6px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 .bank-sync-ok {
   background: #ECFDF5;
@@ -2400,7 +2407,7 @@ body {
   gap: 10px;
   margin-bottom: 10px;
 }
-.pending-icon { font-size: 20px; }
+.pending-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .pending-head-text { font-size: 13.5px; }
 .pending-list {
   display: flex;
@@ -2726,7 +2733,7 @@ body {
   text-align: center;
   box-shadow: var(--sh);
 }
-.state-block-icon { font-size: 30px; line-height: 1; }
+.state-block-icon { display: inline-flex; align-items: center; justify-content: center; color: var(--muted-l); margin-bottom: 4px; }
 .state-block-title { font-weight: 600; font-size: 15px; margin-top: 10px; }
 .state-block-msg { color: var(--muted); font-size: 13.5px; margin: 6px auto 0; max-width: 420px; line-height: 1.5; }
 .state-block-msg + .btn { margin-top: 16px; }
@@ -2780,7 +2787,7 @@ body {
 .wedge-insight-investir { border-left-color: var(--green); }
 .wedge-insight-equivalente { border-left-color: var(--muted-l); }
 .wedge-insight-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.wedge-insight-icon { font-size: 18px; }
+.wedge-insight-icon { display: inline-flex; color: var(--amber); }
 .wedge-insight-kicker {
   font-size: 12px; font-weight: 700; letter-spacing: .04em;
   text-transform: uppercase; color: var(--muted);
@@ -2791,6 +2798,7 @@ body {
 }
 .wedge-insight-verdict { margin: 0 0 12px; font-size: 15px; line-height: 1.45; font-weight: 500; }
 .wedge-insight-figures { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.wedge-insight-fig { display: inline-flex; align-items: center; gap: 6px; }
 .wedge-insight-fig strong { color: var(--text); margin-left: 4px; font-weight: 700; }
 .wedge-insight-skeleton {
   height: 96px; background: var(--surface-2);
@@ -2881,13 +2889,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  color: var(--accent);
   background: var(--accent-l);
   border-radius: 9px;
 }
-.hero-card-primary .hero-icon { background: rgba(255,255,255,0.2); }
-.hero-card-good .hero-icon { background: #FFFFFF80; }
-.hero-card-bad .hero-icon { background: #FFFFFF80; }
+.hero-card-primary .hero-icon { background: rgba(255,255,255,0.18); color: #fff; }
+.hero-card-good .hero-icon { background: #FFFFFF80; color: var(--green-d); }
+.hero-card-bad .hero-icon { background: #FFFFFF80; color: var(--red); }
 
 /* ── Cashflow chart card ──────────────────────────────────── */
 .cashflow-card {
@@ -2969,7 +2977,7 @@ body {
   gap: 8px;
   margin-bottom: 4px;
 }
-.module-card-icon { font-size: 20px; }
+.module-card-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .module-card-title {
   font-size: 14px;
   font-weight: 600;
@@ -3429,7 +3437,8 @@ body {
   background: var(--surface-2);
   border-color: var(--border);
 }
-.compare-rec-icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+.compare-rec-icon { display: inline-flex; align-items: center; flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+.compare-rec-investir .compare-rec-icon { color: var(--brand-green-d); }
 .compare-rec-title {
   font-size: 15px;
   font-weight: 700;
@@ -3459,7 +3468,7 @@ body {
   font-weight: 700;
   color: var(--text);
 }
-.compare-col-icon { font-size: 20px; }
+.compare-col-icon { display: inline-flex; align-items: center; color: var(--accent); }
 
 .compare-col-amortizar { border-top: 3px solid var(--accent); }
 .compare-col-investir { border-top: 3px solid var(--green); }
@@ -3853,7 +3862,7 @@ body {
   align-items: center;
   text-align: center;
 }
-.lock-logo { font-size: 34px; }
+.lock-logo { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
 .lock-title { font-size: 20px; margin: 8px 0 2px; }
 .lock-subtitle { font-size: 13px; margin: 0 0 18px; }
 .lock-dots { display: flex; gap: 14px; margin: 6px 0; }
@@ -3909,6 +3918,7 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-md, 10px);
 }
+.bio-device { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
 
 /* ── Demo mode ─────────────────────────────────────────────── */
 .linklike {
@@ -3940,6 +3950,7 @@ body {
   font-size: 13px;
   font-weight: 500;
 }
+.demo-banner-text { display: inline-flex; align-items: center; gap: 6px; }
 .demo-banner-actions { display: inline-flex; align-items: center; gap: 12px; }
 .demo-banner-link { color: #92400E; font-weight: 600; text-decoration: underline; }
 .demo-banner-exit {

@@ -4,6 +4,7 @@ import { useAuth, useLogout } from '@/hooks/useAuth'
 import { useLanguageSync } from '@/hooks/useLanguage'
 import { BottomNav } from './BottomNav'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { Icon } from '@/components/ui/Icon'
 
 // Map route → translation key for the navbar section subtitle
 type NavItemKey =
@@ -41,7 +42,7 @@ export function Layout() {
     <div className="app-shell">
       {user?.isDemo && (
         <div className="demo-banner" role="status">
-          <span className="demo-banner-text">🧪 {t('demoBanner')}</span>
+          <span className="demo-banner-text"><Icon name="flask" size={14} /> {t('demoBanner')}</span>
           <span className="demo-banner-actions">
             <NavLink to="/signup" className="demo-banner-link">{t('demoSignup')}</NavLink>
             <button type="button" className="demo-banner-exit" onClick={handleSignOut}>{t('demoExit')}</button>

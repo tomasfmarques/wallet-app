@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { eur, eurCompact, pctSigned, ymToShort } from '@/lib/format'
+import { Icon } from '@/components/ui/Icon'
 import type { LoanKpis as LoanKpisT } from '@/hooks/useLoan'
 import type { PortfolioKpisData } from '@/hooks/usePortfolio'
 import type { BudgetKpis as BudgetKpisT } from '@/hooks/useBudget'
@@ -26,7 +27,7 @@ export function ModuleSummary({
       {/* ── Empréstimo ──────────────────────────────────────── */}
       <Link to="/loan" className="module-card">
         <div className="module-card-head">
-          <span className="module-card-icon" aria-hidden>🏠</span>
+          <span className="module-card-icon"><Icon name="home" size={19} /></span>
           <span className="module-card-title">{t('module.loanTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
@@ -58,7 +59,7 @@ export function ModuleSummary({
       {/* ── Investimentos ───────────────────────────────────── */}
       <Link to="/investments" className="module-card">
         <div className="module-card-head">
-          <span className="module-card-icon" aria-hidden>📈</span>
+          <span className="module-card-icon"><Icon name="trendingUp" size={19} /></span>
           <span className="module-card-title">{t('module.investTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
@@ -87,7 +88,7 @@ export function ModuleSummary({
       {/* ── Saldo ───────────────────────────────────────────── */}
       <Link to="/budget" className="module-card">
         <div className="module-card-head">
-          <span className="module-card-icon" aria-hidden>💰</span>
+          <span className="module-card-icon"><Icon name="wallet" size={19} /></span>
           <span className="module-card-title">{t('module.balanceTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>
@@ -117,7 +118,7 @@ export function ModuleSummary({
       {/* ── Amortizar vs Investir CTA ───────────────────────── */}
       <Link to="/comparar" className="module-card module-card-compare">
         <div className="module-card-head">
-          <span className="module-card-icon" aria-hidden>⚖️</span>
+          <span className="module-card-icon"><Icon name="scale" size={19} /></span>
           <span className="module-card-title">{t('module.compareTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>

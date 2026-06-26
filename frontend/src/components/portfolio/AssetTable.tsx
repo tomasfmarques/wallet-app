@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { eur, eurSigned, pctSigned, num } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/apiError'
@@ -210,7 +211,7 @@ function HoldRow({ asset, colour, onOpenChart, onHistory, onEdit, onReforcar, on
         {asset.ticker.slice(0, 2)}
       </div>
       <div className="hold-main">
-        <div className="hold-name">{asset.name}<span className="hold-chart-hint" aria-hidden>📈</span></div>
+        <div className="hold-name">{asset.name}<span className="hold-chart-hint"><Icon name="trendingUp" size={13} /></span></div>
         <div className="hold-sub">
           {asset.ticker} · {t('table.units', { qty: num(asset.qty, 4) })}
           {refreshErr && <span className="gain-negative"> · {refreshErr}</span>}

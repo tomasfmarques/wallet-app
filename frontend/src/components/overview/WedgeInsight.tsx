@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Icon } from '@/components/ui/Icon'
 import type { LoanItem } from '@/hooks/useLoan'
 import type { PortfolioResponse } from '@/hooks/usePortfolio'
 import { useCompare, type CompareResult } from '@/hooks/useCompare'
@@ -86,17 +87,17 @@ export function WedgeInsight({ loans, portfolio }: Props) {
   return (
     <Link to={`/comparar?loan=${primaryLoan.loan.id}`} className={`wedge-insight wedge-insight-${rec}`}>
       <div className="wedge-insight-head">
-        <span className="wedge-insight-icon" aria-hidden>💡</span>
+        <span className="wedge-insight-icon"><Icon name="bulb" size={18} /></span>
         <span className="wedge-insight-kicker">{t('wedge.kicker')}</span>
         <span className="wedge-insight-cta">{t('wedge.cta')}</span>
       </div>
       <p className="wedge-insight-verdict">{verdict}</p>
       <div className="wedge-insight-figures">
         <span className="wedge-insight-fig">
-          <span aria-hidden>🏠</span> {t('wedge.interestSaved')} <strong>{saved}</strong>
+          <Icon name="home" size={15} /> {t('wedge.interestSaved')} <strong>{saved}</strong>
         </span>
         <span className="wedge-insight-fig">
-          <span aria-hidden>📈</span> {t('wedge.netGain')} <strong>{gain}</strong>
+          <Icon name="trendingUp" size={15} /> {t('wedge.netGain')} <strong>{gain}</strong>
         </span>
       </div>
     </Link>

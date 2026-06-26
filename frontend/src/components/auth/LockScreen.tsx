@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Icon } from '@/components/ui/Icon'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { useLock } from '@/hooks/useLock'
 import { usePinVerify, useWebAuthnAuth } from '@/hooks/useSecurity'
@@ -102,7 +103,7 @@ export function LockScreen() {
   return (
     <div className="lock-screen" role="dialog" aria-modal="true" aria-label={t('lock.title')}>
       <div className="lock-card">
-        <div className="lock-logo" aria-hidden>🔒</div>
+        <div className="lock-logo"><Icon name="lock" size={32} /></div>
         <h1 className="lock-title">{t('lock.title')}</h1>
         <p className="lock-subtitle muted">{t('lock.subtitle', { name: user?.name ?? '' })}</p>
 
