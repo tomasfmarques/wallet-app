@@ -1,46 +1,46 @@
 # Eliminação de Conta — Wallet360
 
-> **DRAFT — requer revisão antes de publicar.** O Google Play exige um URL
-> público que explique como eliminar a conta e que dados são removidos.
+> **Fonte de registo.** A versão **publicada** vive em
+> [`frontend/public/eliminar-conta.html`](../../frontend/public/eliminar-conta.html)
+> → https://wallet360.pt/eliminar-conta.html. É o URL público a fornecer à Play.
+> Mantém os dois em sincronia.
 
-**Última atualização:** [DATA]
+**Última atualização:** 2026-06-27
 
 ## Como eliminar a tua conta
 
-**Na aplicação:** [Definições → Eliminar conta] — confirmação obrigatória.
-[Se ainda não existir esta opção na app, ver "Ainda não há eliminação na app".]
+**Na aplicação:** *Definições → Zona de perigo → Eliminar conta* — confirmação de
+identidade + palavra de confirmação obrigatórias. A conta e todos os dados são
+apagados de imediato e a sessão é terminada (`DELETE /api/me`).
 
-**Por email:** envia um pedido de [seu_email@dominio] a partir do email da conta
-para [EMAIL]. Eliminamos a conta no prazo de [30] dias.
+**Por email:** envia um pedido a partir do email da conta para
+privacy@wallet360.pt (assunto "Eliminar conta"). Eliminamos no prazo de 30 dias.
 
 ## Que dados são eliminados
 
-Ao eliminar a conta, são removidos de forma permanente:
+Ao eliminar a conta, são removidos de forma permanente e em cascata:
 
-- Conta e credenciais (email, *hash* da palavra-passe / ligação Google).
+- Conta e credenciais (email, *hash* da palavra-passe / ligação Google, PIN,
+  chaves biométricas).
 - Todos os dados financeiros: créditos e amortizações, ativos e movimentos de
   investimento, receitas/despesas do orçamento e transações importadas.
-- Preferências (idioma, *watchlist*) e ligações bancárias (Open Banking), se
-  existirem.
+- Preferências (idioma, *watchlist*) e ligações bancárias / de corretora.
 
-A eliminação é **em cascata** (todos os registos associados ao utilizador são
-apagados). Cópias de segurança são purgadas no ciclo seguinte (até [N] dias).
+A eliminação é **em cascata** (FKs Prisma `onDelete: Cascade`). As cópias de segurança
+do fornecedor de base de dados (Neon) são removidas dentro do respetivo período de
+retenção (habitualmente alguns dias a semanas).
 
-## Que dados podem ser retidos
+## Que dados são retidos
 
-Apenas o estritamente exigido por lei (ex.: registos contabilísticos, se
-aplicável). [Confirmar — por defeito, nada.]
+Apenas um **registo de eliminação pseudonimizado** (tabela `deletion_log`): um
+*hash* SHA-256 do email + a data. **Não** contém dados pessoais legíveis nem dados
+financeiros — serve só para comprovar que o pedido foi cumprido. Nada mais é retido,
+salvo exigência legal.
 
 ## Antes de eliminar
 
 Podes **exportar** todos os teus dados em *Definições → Exportar* (JSON).
 
-## Ainda não há eliminação na app?
-
-[Se a app ainda não tiver botão de eliminação: implementar um endpoint
-`DELETE /api/me` que apague o utilizador (cascade já existe nas relações Prisma)
-+ um botão em Definições. Até lá, processar pedidos por email no prazo indicado.]
-
 ## Contacto
 
-[NOME] — [EMAIL].
+Tomás Marques — privacy@wallet360.pt.

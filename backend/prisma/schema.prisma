@@ -43,6 +43,20 @@ model User {
   @@map("users")
 }
 
+// Append-only audit trail of account deletions. Deliberately NOT linked to User
+// (it must survive the user's deletion) and holds NO personal data — only a
+// one-way sha256 of the email so a deletion can later be verified without
+// retaining PII. NOT part of per-user export/import (it isn't user-scoped data).
+model DeletionLog {
+  id        String   @id @default(uuid())
+  emailHash String   @map("email_hash")
+  method    String   @default("self-service") // how the deletion was initiated
+  note      String?
+  deletedAt DateTime @default(now()) @map("deleted_at")
+
+  @@map("deletion_log")
+}
+
 // A connected brokerage (e.g. Trading 212) for live portfolio sync. The API
 // key/secret are stored ENCRYPTED (AES-256-GCM via lib/crypto.ts) — never in
 // plaintext. Deliberately EXCLUDED from export/import backup (secrets are

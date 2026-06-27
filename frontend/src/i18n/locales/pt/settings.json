@@ -143,6 +143,7 @@
     "resetBtn": "Repor…",
     "deleteTitle": "Apagar conta",
     "deleteDesc": "Apaga permanentemente a tua conta e todos os dados. Esta ação não pode ser revertida.",
+    "deletePolicy": "Ver política pública de eliminação",
     "deleteBtn": "Apagar conta…",
     "resetModalTitle": "Repor todos os dados",
     "resetModalIntro": "Vai apagar empréstimo + carteira + configurações. A conta mantém-se. Introduz a tua password atual para confirmar.",

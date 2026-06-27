@@ -138,6 +138,12 @@ export function SignIn() {
           </button>
         </p>
         {demo.isError && <p className="field-error" style={{ textAlign: 'center' }}>{t('demo.error')}</p>}
+
+        <p className="auth-footer">
+          <a href="/privacidade.html">{t('legal.privacy')}</a>
+          {' · '}
+          <a href="/eliminar-conta.html">{t('legal.deletion')}</a>
+        </p>
       </div>
     </div>
   )

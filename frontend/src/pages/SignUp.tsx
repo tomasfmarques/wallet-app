@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, Trans } from 'react-i18next'
 import { BrandMark } from '@/components/ui/BrandMark'
 import { useAuth, useSignup, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
@@ -140,6 +140,10 @@ export function SignUp() {
             {signup.isLoading ? t('signUp.submitting') : t('signUp.submit')}
           </button>
         </form>
+
+        <p className="auth-footer">
+          <Trans i18nKey="legal.consent" ns="auth" components={{ 1: <a href="/privacidade.html" target="_blank" rel="noopener" /> }} />
+        </p>
 
         <p className="auth-footer">
           {t('signUp.haveAccount')} <Link to="/signin">{t('signUp.signInLink')}</Link>

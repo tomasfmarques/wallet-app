@@ -2,6 +2,10 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 
+// NOTE: the DeletionLog model is intentionally NOT imported/exported here — it is
+// a system-level audit log (not user-scoped data) and must survive deletion. See
+// schema comment + DELETE /api/me. Don't add it to the per-user backup.
+
 const router = Router()
 router.use(requireAuth)
 

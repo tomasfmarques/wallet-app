@@ -1,5 +1,44 @@
 # Decisions — Auth (email/password + Google Sign In)
 
+## 2026-06-27 — Store-gating legal layer (privacy + public deletion URL + deletion log)
+
+- **What:** the Play-store-gating legal layer. (1) **Public legal pages** served as
+  plain static HTML, (2) a **DeletionLog** audit table, (3) discoverability links
+  in-app. In-app account deletion already existed (`DELETE /api/me`, cascade +
+  session destroy) — this adds the *public* surface + the audit trail.
+- **Public pages = static HTML in `frontend/public/`** (`privacidade.html`,
+  `eliminar-conta.html`) → `wallet360.pt/privacidade.html` + `/eliminar-conta.html`.
+  **Why static, not React routes:** existing files are matched by Vercel's filesystem
+  layer *before* the SPA catch-all rewrite (`/(.*) → /index.html`), so they're stable,
+  JS-free, crawlable URLs — ideal for Play reviewers. Self-contained (inline CSS),
+  brand-aligned, **pt-PT only for now** (EN is a follow-up; deliberately NOT routed
+  through react-i18next to avoid bloating the namespaces with full legal text and
+  breaking the pt/en key-parity check).
+- **DeletionLog model** (both schemas, migration `add_deletion_log`, **additive**):
+  `emailHash` (sha256 of lowercased email), `method` (default `self-service`),
+  `note?`, `deletedAt`. **Pseudonymous by design** — no PII, no financial data; a
+  one-way hash so a deletion can be *verified* without retaining identity. **NOT
+  linked to User** (must survive deletion) and **deliberately excluded from
+  export/import** (system audit log, not user-scoped) — noted in both route files +
+  the schema comment so it doesn't read as a forgotten two-schema step.
+- **Wiring:** `DELETE /api/me` captures the email pre-delete, deletes the user
+  (cascade), then writes the log **best-effort** (a log-write failure never fails the
+  user's deletion). No read endpoint — query via Prisma Studio / Neon (no admin-auth
+  concept yet).
+- **Discoverability:** sign-in footer (`Privacidade · Eliminar conta`), a sign-up
+  **consent line** (`Ao criar conta, aceitas a Política de Privacidade`), and a link
+  from Settings → Danger Zone. New i18n keys `auth.legal.*` + `settings.danger.deletePolicy`
+  (pt/en parity).
+- **Published defaults (CONFIRM before Play submission):** controller =
+  *Tomás Marques (individual, Portugal)*; contact = **privacy@wallet360.pt** (needs a
+  live mailbox/forwarding — chosen over the personal Gmail to keep it off a public,
+  indexable page); no postal address; min age 16. The user did not answer the
+  identity prompt, so these are privacy-preserving defaults, easy to change (one
+  constant each in the two HTML files + the `docs/legal/*.md` source-of-record).
+- **Still pending here:** final legal review; EN versions of the public pages; the
+  mailbox for privacy@wallet360.pt. **Email verification on signup stays deferred**
+  (see below) — it was bundled with this push but is its own two-schema PR.
+
 ## 2026-06-21 — Demo mode (ephemeral seeded account)
 
 - **What:** a throwaway sandbox account so visitors can try the app pre-signup and

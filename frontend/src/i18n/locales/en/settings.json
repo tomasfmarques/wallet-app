@@ -143,6 +143,7 @@
     "resetBtn": "Reset…",
     "deleteTitle": "Delete account",
     "deleteDesc": "Permanently deletes your account and all data. This action cannot be undone.",
+    "deletePolicy": "View the public deletion policy",
     "deleteBtn": "Delete account…",
     "resetModalTitle": "Reset all data",
     "resetModalIntro": "This will delete loan + portfolio + settings. Your account is kept. Enter your current password to confirm.",

@@ -34,7 +34,8 @@ export function DangerZoneSection() {
         <div>
           <strong>{t('danger.deleteTitle')}</strong>
           <p className="muted">
-            {t('danger.deleteDesc')}
+            {t('danger.deleteDesc')}{' '}
+            <a href="/eliminar-conta.html" target="_blank" rel="noopener">{t('danger.deletePolicy')}</a>
           </p>
         </div>
         <button type="button" className="btn btn-danger" onClick={() => setDeleteOpen(true)}>
