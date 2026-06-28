@@ -6,13 +6,13 @@
   plain static HTML, (2) a **DeletionLog** audit table, (3) discoverability links
   in-app. In-app account deletion already existed (`DELETE /api/me`, cascade +
   session destroy) — this adds the *public* surface + the audit trail.
-- **Public pages = static HTML in `frontend/public/`** (`privacidade.html`,
-  `eliminar-conta.html`) → `wallet360.pt/privacidade.html` + `/eliminar-conta.html`.
-  **Why static, not React routes:** existing files are matched by Vercel's filesystem
-  layer *before* the SPA catch-all rewrite (`/(.*) → /index.html`), so they're stable,
-  JS-free, crawlable URLs — ideal for Play reviewers. Self-contained (inline CSS),
-  brand-aligned, **pt-PT only for now** (EN is a follow-up; deliberately NOT routed
-  through react-i18next to avoid bloating the namespaces with full legal text and
+- **Public pages — initial approach: static HTML** (`frontend/public/*.html`).
+  **SUPERSEDED the same day → in-app React routes** (see the update at the end of this
+  entry); kept here for context. The original rationale for static was: files matched by
+  Vercel's filesystem layer *before* the SPA catch-all rewrite, so JS-free + crawlable.
+  That was traded away for in-app/mobile UX (the user asked for "a proper web page" linked
+  in-app). Both approaches are **pt-PT only for now** (EN is a follow-up; legal text is
+  deliberately NOT routed through react-i18next to avoid bloating the namespaces and
   breaking the pt/en key-parity check).
 - **DeletionLog model** (both schemas, migration `add_deletion_log`, **additive**):
   `emailHash` (sha256 of lowercased email), `method` (default `self-service`),
@@ -38,6 +38,15 @@
 - **Still pending here:** final legal review; EN versions of the public pages; the
   mailbox for privacy@wallet360.pt. **Email verification on signup stays deferred**
   (see below) — it was bundled with this push but is its own two-schema PR.
+- **Update (same day): switched static HTML → in-app React routes.** `/privacidade`
+  + `/eliminar-conta` are now public React pages (`pages/legal/*` +
+  `components/legal/LegalPage.tsx`) styled with the app's design system, linked from
+  sign-in, sign-up, and **Settings** via react-router `<Link>` (so they stay inside the
+  SPA/PWA on mobile instead of breaking out to a static file — the reason for the
+  switch). The old `.html` URLs keep working via **Vercel 301 redirects**
+  (`vercel.json`); the `frontend/public/*.html` files were removed. Trade-off vs static:
+  SPA-rendered (needs JS) — fine for Play (Google renders JS) and a better in-app/mobile
+  experience.
 
 ## 2026-06-21 — Demo mode (ephemeral seeded account)
 

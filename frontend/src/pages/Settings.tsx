@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AccountSection } from '@/components/settings/AccountSection'
 import { SecuritySection } from '@/components/settings/SecuritySection'
@@ -54,6 +55,12 @@ export function Settings() {
       )}
       {tab === 'watchlist' && <WatchlistSection />}
       {tab === 'danger'    && <DangerZoneSection />}
+
+      <footer className="settings-legal">
+        <Link to="/privacidade">{t('legal.privacy', { ns: 'auth' })}</Link>
+        <span aria-hidden> · </span>
+        <Link to="/eliminar-conta">{t('legal.deletion', { ns: 'auth' })}</Link>
+      </footer>
     </div>
   )
 }

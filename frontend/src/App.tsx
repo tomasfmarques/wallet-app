@@ -18,6 +18,8 @@ import Portfolio from '@/pages/Portfolio'
 import Budget from '@/pages/Budget'
 import Settings from '@/pages/Settings'
 import Compare from '@/pages/Compare'
+import PrivacyPolicy from '@/pages/legal/PrivacyPolicy'
+import AccountDeletion from '@/pages/legal/AccountDeletion'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +38,10 @@ function AppRoutes() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Public legal pages (no auth) — linked from sign-in, sign-up, settings */}
+      <Route path="/privacidade" element={<PrivacyPolicy />} />
+      <Route path="/eliminar-conta" element={<AccountDeletion />} />
 
       {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
       <Route

@@ -9,6 +9,10 @@
       "includeFiles": "node_modules/.prisma/client/**"
     }
   },
+  "redirects": [
+    { "source": "/privacidade.html", "destination": "/privacidade", "permanent": true },
+    { "source": "/eliminar-conta.html", "destination": "/eliminar-conta", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }

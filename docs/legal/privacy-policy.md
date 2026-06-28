@@ -1,8 +1,8 @@
 # Política de Privacidade — Wallet360
 
-> **Fonte de registo.** A versão **publicada** vive em
-> [`frontend/public/privacidade.html`](../../frontend/public/privacidade.html)
-> → https://wallet360.pt/privacidade.html. Mantém os dois em sincronia.
+> **Fonte de registo.** A versão **publicada** é a página React
+> [`frontend/src/pages/legal/PrivacyPolicy.tsx`](../../frontend/src/pages/legal/PrivacyPolicy.tsx)
+> → https://wallet360.pt/privacidade. Mantém os dois em sincronia.
 > Continua a requerer revisão jurídica final antes de submeter à Play.
 
 **Última atualização:** 2026-06-27

@@ -142,7 +142,7 @@ export function SignUp() {
         </form>
 
         <p className="auth-footer">
-          <Trans i18nKey="legal.consent" ns="auth" components={{ 1: <a href="/privacidade.html" target="_blank" rel="noopener" /> }} />
+          <Trans i18nKey="legal.consent" ns="auth" components={{ 1: <Link to="/privacidade" /> }} />
         </p>
 
         <p className="auth-footer">

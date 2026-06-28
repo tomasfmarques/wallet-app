@@ -11,7 +11,7 @@
   *processadores* (alojamento, base de dados) que tratam dados em nosso nome.
 - **Encriptação em trânsito?** Sim (TLS).
 - **O utilizador pode pedir a eliminação dos dados?** Sim — URL público:
-  https://wallet360.pt/eliminar-conta.html
+  https://wallet360.pt/eliminar-conta
 
 ## Tipos de dados recolhidos
 
@@ -40,5 +40,5 @@
 
 ## Links a fornecer à Play
 
-- **Política de privacidade:** https://wallet360.pt/privacidade.html
-- **Eliminação de conta:** https://wallet360.pt/eliminar-conta.html
+- **Política de privacidade:** https://wallet360.pt/privacidade
+- **Eliminação de conta:** https://wallet360.pt/eliminar-conta

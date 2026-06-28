@@ -140,9 +140,9 @@ export function SignIn() {
         {demo.isError && <p className="field-error" style={{ textAlign: 'center' }}>{t('demo.error')}</p>}
 
         <p className="auth-footer">
-          <a href="/privacidade.html">{t('legal.privacy')}</a>
+          <Link to="/privacidade">{t('legal.privacy')}</Link>
           {' · '}
-          <a href="/eliminar-conta.html">{t('legal.deletion')}</a>
+          <Link to="/eliminar-conta">{t('legal.deletion')}</Link>
         </p>
       </div>
     </div>

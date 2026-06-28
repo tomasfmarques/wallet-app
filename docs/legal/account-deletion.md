@@ -1,8 +1,8 @@
 # Eliminação de Conta — Wallet360
 
-> **Fonte de registo.** A versão **publicada** vive em
-> [`frontend/public/eliminar-conta.html`](../../frontend/public/eliminar-conta.html)
-> → https://wallet360.pt/eliminar-conta.html. É o URL público a fornecer à Play.
+> **Fonte de registo.** A versão **publicada** é a página React
+> [`frontend/src/pages/legal/AccountDeletion.tsx`](../../frontend/src/pages/legal/AccountDeletion.tsx)
+> → https://wallet360.pt/eliminar-conta. É o URL público a fornecer à Play.
 > Mantém os dois em sincronia.
 
 **Última atualização:** 2026-06-27

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation, Trans } from 'react-i18next'
 import { useResetData, useDeleteAccount, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { Modal } from '@/components/ui/Modal'
@@ -35,7 +35,7 @@ export function DangerZoneSection() {
           <strong>{t('danger.deleteTitle')}</strong>
           <p className="muted">
             {t('danger.deleteDesc')}{' '}
-            <a href="/eliminar-conta.html" target="_blank" rel="noopener">{t('danger.deletePolicy')}</a>
+            <Link to="/eliminar-conta">{t('danger.deletePolicy')}</Link>
           </p>
         </div>
         <button type="button" className="btn btn-danger" onClick={() => setDeleteOpen(true)}>
