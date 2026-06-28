@@ -87,7 +87,7 @@ export function PrivacyPolicy() {
       <h2>6. Os teus direitos (RGPD)</h2>
       <p>Tens direito de acesso, retificação, eliminação, limitação, portabilidade e
         oposição. Podes <strong>exportar</strong> todos os teus dados a qualquer momento em{' '}
-        <em>Definições → Backup</em> (JSON), e <strong>eliminar</strong> a conta em{' '}
+        <em>Definições → Dados</em> (JSON), e <strong>eliminar</strong> a conta em{' '}
         <em>Definições → Zona de perigo</em> ou contactando{' '}
         <a href="mailto:privacy@wallet360.pt">privacy@wallet360.pt</a>. Tens ainda o direito
         de reclamar junto da <strong>CNPD</strong> (<a href="https://www.cnpd.pt" target="_blank" rel="noopener">cnpd.pt</a>).</p>

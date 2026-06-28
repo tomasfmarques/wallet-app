@@ -11,7 +11,12 @@ import { WatchlistSection } from '@/components/settings/WatchlistSection'
 import { LanguageSection } from '@/components/settings/LanguageSection'
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection'
 
-type Tab = 'account' | 'security' | 'language' | 'euribor' | 'backup' | 'watchlist' | 'danger'
+// Four grouped tabs (was seven flat ones):
+//  • account     — identity & account lifecycle (profile, demo, danger zone)
+//  • security    — password, PIN, biometrics
+//  • preferences — app behaviour/display (language, Euribor, watchlist)
+//  • data        — backup (export/import) + legal links
+type Tab = 'account' | 'security' | 'preferences' | 'data'
 
 export function Settings() {
   const { t } = useTranslation('settings')
@@ -27,40 +32,46 @@ export function Settings() {
       </header>
 
       <div className="subtabs" role="tablist">
-        <TabBtn id="account"   label={t('tabs.account')}   tab={tab} set={setTab} />
-        <TabBtn id="security"  label={t('tabs.security')}  tab={tab} set={setTab} />
-        <TabBtn id="language"  label={t('tabs.language')}  tab={tab} set={setTab} />
-        <TabBtn id="euribor"   label={t('tabs.euribor')}   tab={tab} set={setTab} />
-        <TabBtn id="backup"    label={t('tabs.backup')}    tab={tab} set={setTab} />
-        <TabBtn id="watchlist" label={t('tabs.watchlist')} tab={tab} set={setTab} />
-        <TabBtn id="danger"    label={t('tabs.danger')}    tab={tab} set={setTab} />
+        <TabBtn id="account"     label={t('tabs.account')}     tab={tab} set={setTab} />
+        <TabBtn id="security"    label={t('tabs.security')}    tab={tab} set={setTab} />
+        <TabBtn id="preferences" label={t('tabs.preferences')} tab={tab} set={setTab} />
+        <TabBtn id="data"        label={t('tabs.data')}        tab={tab} set={setTab} />
       </div>
 
-      {tab === 'account'   && (
+      {tab === 'account' && (
         <div className="settings-backup-stack">
           <AccountSection />
           <DemoSection />
+          <DangerZoneSection />
         </div>
       )}
-      {tab === 'security'  && <SecuritySection />}
-      {tab === 'language'  && <LanguageSection />}
-      {tab === 'euribor'   && <EuriborSection />}
-      {tab === 'backup'    && (
+
+      {tab === 'security' && <SecuritySection />}
+
+      {tab === 'preferences' && (
+        <div className="settings-backup-stack">
+          <h2 className="section-label">{t('tabs.language')}</h2>
+          <LanguageSection />
+          <h2 className="section-label" style={{ marginTop: 28 }}>{t('tabs.euribor')}</h2>
+          <EuriborSection />
+          <h2 className="section-label" style={{ marginTop: 28 }}>{t('tabs.watchlist')}</h2>
+          <WatchlistSection />
+        </div>
+      )}
+
+      {tab === 'data' && (
         <div className="settings-backup-stack">
           <h2 className="section-label">{t('backup.exportLabel')}</h2>
           <ExportSection />
           <h2 className="section-label" style={{ marginTop: 28 }}>{t('backup.importLabel')}</h2>
           <ImportSection />
+          <footer className="settings-legal">
+            <Link to="/privacidade">{t('legal.privacy', { ns: 'auth' })}</Link>
+            <span aria-hidden> · </span>
+            <Link to="/eliminar-conta">{t('legal.deletion', { ns: 'auth' })}</Link>
+          </footer>
         </div>
       )}
-      {tab === 'watchlist' && <WatchlistSection />}
-      {tab === 'danger'    && <DangerZoneSection />}
-
-      <footer className="settings-legal">
-        <Link to="/privacidade">{t('legal.privacy', { ns: 'auth' })}</Link>
-        <span aria-hidden> · </span>
-        <Link to="/eliminar-conta">{t('legal.deletion', { ns: 'auth' })}</Link>
-      </footer>
     </div>
   )
 }

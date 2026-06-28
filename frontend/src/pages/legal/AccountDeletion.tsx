@@ -15,7 +15,7 @@ export function AccountDeletion() {
 
       <div className="legal-box accent">
         <strong>Antes de eliminar:</strong> podes exportar todos os teus dados em{' '}
-        <em>Definições → Backup</em> (ficheiro JSON), para os guardares ou levares para
+        <em>Definições → Dados</em> (ficheiro JSON), para os guardares ou levares para
         outro lado.
       </div>
 

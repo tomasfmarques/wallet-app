@@ -3,6 +3,8 @@
   "subtitle": "Account, loan data, backup and personalisation.",
   "tabs": {
     "account": "Account",
+    "preferences": "Preferences",
+    "data": "Data",
     "security": "Security",
     "euribor": "Euribor",
     "backup": "Backup",
@@ -137,7 +139,7 @@
   },
   "danger": {
     "head": "⚠️ Danger zone",
-    "intro": "These actions are irreversible. To avoid accidental loss, we recommend downloading a backup first in <1>Settings → Backup</1>.",
+    "intro": "These actions are irreversible. To avoid accidental loss, we recommend downloading a backup first in <1>Settings → Data</1>.",
     "resetTitle": "Reset data",
     "resetDesc": "Deletes loan, payments, overpayments, portfolio and settings. Your account (email, password) is kept.",
     "resetBtn": "Reset…",

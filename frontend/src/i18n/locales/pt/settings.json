@@ -3,6 +3,8 @@
   "subtitle": "Conta, dados do empréstimo, backup e personalizações.",
   "tabs": {
     "account": "Conta",
+    "preferences": "Preferências",
+    "data": "Dados",
     "security": "Segurança",
     "euribor": "Euribor",
     "backup": "Backup",
@@ -137,7 +139,7 @@
   },
   "danger": {
     "head": "⚠️ Zona perigosa",
-    "intro": "Estas ações são irreversíveis. Para evitar perdas acidentais, recomenda-se descarregar primeiro um backup em <1>Configurações → Backup</1>.",
+    "intro": "Estas ações são irreversíveis. Para evitar perdas acidentais, recomenda-se descarregar primeiro um backup em <1>Configurações → Dados</1>.",
     "resetTitle": "Repor dados",
     "resetDesc": "Apaga empréstimo, pagamentos, amortizações, carteira e configurações. A conta (email, password) é mantida.",
     "resetBtn": "Repor…",
