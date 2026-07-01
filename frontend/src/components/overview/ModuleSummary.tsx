@@ -27,7 +27,7 @@ export function ModuleSummary({
       {/* ── Empréstimo ──────────────────────────────────────── */}
       <Link to="/loan" className="module-card">
         <div className="module-card-head">
-          <span className="module-card-icon"><Icon name="home" size={19} /></span>
+          <span className="module-card-icon"><Icon name="bank" size={19} /></span>
           <span className="module-card-title">{t('module.loanTitle')}</span>
           <span className="module-card-arrow" aria-hidden>→</span>
         </div>

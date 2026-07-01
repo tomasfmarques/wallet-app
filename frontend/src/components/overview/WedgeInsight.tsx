@@ -94,7 +94,7 @@ export function WedgeInsight({ loans, portfolio }: Props) {
       <p className="wedge-insight-verdict">{verdict}</p>
       <div className="wedge-insight-figures">
         <span className="wedge-insight-fig">
-          <Icon name="home" size={15} /> {t('wedge.interestSaved')} <strong>{saved}</strong>
+          <Icon name="bank" size={15} /> {t('wedge.interestSaved')} <strong>{saved}</strong>
         </span>
         <span className="wedge-insight-fig">
           <Icon name="trendingUp" size={15} /> {t('wedge.netGain')} <strong>{gain}</strong>

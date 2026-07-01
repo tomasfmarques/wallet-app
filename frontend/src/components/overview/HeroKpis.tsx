@@ -68,7 +68,7 @@ export function HeroKpis({ portfolioValue, loanRemaining, monthlyNet, monthlyInc
       <Link to="/loan" className="hero-card">
         <div className="hero-card-top">
           <div className="hero-label">{t('hero.loanLabel')}</div>
-          <span className="hero-icon"><Icon name="home" size={17} /></span>
+          <span className="hero-icon"><Icon name="bank" size={17} /></span>
         </div>
         <div className="hero-value">{loanRemaining != null ? eur(loanRemaining) : '—'}</div>
         <div className="hero-meta">{t('hero.loanMeta')}</div>

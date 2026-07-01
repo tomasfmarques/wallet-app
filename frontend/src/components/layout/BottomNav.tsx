@@ -29,9 +29,9 @@ const GESTAO_ITEMS = [
     descKey: 'manage.loanDesc',
     icon: (
       <svg {...COMMON}>
-        <path d="M3 21h18" />
-        <path d="M5 21V10l7-5 7 5v11" />
-        <path d="M9 21v-6h6v6" />
+        <path d="M12 3 21 8H3Z" />
+        <path d="M5 8v9.5M9.5 8v9.5M14.5 8v9.5M19 8v9.5" />
+        <path d="M3.5 21h17" />
       </svg>
     ),
   },

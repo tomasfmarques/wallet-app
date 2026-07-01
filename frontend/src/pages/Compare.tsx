@@ -380,7 +380,7 @@ export function Compare() {
           <div className="compare-columns">
             <div className="card card-pad-lg compare-col compare-col-amortizar">
               <div className="compare-col-header">
-                <span className="compare-col-icon"><Icon name="home" size={19} /></span>
+                <span className="compare-col-icon"><Icon name="bank" size={19} /></span>
                 <h3>{t('amortizar')}</h3>
               </div>
               <div className="kpi-grid compare-kpis">
