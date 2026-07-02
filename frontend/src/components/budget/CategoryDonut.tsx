@@ -29,9 +29,11 @@ const COLOURS_LIGHT = [
   '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
   '#059669', '#DC2626', '#475569', '#0F172A',
 ]
+// Lighter, less-saturated tones (≈Tailwind 400) so slices sit calmly on the dark
+// card instead of vibrating like the saturated light-mode palette does.
 const COLOURS_DARK = [
-  '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
-  '#059669', '#DC2626', '#8B98A9', '#C3CDDA',
+  '#60A5FA', '#2DD4BF', '#A78BFA', '#FB923C', '#FBBF24',
+  '#4ADE80', '#F87171', '#94A3B8', '#CBD5E1',
 ]
 const OTHERS_LIGHT = '#94A3B8'
 const OTHERS_DARK = '#64748B'
