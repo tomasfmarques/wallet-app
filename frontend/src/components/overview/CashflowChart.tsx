@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 import { StateBlock } from '@/components/ui/StateBlock'
 import type { Income, Expense } from '@/types'
 
@@ -42,6 +43,7 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 export function CashflowChart({ incomes, expenses }: Props) {
   const { t } = useTranslation('overview')
   const [mode, setMode] = useState<Mode>('month')
+  const cc = useChartColors()
   const isEmpty = incomes.length === 0 && expenses.length === 0
 
   const { data, options, summary } = useMemo(() => {
@@ -114,15 +116,15 @@ export function CashflowChart({ incomes, expenses }: Props) {
       plugins: {
         legend: {
           position: 'top', align: 'end',
-          labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } },
+          labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 }, color: cc.text },
         },
         tooltip: {
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${eur(Math.abs(Number(ctx.parsed.y)))}` },
         },
       },
       scales: {
-        x: { stacked: true, grid: { display: false } },
-        y: { stacked: true, grid: { color: '#F1F5F9' }, ticks: { callback: (v) => eur(Number(v)) } },
+        x: { stacked: true, grid: { display: false }, ticks: { color: cc.text } },
+        y: { stacked: true, grid: { color: cc.grid }, ticks: { color: cc.text, callback: (v) => eur(Number(v)) } },
       },
     }
 
@@ -132,7 +134,7 @@ export function CashflowChart({ incomes, expenses }: Props) {
       net: netSer.reduce((s, v) => s + v, 0),
     }
     return { data: chartData, options: opts, summary: totals }
-  }, [incomes, expenses, mode, t])
+  }, [incomes, expenses, mode, t, cc.grid, cc.text])
 
   // No budget data yet → a friendly prompt instead of an empty axes-only chart.
   if (isEmpty) {

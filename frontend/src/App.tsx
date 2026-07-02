@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { useTranslation } from 'react-i18next'
 
 import { AuthProvider } from '@/hooks/useAuth'
+import { ThemeProvider } from '@/hooks/useTheme'
 import { LockProvider } from '@/hooks/useLock'
 import AuthGuard from '@/components/auth/AuthGuard'
 import LockGate from '@/components/auth/LockGate'
@@ -73,6 +74,7 @@ function AppRoutes() {
 function App() {
   const { i18n } = useTranslation()
   return (
+    <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
@@ -83,6 +85,7 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    </ThemeProvider>
   )
 }
 

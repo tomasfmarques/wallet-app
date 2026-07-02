@@ -9,6 +9,7 @@ import { ExportSection } from '@/components/settings/ExportSection'
 import { ImportSection } from '@/components/settings/ImportSection'
 import { WatchlistSection } from '@/components/settings/WatchlistSection'
 import { LanguageSection } from '@/components/settings/LanguageSection'
+import { ThemeSection } from '@/components/settings/ThemeSection'
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection'
 
 // Four grouped tabs (was seven flat ones):
@@ -50,7 +51,9 @@ export function Settings() {
 
       {tab === 'preferences' && (
         <div className="settings-backup-stack">
-          <h2 className="section-label">{t('tabs.language')}</h2>
+          <h2 className="section-label">{t('theme.label')}</h2>
+          <ThemeSection />
+          <h2 className="section-label" style={{ marginTop: 28 }}>{t('tabs.language')}</h2>
           <LanguageSection />
           <h2 className="section-label" style={{ marginTop: 28 }}>{t('tabs.euribor')}</h2>
           <EuriborSection />

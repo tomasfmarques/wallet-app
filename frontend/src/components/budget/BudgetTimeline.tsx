@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 import { realMonth } from '@/lib/budgetReal'
 import type { Income, Expense } from '@/types'
 
@@ -47,6 +48,7 @@ export function BudgetTimeline({
   months = 12, endAt, futureMonths = 0, onMonthClick,
 }: Props) {
   const { t } = useTranslation('budget')
+  const cc = useChartColors()
   const today = endAt ?? currentYm()
   const totalMonths = months + futureMonths
 
@@ -164,7 +166,7 @@ export function BudgetTimeline({
         legend: {
           position: 'top',
           align: 'end',
-          labels: { boxWidth: 12, boxHeight: 12, padding: 10 },
+          labels: { boxWidth: 12, boxHeight: 12, padding: 10, color: cc.text },
         },
         tooltip: {
           callbacks: {
@@ -176,11 +178,12 @@ export function BudgetTimeline({
         x: {
           stacked: true,
           grid: { display: false },
+          ticks: { color: cc.text },
         },
         y: {
           stacked: true,
-          grid: { color: '#F1F5F9' },
-          ticks: { callback: (v) => eur(Number(v)) },
+          grid: { color: cc.grid },
+          ticks: { color: cc.text, callback: (v) => eur(Number(v)) },
         },
       },
     }
@@ -189,7 +192,7 @@ export function BudgetTimeline({
     const avg = past.length > 0 ? past.reduce((s, v) => s + v, 0) / past.length : 0
 
     return { chartData: data, chartOptions: opts, avgNet: avg }
-  }, [incomes, expenses, actualIncomes, actualExpenses, today, months, totalMonths, onMonthClick, t])
+  }, [incomes, expenses, actualIncomes, actualExpenses, today, months, totalMonths, onMonthClick, t, cc.grid, cc.text])
 
   return (
     <div className="card card-pad-lg">

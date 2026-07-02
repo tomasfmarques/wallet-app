@@ -12,6 +12,13 @@
     "language": "Language",
     "danger": "Danger"
   },
+  "theme": {
+    "intro": "Choose how the app looks. \"System\" follows your device settings.",
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "security": {
     "pinHead": "Access PIN",
     "pinOn": "PIN on — the app asks for it on launch.",

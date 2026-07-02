@@ -8,6 +8,7 @@ import { useCompare, type CompareResult } from '@/hooks/useCompare'
 import { compareDefaults, type Modo, type Frequencia, type ReturnMode } from '@/lib/compareDefaults'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, ymToShort } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
 
@@ -519,6 +520,7 @@ export function Compare() {
 
 function CompareChart({ curve }: { curve: Array<{ ym: string; amortizar: number; investir: number }> }) {
   const { t } = useTranslation('compare')
+  const cc = useChartColors()
   const labels = curve.map((p) => ymToShort(p.ym))
   const data: ChartData<'line'> = {
     labels,
@@ -553,12 +555,12 @@ function CompareChart({ curve }: { curve: Array<{ ym: string; amortizar: number;
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, boxHeight: 12, padding: 12 } },
+      legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, boxHeight: 12, padding: 12, color: cc.text } },
       tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y != null ? eur(ctx.parsed.y) : '—'}` } },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, autoSkip: true } },
-      y: { grid: { color: '#F1F5F9' }, ticks: { callback: (v) => eur(Number(v)) }, beginAtZero: true },
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, autoSkip: true, color: cc.text } },
+      y: { grid: { color: cc.grid }, ticks: { color: cc.text, callback: (v) => eur(Number(v)) }, beginAtZero: true },
     },
   }
 

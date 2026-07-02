@@ -5,6 +5,7 @@ import type { ChartData, ChartOptions } from 'chart.js'
 import { Modal } from '@/components/ui/Modal'
 import { useStockHistory, type HistoryRange } from '@/hooks/useQuotes'
 import { pctSigned, localeTag } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 
 interface Props {
   open: boolean
@@ -43,6 +44,7 @@ function labelFor(ts: number, range: HistoryRange): string {
 
 export function StockChartModal({ open, onClose, symbol, name }: Props) {
   const { t } = useTranslation('portfolio')
+  const cc = useChartColors()
   const [range, setRange] = useState<HistoryRange>('1y')
   const { data, isLoading, isError } = useStockHistory(open ? symbol : undefined, range)
 
@@ -98,18 +100,18 @@ export function StockChartModal({ open, onClose, symbol, name }: Props) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { maxTicksLimit: 6, autoSkip: true, maxRotation: 0 },
+          ticks: { maxTicksLimit: 6, autoSkip: true, maxRotation: 0, color: cc.text },
         },
         y: {
           position: 'right',
-          grid: { color: '#F1F5F9' },
-          ticks: { maxTicksLimit: 5, callback: (v) => money(Number(v), cur) },
+          grid: { color: cc.grid },
+          ticks: { maxTicksLimit: 5, color: cc.text, callback: (v) => money(Number(v), cur) },
         },
       },
     }
     return { chartData: cData, chartOptions: cOpts }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, range, colour, up, data?.currency])
+  }, [points, range, colour, up, data?.currency, cc.grid, cc.text])
 
   return (
     <Modal open={open} onClose={onClose} title={`${name} · ${symbol.toUpperCase()}`} maxWidth={680}>

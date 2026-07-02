@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 
 interface Series {
   label: string
@@ -21,6 +22,7 @@ interface Props {
 // component renders both the "tracking mensal" single curve and the simulator
 // comparison.
 export function CapitalChart({ series, height = 280, sampleEvery = 6 }: Props) {
+  const cc = useChartColors()
   const { data, options } = useMemo(() => {
     // Build labels from the longest series so X-axis covers everything
     const longest = series.reduce(
@@ -67,7 +69,7 @@ export function CapitalChart({ series, height = 280, sampleEvery = 6 }: Props) {
           display: series.length > 1,
           position: 'top',
           align: 'end',
-          labels: { boxWidth: 12, boxHeight: 12, padding: 12 },
+          labels: { boxWidth: 12, boxHeight: 12, padding: 12, color: cc.text },
         },
         tooltip: {
           callbacks: {
@@ -79,18 +81,18 @@ export function CapitalChart({ series, height = 280, sampleEvery = 6 }: Props) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { maxTicksLimit: 8, autoSkip: true },
+          ticks: { maxTicksLimit: 8, autoSkip: true, color: cc.text },
         },
         y: {
-          grid: { color: '#F1F5F9' },
-          ticks: { callback: (v) => eur(Number(v)) },
+          grid: { color: cc.grid },
+          ticks: { color: cc.text, callback: (v) => eur(Number(v)) },
           beginAtZero: true,
         },
       },
     }
 
     return { data: chartData, options: opts }
-  }, [series, sampleEvery])
+  }, [series, sampleEvery, cc.grid, cc.text])
 
   return (
     <div className="chart-wrap" style={{ height }}>

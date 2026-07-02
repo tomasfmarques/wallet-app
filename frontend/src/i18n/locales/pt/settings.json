@@ -12,6 +12,13 @@
     "language": "Idioma",
     "danger": "Perigo"
   },
+  "theme": {
+    "intro": "Escolhe o aspeto da aplicação. \"Sistema\" segue as definições do teu dispositivo.",
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema"
+  },
   "security": {
     "pinHead": "PIN de acesso",
     "pinOn": "PIN ativo — a app pede o PIN ao abrir.",

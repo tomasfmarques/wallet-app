@@ -3,6 +3,7 @@ import { Doughnut } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 import { categoryLabel } from '@/lib/categoryDictionary'
 
 interface Item {
@@ -37,6 +38,7 @@ const MAX_SLICES = 7
 // category fall into the "Por classificar" bucket.
 export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
   const { t } = useTranslation('budget')
+  const cc = useChartColors()
   const suffix = totalSuffix ?? t('donut.perMonth')
   const { data, options, total, hasData } = useMemo(() => {
     const byCat = new Map<string, number>()
@@ -70,7 +72,7 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
       datasets: [{
         data: values,
         backgroundColor: colours,
-        borderColor: '#FFFFFF',
+        borderColor: cc.segmentBorder,
         borderWidth: 2,
         hoverOffset: 8,
       }],
@@ -87,6 +89,7 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
             boxHeight: 10,
             padding: 10,
             font: { size: 12 },
+            color: cc.text,
             generateLabels: (chart) => {
               const data = chart.data
               if (!data.labels?.length || !data.datasets.length) return []
@@ -118,7 +121,7 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
       },
     }
     return { data: chartData, options: opts, total: tot, hasData: values.length > 0 }
-  }, [items, t])
+  }, [items, t, cc.segmentBorder, cc.text])
 
   return (
     <div className="card card-pad-lg category-donut">

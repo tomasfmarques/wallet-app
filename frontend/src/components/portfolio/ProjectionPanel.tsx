@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, eurCompact } from '@/lib/format'
+import { useChartColors } from '@/lib/chartTheme'
 import { useUpdateSettings, type PortfolioProjectionData } from '@/hooks/usePortfolio'
 import type { PortfolioSettings } from '@/types'
 
@@ -15,6 +16,7 @@ interface Props {
 // (debounced) and a chart showing the aggregate compound-growth curve.
 export function ProjectionPanel({ projection, settings }: Props) {
   const { t } = useTranslation('portfolio')
+  const cc = useChartColors()
   const update = useUpdateSettings()
   const [gInc, setGInc] = useState(settings.gInc)
   const [gFY, setGFY]   = useState(settings.gFY)
@@ -70,16 +72,16 @@ export function ProjectionPanel({ projection, settings }: Props) {
         },
       },
       scales: {
-        x: { grid: { display: false } },
+        x: { grid: { display: false }, ticks: { color: cc.text } },
         y: {
-          grid: { color: '#F1F5F9' },
-          ticks: { callback: (v) => eurCompact(Number(v)) },
+          grid: { color: cc.grid },
+          ticks: { color: cc.text, callback: (v) => eurCompact(Number(v)) },
           beginAtZero: true,
         },
       },
     }
     return { chartData: data, chartOptions: opts }
-  }, [projection, settings.gH, t])
+  }, [projection, settings.gH, t, cc.grid, cc.text])
 
   return (
     <div className="proj-panel">

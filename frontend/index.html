@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Theme: apply the saved light/dark/system preference before first paint
+         (no flash). Mirrors the resolution logic in src/hooks/useTheme.tsx. -->
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem('w360:theme') || 'system';
+          var dark = p === 'dark' || (p === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <title>Wallet360 — As tuas finanças, de todos os ângulos</title>
     <meta name="description" content="Wallet360 — as tuas finanças, de todos os ângulos. Créditos, investimentos e orçamento num só sítio." />
     <meta name="theme-color" content="#0D2740" />
