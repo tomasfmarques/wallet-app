@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from 'react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '@/lib/api'
 import { apiErrorMessage } from '@/lib/apiError'
+import { useTheme } from '@/hooks/useTheme'
 import type { User } from '@/types'
 
 // Type-only shim for the Google Identity Services global.
@@ -68,6 +69,7 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
   const [err, setErr] = useState<string | null>(null)
   const navigate = useNavigate()
   const signIn = useGoogleSignIn()
+  const { resolved } = useTheme()
 
   // Poll for the GSI library to load
   useEffect(() => {
@@ -105,9 +107,13 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
       use_fedcm_for_prompt: true,
       cancel_on_tap_outside: true,
     })
+    // Clear any prior render so re-running (e.g. on a theme flip) doesn't stack buttons.
+    buttonRef.current.innerHTML = ''
     g.renderButton(buttonRef.current, {
       type: 'standard',
-      theme: 'outline',
+      // GSI can't read our CSS: pick a dark button on the dark theme so it doesn't
+      // render as a bright white block over the dark auth screen.
+      theme: resolved === 'dark' ? 'filled_black' : 'outline',
       size: 'large',
       text,
       shape: 'rectangular',
@@ -118,7 +124,7 @@ export function GoogleSignInButton({ text = 'continue_with', redirectTo = '/over
     // One Tap: auto-signs a remembered account, else prompts to choose.
     g.prompt()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, clientId, text])
+  }, [ready, clientId, text, resolved])
 
   // If Google isn't configured, render nothing — keeps the auth screen clean
   if (!clientId) return null

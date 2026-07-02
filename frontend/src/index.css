@@ -2915,6 +2915,11 @@ body {
 }
 .hero-card-primary .hero-label,
 .hero-card-primary .hero-meta { color: rgba(255,255,255,0.78); }
+/* Keep the primary card a deep, readable blue in dark mode — the light-value
+   token gradient washes out to pale blue with white text. */
+:root[data-theme="dark"] .hero-card-primary {
+  background: linear-gradient(135deg, #2f5fa8 0%, #274c86 60%, #1f3d69 100%);
+}
 .hero-card-good {
   background: linear-gradient(135deg, var(--bg-success) 0%, var(--bg-success-2) 100%);
   border-color: var(--border-success);

@@ -22,12 +22,19 @@ interface Props {
 
 const UNCAT = 'Por classificar'  // internal bucket key (category is null/empty)
 
-// Tones from the existing accent palette.
-const COLOURS = [
+// Categorical slice tones. The first seven read fine on both light and dark
+// cards; the last two (slate / near-black) are invisible on a dark surface, so
+// dark mode lightens them. "Outras" gets a neutral grey per theme.
+const COLOURS_LIGHT = [
   '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
   '#059669', '#DC2626', '#475569', '#0F172A',
 ]
-const OTHERS_COLOUR = '#94A3B8'
+const COLOURS_DARK = [
+  '#2563EB', '#0EA5A4', '#7C3AED', '#E8590C', '#D97706',
+  '#059669', '#DC2626', '#8B98A9', '#C3CDDA',
+]
+const OTHERS_LIGHT = '#94A3B8'
+const OTHERS_DARK = '#64748B'
 
 // Beyond this many slices the right-hand legend overflows the card, so
 // the smallest categories collapse into a single "Outras" bucket.
@@ -64,8 +71,10 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
     const values = entries.map(([, v]) => v)
     const tot = values.reduce((s, v) => s + v, 0)
 
+    const palette = cc.resolved === 'dark' ? COLOURS_DARK : COLOURS_LIGHT
+    const othersColour = cc.resolved === 'dark' ? OTHERS_DARK : OTHERS_LIGHT
     const colours = labels.map((_, i) =>
-      hasOthers && i === labels.length - 1 ? OTHERS_COLOUR : COLOURS[i % COLOURS.length])
+      hasOthers && i === labels.length - 1 ? othersColour : palette[i % palette.length])
 
     const chartData: ChartData<'doughnut'> = {
       labels,
@@ -121,7 +130,7 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
       },
     }
     return { data: chartData, options: opts, total: tot, hasData: values.length > 0 }
-  }, [items, t, cc.segmentBorder, cc.text])
+  }, [items, t, cc.segmentBorder, cc.text, cc.resolved])
 
   return (
     <div className="card card-pad-lg category-donut">
