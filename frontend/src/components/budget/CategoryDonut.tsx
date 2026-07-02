@@ -113,6 +113,10 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
                   text: `${lbl} · ${pct}%`,
                   fillStyle: bg[i],
                   strokeStyle: bg[i],
+                  // Set the text colour per-item too: a custom generateLabels can
+                  // otherwise bypass labels.color and fall back to Chart.js's dark
+                  // default, making the legend unreadable on the dark card.
+                  fontColor: cc.text,
                   hidden: false,
                   index: i,
                 }
