@@ -1566,6 +1566,15 @@ body {
   display: flex;
   justify-content: center;
 }
+/* GSI progressively upgrades the button to a FedCM iframe ~0.5s after the
+   initial inline render; that iframe's default light surface renders as a
+   white frame around the dark (filled_black) button in dark mode. Force the
+   iframe (and container) to the dark colour-scheme so its canvas is dark. */
+:root[data-theme="dark"] .gsi-button,
+:root[data-theme="dark"] .gsi-button iframe {
+  color-scheme: dark;
+  background-color: transparent !important;
+}
 .auth-divider {
   display: flex;
   align-items: center;
