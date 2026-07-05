@@ -1566,14 +1566,23 @@ body {
   display: flex;
   justify-content: center;
 }
-/* GSI progressively upgrades the button to a FedCM iframe ~0.5s after the
-   initial inline render; that iframe's default light surface renders as a
-   white frame around the dark (filled_black) button in dark mode. Force the
-   iframe (and container) to the dark colour-scheme so its canvas is dark. */
-:root[data-theme="dark"] .gsi-button,
+/* On the real domain GSI upgrades the button to a FedCM iframe whose body is a
+   light surface — in dark mode that shows as a white frame around the dark
+   (filled_black) button, and its cross-origin content can't be styled. Clip the
+   container to the button's content box (320x40 = the width we pass to
+   renderButton) and shift the slightly-larger iframe so its ~10px/2px white
+   padding band overflows and is cropped out. Verified on the live domain. */
+:root[data-theme="dark"] .gsi-button {
+  display: block;
+  width: 320px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin: 0 auto;
+}
 :root[data-theme="dark"] .gsi-button iframe {
-  color-scheme: dark;
-  background-color: transparent !important;
+  display: block;
+  margin: -2px 0 0 -10px !important;
 }
 .auth-divider {
   display: flex;
