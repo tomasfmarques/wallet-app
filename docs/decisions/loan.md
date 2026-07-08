@@ -177,6 +177,11 @@ of per-asset expected returns. Two upgrades:
   horizon).
 - Also: the **σ/Σ symbols were stripped from the user-facing labels**
   (`compare.json` pt+en) as statistics jargon — now plain "RISCO DO INVESTIMENTO
-  / Ano mau: / Ano bom:". (Status: both changes shipped to `main`/prod this
-  session; the "Cenário mau/bom" rewording remains an open follow-up.)
+  / Ano mau: / Ano bom:". (Status: both changes shipped to `main`/prod.)
+- **2026-07-08 — "Ano mau/bom" → "Cenário mau/bom" (done).** Applied the copy
+  fix flagged above: `risk.pessimistic`/`risk.optimistic`/`risk.robustInvest`/
+  `risk.fragileInvest` in `compare.json` (pt+en) now say "Cenário mau/bom" /
+  "bad/good scenario" instead of "Ano mau/bom" / "bad/good year" — matches the
+  fact that the figure is a horizon outcome, not a single year. Copy-only, no
+  schema/logic change.
 

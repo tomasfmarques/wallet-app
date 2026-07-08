@@ -83,10 +83,10 @@
   "risk": {
     "label": "RISCO DO INVESTIMENTO",
     "vol": "volatilidade {{value}} %/ano",
-    "pessimistic": "Ano mau: {{value}}",
-    "optimistic": "Ano bom: {{value}}",
-    "robustInvest": "Mesmo num ano mau, investir supera o que pouparias a amortizar.",
-    "fragileInvest": "Investir vence em média, mas num ano mau a poupança garantida de {{saved}} ao amortizar pode ser melhor.",
+    "pessimistic": "Cenário mau: {{value}}",
+    "optimistic": "Cenário bom: {{value}}",
+    "robustInvest": "Mesmo no cenário mau, investir supera o que pouparias a amortizar.",
+    "fragileInvest": "Investir vence em média, mas no cenário mau a poupança garantida de {{saved}} ao amortizar pode ser melhor.",
     "robustAmortize": "Amortizar vence — e sem o risco de mercado.",
     "coverage": "Risco calculado sobre {{value}} % da carteira (sem dados históricos nos restantes).",
     "level": { "baixo": "Risco baixo", "medio": "Risco médio", "alto": "Risco alto", "muito_alto": "Risco muito alto" }
