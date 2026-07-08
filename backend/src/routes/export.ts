@@ -37,7 +37,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const [loans, assets, settings, incomes, expenses, classificationRules, bankConnections, importedTxns] = await Promise.all([
+    // NOTE: PushSubscription is intentionally NOT exported — device-bound push
+    // registrations (like passkeys) are meaningless on another install.
+    const [loans, assets, settings, incomes, expenses, classificationRules, bankConnections, importedTxns, notificationPreference] = await Promise.all([
       prisma.loan.findMany({
         where: { userId },
         orderBy: { name: 'asc' },
@@ -66,6 +68,7 @@ router.post('/', async (req, res) => {
         where: { userId }, orderBy: { createdAt: 'asc' },
         select: { source: true, externalId: true, createdAt: true },
       }),
+      prisma.notificationPreference.findUnique({ where: { userId } }),
     ])
 
     const payload = {
@@ -81,6 +84,7 @@ router.post('/', async (req, res) => {
       classificationRules,
       bankConnections,
       importedTxns,
+      notificationPreference,
     }
 
     const stamp = new Date().toISOString().slice(0, 10)

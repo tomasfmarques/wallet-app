@@ -178,5 +178,19 @@
     "resetting": "A reiniciar…",
     "resetDone": "Dados repostos",
     "exit": "Sair do demo"
+  },
+  "notifications": {
+    "label": "Notificações",
+    "intro": "Recebe alertas neste dispositivo: prestações a vencer, revisões da Euribor e lembretes de importação. Também controlas aqui o resumo mensal por email.",
+    "enable": "Ativar notificações",
+    "disableDevice": "Desativar neste dispositivo",
+    "topicsLabel": "Tipos de notificação",
+    "topicPayment": "Pagamentos a vencer (dia anterior)",
+    "topicEuribor": "Revisão da prestação (Euribor)",
+    "topicImport": "Lembrete de importação do extrato",
+    "topicDigest": "Resumo mensal por email",
+    "denied": "As notificações foram bloqueadas pelo browser. Ativa-as nas definições do site.",
+    "error": "Não foi possível atualizar as notificações. Tenta novamente.",
+    "iosHint": "No iPhone/iPad, as notificações só funcionam com a app instalada no ecrã principal (Partilhar → Adicionar ao ecrã principal)."
   }
 }

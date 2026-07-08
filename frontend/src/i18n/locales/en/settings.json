@@ -178,5 +178,19 @@
     "resetting": "Resetting…",
     "resetDone": "Data reset",
     "exit": "Exit demo"
+  },
+  "notifications": {
+    "label": "Notifications",
+    "intro": "Get alerts on this device: payments coming due, Euribor revisions and statement-import reminders. The monthly email digest is controlled here too.",
+    "enable": "Enable notifications",
+    "disableDevice": "Disable on this device",
+    "topicsLabel": "Notification topics",
+    "topicPayment": "Payments due (day before)",
+    "topicEuribor": "Payment revision (Euribor)",
+    "topicImport": "Statement import reminder",
+    "topicDigest": "Monthly email digest",
+    "denied": "Notifications are blocked by the browser. Enable them in the site settings.",
+    "error": "Could not update notifications. Try again.",
+    "iosHint": "On iPhone/iPad, notifications only work when the app is installed on the home screen (Share → Add to Home Screen)."
   }
 }

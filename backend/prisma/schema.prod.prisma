@@ -41,8 +41,39 @@ model User {
   passwordResetTokens PasswordResetToken[]
   webauthnCredentials WebAuthnCredential[]
   importedTxns      ImportedTxn[]
+  pushSubscriptions PushSubscription[]
+  notificationPreference NotificationPreference?
 
   @@map("users")
+}
+
+// One row per browser/device push registration. Device-bound (like passkeys)
+// → EXCLUDED from export/import; dies with the user (cascade).
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+// Per-user notification switches. User data → included in export/import.
+model NotificationPreference {
+  id                 String  @id @default(uuid())
+  userId             String  @unique @map("user_id")
+  pushPayment        Boolean @default(true)  @map("push_payment")
+  pushEuribor        Boolean @default(true)  @map("push_euribor")
+  pushImportReminder Boolean @default(true)  @map("push_import_reminder")
+  emailMonthlyDigest Boolean @default(true)  @map("email_monthly_digest")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // Append-only audit trail of account deletions. Deliberately NOT linked to User

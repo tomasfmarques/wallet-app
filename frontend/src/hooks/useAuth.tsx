@@ -170,10 +170,28 @@ export function useDeleteAccount() {
   )
 }
 
+// Best-effort: unbind this device's push subscription BEFORE the session dies
+// (the DELETE needs the cookie). On a shared browser, a leftover subscription
+// would keep routing the previous user's finance alerts to a device someone
+// else now controls. Never blocks the logout itself.
+async function releasePushSubscription(): Promise<void> {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    const reg = await navigator.serviceWorker.getRegistration()
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    await api.delete('/api/push/subscribe', { endpoint: sub.endpoint }).catch(() => {})
+    await sub.unsubscribe().catch(() => {})
+  } catch { /* best-effort */ }
+}
+
 export function useLogout() {
   const qc = useQueryClient()
   return useMutation<{ ok: true }, ApiError>(
-    () => api.post<{ ok: true }>('/api/auth/logout'),
+    async () => {
+      await releasePushSubscription()
+      return api.post<{ ok: true }>('/api/auth/logout')
+    },
     {
       onSuccess: () => {
         try { sessionStorage.removeItem('w360:unlocked') } catch { /* re-lock on next launch */ }

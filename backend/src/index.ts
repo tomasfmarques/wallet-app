@@ -25,6 +25,7 @@ import bankRouter from './routes/bank'
 import brokerRouter from './routes/broker'
 import simulateRouter from './routes/simulate'
 import cronRouter from './routes/cron'
+import pushRouter from './routes/push'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -181,6 +182,7 @@ app.use('/api/bank', bankRouter)
 app.use('/api/broker', brokerRouter)
 app.use('/api/simulate', simulateRouter)
 app.use('/api/cron', cronRouter)
+app.use('/api/push', pushRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })

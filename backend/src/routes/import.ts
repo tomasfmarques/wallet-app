@@ -146,6 +146,24 @@ router.post('/', async (req, res) => {
       await tx.classificationRule.deleteMany({ where: { userId } })
       await tx.bankConnection.deleteMany({ where: { userId } })
       await tx.importedTxn.deleteMany({ where: { userId } })
+      // NOTE: PushSubscription is NOT restored (device-bound, like passkeys);
+      // NotificationPreference IS (user data — restored below).
+      await tx.notificationPreference.deleteMany({ where: { userId } })
+
+      // ── Notification preferences ───────────────────────────────
+      if (isObj(payload.notificationPreference)) {
+        const np = payload.notificationPreference as Record<string, unknown>
+        const asBool = (v: unknown, dflt: boolean) => (typeof v === 'boolean' ? v : dflt)
+        await tx.notificationPreference.create({
+          data: {
+            userId,
+            pushPayment:        asBool(np.pushPayment, true),
+            pushEuribor:        asBool(np.pushEuribor, true),
+            pushImportReminder: asBool(np.pushImportReminder, true),
+            emailMonthlyDigest: asBool(np.emailMonthlyDigest, true),
+          },
+        })
+      }
 
       // ── Loans (multiple credits) ───────────────────────────────
       const loanList: Record<string, unknown>[] = isArr(payload.loans)

@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 import { timingSafeEqual } from 'crypto'
 import { fetchAndStoreEuribor } from '../lib/euribor'
+import { evaluatePushNotifications } from '../lib/notifications'
 
 // ── Daily cron dispatcher ────────────────────────────────────────
 // Vercel Cron (see vercel.json "crons") GETs /api/cron/daily once a day; the
@@ -39,8 +40,15 @@ async function runDaily(req: Request, res: Response): Promise<void> {
     tasks.euribor = `error: ${err instanceof Error ? err.message : 'unknown'}`
   }
 
-  // WS3 (push notifications) and WS4 (monthly digest, day-1 only) plug in
-  // here as further try/catch blocks.
+  try {
+    const result = await evaluatePushNotifications()
+    tasks.push = 'skipped' in result ? `skipped (${result.skipped})` : `ok (${result.sent} sent)`
+  } catch (err) {
+    console.error('[cron] push task failed:', err)
+    tasks.push = `error: ${err instanceof Error ? err.message : 'unknown'}`
+  }
+
+  // WS4 (monthly digest, day-1 only) plugs in here as a further block.
 
   res.json({ ok: true, tasks })
 }
