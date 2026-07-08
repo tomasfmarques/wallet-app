@@ -280,3 +280,44 @@ Banking-style app-lock layered over the session. **Re-lock = launch only.**
 - **Trigger to revisit:** the pre-public legal/launch push (pairs with the
   privacy-policy + account-deletion URL work in [`../legal/`](../legal/) and
   STATE next-step #4).
+
+## 2026-07-08 — WS1 security hardening: email casing, session invalidation, login lockout
+
+Shipped as the roadmap's WS1 ([`../roadmap-2026-07-spec.md`](../roadmap-2026-07-spec.md)).
+Backend-only, no schema change.
+
+- **Email normalization (`lib/normalizeEmail.ts` + `lib/userLookup.ts`):**
+  emails are stored/compared lowercase+trimmed at every boundary — signup
+  (existence check + create), login, forgot-password, and Google sign-in.
+  **The legacy fallback lives in ONE place** — `findUserByEmail()` in
+  `lib/userLookup.ts` (normalized lookup, then raw-input retry when the casing
+  differs) — used by all FOUR read sites: login, forgot-password, signup dedup,
+  and the **Google auto-link** (main lookup + concurrent-link recovery). The
+  Google site matters: without the fallback, a pre-normalization account stored
+  `Foo@x.com` + a Google sign-in with that address would silently create a
+  DUPLICATE Google-only user (caught in code review pre-ship). No data
+  migration needed, nobody gets locked out. **Residual edge (accepted):** a legacy mixed-case row
+  (`Foo@x.com`) queried with a THIRD casing (`FOO@x.com`) misses both lookups;
+  a case-insensitive query would need pg-only `mode: 'insensitive'` (SQLite dev
+  lacks it). Realistically zero users affected (owner account is lowercase;
+  Google + demo accounts always were normalized).
+- **Session invalidation (`lib/sessions.ts` → `destroyOtherSessions`):** after a
+  successful change-password the user's OTHER sessions are deleted from the pg
+  `session` table (raw SQL — the table belongs to connect-pg-simple, not the
+  Prisma schema; `sess::jsonb->>'userId'`); the acting session survives via
+  `req.sessionID`. After a reset-password ALL the user's sessions die (the reset
+  flow has no session to keep). No-op off Postgres (dev MemoryStore). Failures
+  are logged, never block the password change (best-effort hardening).
+- **Per-account login lockout:** `/login` now uses the existing kvStore lockout
+  (5 fails / 15 min, same counters as PIN/change-password) with namespace
+  `login:<normalizedEmail>`. Checked for EVERY request (unknown emails too) so
+  the lock check can't probe account existence; fails recorded on wrong password
+  AND on password attempts against Google-only accounts; cleared on success.
+  **Trade-off (deliberate):** an attacker can lock a victim's password login for
+  15 min by spamming wrong passwords — acceptable for a finance app (and Google
+  sign-in is unaffected). The per-IP limiter stays as defence in depth.
+- **Verified:** live against the dev backend — mixed-case signup stores
+  lowercase; cross-casing login works; cross-casing duplicate signup → 409;
+  6th attempt after 5 fails → 429 even with the correct password and any casing.
+- **Don't:** remove the raw-input fallback lookups without first migrating any
+  mixed-case rows; don't key the login lockout on userId (existence probe).

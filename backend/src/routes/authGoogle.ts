@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { OAuth2Client } from 'google-auth-library'
 import { prisma } from '../lib/prisma'
+import { normalizeEmail } from '../lib/normalizeEmail'
+import { findUserByEmail } from '../lib/userLookup'
 
 const router = Router()
 
@@ -49,7 +51,7 @@ router.post('/', async (req, res) => {
     }
 
     const googleId = payload.sub
-    const email = payload.email.toLowerCase()
+    const email = normalizeEmail(payload.email)
     const emailVerified = payload.email_verified === true
     const name = payload.name?.trim() || email.split('@')[0]
 
@@ -60,7 +62,10 @@ router.post('/', async (req, res) => {
     let user = await prisma.user.findUnique({ where: { googleId } })
 
     if (!user && emailVerified) {
-      const byEmail = await prisma.user.findUnique({ where: { email } })
+      // findUserByEmail carries the legacy mixed-case fallback — without it, a
+      // pre-normalization account stored as "Foo@x.com" would be missed here
+      // and a DUPLICATE Google-only user created for the same person.
+      const byEmail = await findUserByEmail(payload.email)
       if (byEmail) {
         try {
           user = await prisma.user.update({
@@ -70,7 +75,7 @@ router.post('/', async (req, res) => {
         } catch {
           // Concurrent request already linked this googleId — re-read the final state
           user = await prisma.user.findUnique({ where: { googleId } })
-               ?? await prisma.user.findUnique({ where: { email } })
+               ?? await findUserByEmail(payload.email)
         }
       }
     }

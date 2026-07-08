@@ -64,10 +64,7 @@ _A full code/security/product audit ran 2026-07-08 (see Recent work). Verdict: c
 
 > **📋 DETAILED BUILD SPEC:** items #5–#7, #10 and #12 below (plus **Modo Casal**, the **monthly email digest**, and the **"Fecho do mês"** ritual) are fully specced as agent-executable workstreams WS1–WS8 in [`docs/roadmap-2026-07-spec.md`](roadmap-2026-07-spec.md) — schemas, endpoints, UI, i18n, edge cases, acceptance criteria, ship order. **Start any of those tasks from the spec, not from the summaries below.** Owner-approved 2026-07-08 (IRS + Modo Casal + notifications + auto email digest all confirmed "build").
 
-5. **Security hardening batch (small, ship as one PR — no schema):**
-   - **(a) Normalize email casing** at signup/login (`email.toLowerCase().trim()` before lookup/create, as forgot-password already does). Today `Foo@x.com` and `foo@x.com` can be two accounts, forgot-password misses mixed-case signups, and Google auto-link (which lowercases) won't match a mixed-case password account.
-   - **(b) Invalidate other sessions on password change/reset** — a stolen session currently survives a password reset (pg session store; delete this user's other rows in `session`).
-   - **(c) Per-account login lockout** — login only has the per-IP limiter; reuse the existing kvStore lockout (like PIN/change-password) keyed on the account.
+5. ~~**Security hardening batch**~~ — **✅ DONE (WS1, shipped 2026-07-08):** email normalization with legacy mixed-case fallback (`lib/normalizeEmail.ts`), other-sessions invalidation on password change/reset (`lib/sessions.ts`, pg raw SQL), per-account login lockout (`login:<email>` kvStore namespace, 5/15min). Verified live: cross-casing signup/login/dedup + lockout-with-correct-password. See [`docs/decisions/auth.md`](decisions/auth.md).
 6. **Retention layer — the biggest product gap (nothing pulls users back today):**
    - **(a) Web Push notifications** (PWA is installed + SW exists; iOS ≥16.4 supports it). First alerts: prestação due date, Euribor revision impact, monthly import reminder.
    - **(b) Monthly digest email** — "O teu resumo de junho": saved vs plan, portfolio move, wedge delta. Nodemailer already wired for reset emails.

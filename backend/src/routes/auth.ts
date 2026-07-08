@@ -5,6 +5,9 @@ import { prisma } from '../lib/prisma'
 import { sendPasswordResetEmail } from '../lib/email'
 import { seedDemoAccount } from '../lib/demoSeed'
 import { hit, peek, clear } from '../lib/kvStore'
+import { normalizeEmail } from '../lib/normalizeEmail'
+import { findUserByEmail } from '../lib/userLookup'
+import { destroyOtherSessions } from '../lib/sessions'
 
 const router = Router()
 
@@ -73,8 +76,12 @@ function serializeUser(user: { id: string; email: string; name: string; createdA
 router.post('/signup', async (req, res) => {
   const { email, password, name } = req.body ?? {}
 
+  // Normalize BEFORE validating so accidental whitespace (mobile keyboards
+  // love trailing spaces) doesn't bounce a perfectly good address.
+  const emailNorm = typeof email === 'string' ? normalizeEmail(email) : email
+
   const errors: Record<string, string> = {}
-  const emailErr = validateEmail(email)
+  const emailErr = validateEmail(emailNorm)
   if (emailErr) errors.email = emailErr
   const passwordErr = validatePassword(password)
   if (passwordErr) errors.password = passwordErr
@@ -87,7 +94,8 @@ router.post('/signup', async (req, res) => {
   }
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } })
+    // findUserByEmail carries the legacy mixed-case fallback (see lib/userLookup).
+    const existing = await findUserByEmail(email)
     if (existing) {
       res.status(409).json({ errors: { email: 'Já existe uma conta com este email' } })
       return
@@ -95,7 +103,7 @@ router.post('/signup', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12)
     const user = await prisma.user.create({
-      data: { email, passwordHash, name: name.trim() },
+      data: { email: emailNorm, passwordHash, name: name.trim() },
     })
 
     req.session.regenerate((err) => {
@@ -119,8 +127,21 @@ router.post('/login', async (req, res) => {
     return
   }
 
+  const emailNorm = normalizeEmail(email)
+  // Per-account lockout, keyed on the email (not userId) and checked for every
+  // request — including unknown emails — so the lock check itself can't be
+  // used to probe whether an account exists. The per-IP limiter stays as
+  // defence in depth; this one stops a brute force spread across IPs.
+  const lockKey = `login:${emailNorm}`
+
   try {
-    const user = await prisma.user.findUnique({ where: { email } })
+    if (await cpIsLocked(lockKey)) {
+      res.status(429).json({ error: 'Demasiadas tentativas falhadas. Tenta novamente em 15 minutos.' })
+      return
+    }
+
+    // findUserByEmail carries the legacy mixed-case fallback (see lib/userLookup).
+    const user = await findUserByEmail(email)
     if (!user) {
       // Same error message as wrong-password — don't leak whether email exists
       res.status(401).json({ error: 'Email ou password incorretos' })
@@ -128,8 +149,10 @@ router.post('/login', async (req, res) => {
     }
 
     // Google-only users (no local password) get a clear hint instead of a
-    // generic 401, since "wrong password" would confuse them.
+    // generic 401, since "wrong password" would confuse them. Still counts as
+    // a failed attempt — this path is also a password-guessing oracle.
     if (!user.passwordHash) {
+      await cpRecordFail(lockKey)
       res.status(401).json({
         error: 'Esta conta usa Sign in with Google. Usa o botão Google para entrar.',
       })
@@ -138,10 +161,12 @@ router.post('/login', async (req, res) => {
 
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) {
+      await cpRecordFail(lockKey)
       res.status(401).json({ error: 'Email ou password incorretos' })
       return
     }
 
+    await cpClear(lockKey)
     req.session.regenerate((err) => {
       if (err) { res.status(500).json({ error: 'Erro de sessão' }); return }
       req.session.userId = user.id
@@ -209,6 +234,9 @@ router.post('/change-password', async (req, res) => {
       where: { id: user.id },
       data: { passwordHash },
     })
+    // Evict every OTHER session — a hijacked session must not survive the
+    // password change. The session making the change stays alive.
+    await destroyOtherSessions(user.id, req.sessionID)
     res.json({ ok: true })
   } catch (err) {
     console.error('Change password failed:', err)
@@ -372,7 +400,8 @@ router.post('/forgot-password', async (req, res) => {
   res.json({ ok: true }) // respond immediately to not leak existence
 
   try {
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
+    // findUserByEmail carries the legacy mixed-case fallback (see lib/userLookup).
+    const user = await findUserByEmail(email)
     // Only send for accounts that have a local password; Google-only users have no password to reset.
     if (!user || !user.passwordHash) return
 
@@ -424,6 +453,10 @@ router.post('/reset-password', async (req, res) => {
       prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
       prisma.passwordResetToken.update({ where: { id: record.id }, data: { used: true } }),
     ])
+
+    // A reset means "someone else may control my sessions" — destroy them ALL
+    // (the reset flow has no session of its own to preserve).
+    await destroyOtherSessions(record.userId)
 
     res.json({ ok: true })
   } catch (err) {
