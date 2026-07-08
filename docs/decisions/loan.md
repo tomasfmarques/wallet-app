@@ -185,3 +185,48 @@ of per-asset expected returns. Two upgrades:
   fact that the figure is a horizon outcome, not a single year. Copy-only, no
   schema/logic change.
 
+
+## 2026-07-08 — WS2: cron infra + auto-Euribor + revision forecasting
+
+Roadmap WS2 ([`../roadmap-2026-07-spec.md`](../roadmap-2026-07-spec.md)).
+Additive schema (`add_euribor_rate_and_tenor`): global `EuriborRate` table +
+nullable `Loan.euriborTenor` — both schema files; EuriborRate **excluded** from
+export/import (global market data); `euriborTenor` carried by the full-row
+export and whitelisted in import.
+
+- **Cron dispatcher** (`routes/cron.ts`, `/api/cron/daily`, GET+POST): gated on
+  `CRON_SECRET` (503 unset / 401 wrong / 200 Bearer match — matches Vercel's
+  convention of sending `Authorization: Bearer $CRON_SECRET` on cron calls).
+  `vercel.json` schedules it daily at 06:00 UTC. Each task runs in its own
+  try/catch; WS3 (push) and WS4 (digest) plug in as further blocks.
+- **Source = ECB Data Portal MONTHLY AVERAGES** (dataset FM, HSTA series for
+  3M/6M/12M), not daily EMMI fixings: official, free, keyless — and PT mortgage
+  revisions are contractually indexed to the *previous month's monthly
+  average*, so this series IS the number the bank uses. Consequently
+  `EuriborRate` stores a `month` ("AAAA-MM"), a deliberate deviation from the
+  spec's daily `date`. Values stored in PERCENT (2.5955); ÷100 before the
+  engine. Fetch pulls the last 2 observations per tenor (late publications),
+  upserts on unique [tenor, month] — idempotent, verified live (6 rows, stable
+  across reruns).
+- **Revision projection** (`lib/euribor.ts` → `projectRevision`, exposed at
+  `GET /api/loan/:id/revision`): revision anchor = end of the fixed phase
+  (`addMonths(dataInicio, mesesFixos)`), then every tenor months. Re-prices the
+  schedule (incl. amortizations) with the latest stored average and compares
+  the prestação at the next revision vs today's. Returns null when: no tenor,
+  no stored rate, or payoff precedes the next revision. Verified against the
+  demo loan: 2022-03 start + 24m fixed + 6m tenor → next revision 2026-09,
+  3.50%→3.60%, +€12.62/month — hand-checked.
+- **`loan.euribor` is NOT auto-written** by the fetch (v1 decision): the engine
+  keeps the user-confirmed rate; the card shows a projection. Auto-applying at
+  the revision date (and notifying — WS3) is the v2 follow-up.
+- **UI:** tenor `<select>` in the setup form's mixed-rate section (optional,
+  default Manual = exactly the old behaviour; prefilled on edit — remember the
+  page builds `initial` EXPLICITLY, new loan fields must be added there too:
+  `pages/Loan.tsx`) + a "Próxima revisão" card between the KPIs and subtabs
+  (`components/loan/RevisionCard.tsx`), i18n `loan.setup.tenor*` +
+  `loan.revision.*` pt+en. Card renders nothing in manual mode.
+- **Import fix (pre-existing gap, folded in):** the restore whitelist dropped
+  `bonificacaoMensal`/`bonificacaoMeses`/`taeg` — now carried, along with the
+  new `euriborTenor`.
+- **Don't:** feed `EuriborRate.value` to the engine without ÷100; move the
+  revision card into `LoanKpis` (it fetches its own endpoint, gated on tenor).

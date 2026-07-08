@@ -6,6 +6,8 @@ import { prisma } from '../lib/prisma'
 // NOTE: the DeletionLog model is intentionally NOT exported here — it is a
 // system-level audit log (not user-scoped data) and must survive deletion. See
 // schema comment + DELETE /api/me. Don't add it to the per-user backup.
+// NOTE: EuriborRate is intentionally NOT exported either — it is global market
+// data (ECB monthly averages) refreshed by the daily cron, not user data.
 
 const router = Router()
 router.use(requireAuth)

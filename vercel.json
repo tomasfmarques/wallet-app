@@ -9,6 +9,9 @@
       "includeFiles": "node_modules/.prisma/client/**"
     }
   },
+  "crons": [
+    { "path": "/api/cron/daily", "schedule": "0 6 * * *" }
+  ],
   "redirects": [
     { "source": "/privacidade.html", "destination": "/privacidade", "permanent": true },
     { "source": "/eliminar-conta.html", "destination": "/eliminar-conta", "permanent": true }

@@ -66,6 +66,7 @@ export interface LoanInputBody {
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
   taeg?: number | null
+  euriborTenor?: '3m' | '6m' | '12m' | null
 }
 
 // ── Query key ────────────────────────────────────────────────────
@@ -77,6 +78,28 @@ export function useLoan() {
     LOAN_KEY,
     () => api.get<LoanResponse>('/api/loan'),
     { staleTime: 1000 * 60 },
+  )
+}
+
+// ── Revision projection (auto-Euribor) ───────────────────────────
+export interface RevisionProjection {
+  tenor: '3m' | '6m' | '12m'
+  nextRevisionYm: string
+  latestEuribor: number       // percent
+  latestEuriborMonth: string  // "AAAA-MM"
+  currentRate: number         // percent
+  projectedRate: number       // percent
+  currentPayment: number      // €
+  projectedPayment: number    // €
+  deltaMonthly: number        // €
+}
+
+// null when the loan has no tenor set or no rate has been fetched yet.
+export function useLoanRevision(loanId: string | undefined, enabled: boolean) {
+  return useQuery<{ revision: RevisionProjection | null }, ApiError>(
+    ['loan', 'revision', loanId],
+    () => api.get<{ revision: RevisionProjection | null }>(`/api/loan/${loanId}/revision`),
+    { enabled: !!loanId && enabled, staleTime: 1000 * 60 * 60 },
   )
 }
 

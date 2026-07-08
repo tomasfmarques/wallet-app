@@ -233,6 +233,9 @@ model Loan {
   bonificacaoMensal Float? @map("bonificacao_mensal")
   bonificacaoMeses  Int?   @map("bonificacao_meses")
   taeg              Float? // display-only TAEG for fixed-rate loans (e.g. car, personal)
+  // Which Euribor tenor the contract revises on: "3m" | "6m" | "12m".
+  // null = manual mode (no auto-tracking / revision projection) — the default.
+  euriborTenor      String? @map("euribor_tenor")
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments      LoanPayment[]
@@ -279,6 +282,21 @@ model EuriborHistory {
 
   @@unique([loanId, ym])
   @@map("euribor_history")
+}
+
+// Global Euribor market data (monthly averages from the ECB Data Portal) —
+// fetched by the daily cron, shared by all users. PT mortgage revisions use
+// the PREVIOUS month's monthly average, which is exactly this series.
+// NOT user data → deliberately EXCLUDED from export.ts / import.ts.
+model EuriborRate {
+  id        String   @id @default(uuid())
+  tenor     String   // "3m" | "6m" | "12m"
+  month     String   // "AAAA-MM" — the month the average covers
+  value     Float    // percent, e.g. 2.5955 (divide by 100 before the loan engine)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([tenor, month])
+  @@map("euribor_rates")
 }
 
 // ── Portfolio ─────────────────────────────────────────────────────

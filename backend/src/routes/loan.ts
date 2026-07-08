@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { computeSchedule, computeKpis, type LoanInput } from '../lib/loanEngine'
 import { stripFormulaPrefix } from '../lib/sanitize'
+import { isEuriborTenor, projectRevision } from '../lib/euribor'
 
 const router = Router()
 router.use(requireAuth)
@@ -126,10 +127,18 @@ router.put('/', async (req, res) => {
     else taeg = t > 0 ? t : null
   }
 
+  // Euribor tenor for auto-tracking ("3m" | "6m" | "12m"); null/'' = manual.
+  const tenorRaw = req.body?.euriborTenor
+  let euriborTenor: string | null = null
+  if (tenorRaw !== undefined && tenorRaw !== null && tenorRaw !== '') {
+    if (!isEuriborTenor(tenorRaw)) errors.euriborTenor = 'Tenor inválido (3m, 6m ou 12m)'
+    else euriborTenor = tenorRaw
+  }
+
   if (mesesFixos > prazoMeses) errors.mesesFixos = 'mesesFixos não pode exceder prazoMeses'
   if (Object.keys(errors).length > 0) { res.status(400).json({ errors }); return }
 
-  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses, taeg }
+  const data = { name, capital, prazoMeses, tanFixa, mesesFixos, spread, euribor, dataInicio, bonificacaoMensal, bonificacaoMeses, taeg, euriborTenor }
   const id = typeof req.body?.id === 'string' ? req.body.id : null
 
   try {
@@ -297,6 +306,25 @@ router.post('/:loanId/euribor', async (req, res) => {
     res.json({ loan: updated, entry })
   } catch (err) {
     console.error('POST /api/loan/:loanId/euribor failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── GET /api/loan/:loanId/revision ──────────────────────────────
+// Projects the next Euribor revision: date + re-priced prestação using the
+// latest ECB monthly average for the loan's tenor. 204-equivalent null when
+// the loan has no tenor set or no rate has been fetched yet.
+router.get('/:loanId/revision', async (req, res) => {
+  try {
+    const loan = await ownedLoan(req.params.loanId, req.session.userId!)
+    if (!loan) { res.status(404).json({ error: 'Crédito não encontrado' }); return }
+    const amortizations = await prisma.loanAmortization.findMany({
+      where: { loanId: loan.id }, orderBy: { ym: 'asc' },
+    })
+    const revision = await projectRevision({ ...loan, amortizations })
+    res.json({ revision })
+  } catch (err) {
+    console.error('GET /api/loan/:loanId/revision failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

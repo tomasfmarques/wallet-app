@@ -166,6 +166,12 @@ router.post('/', async (req, res) => {
               spread:     isNum(loan.spread)     ? loan.spread     : 0,
               euribor:    isNum(loan.euribor)    ? loan.euribor    : 0,
               dataInicio: loan.dataInicio,
+              // Optional fields (were silently dropped by older restores):
+              bonificacaoMensal: isNum(loan.bonificacaoMensal) ? loan.bonificacaoMensal : null,
+              bonificacaoMeses:  isNum(loan.bonificacaoMeses)  ? Math.round(loan.bonificacaoMeses) : null,
+              taeg:              isNum(loan.taeg)              ? loan.taeg : null,
+              euriborTenor:      loan.euriborTenor === '3m' || loan.euriborTenor === '6m' || loan.euriborTenor === '12m'
+                ? loan.euriborTenor : null,
             },
           })
 

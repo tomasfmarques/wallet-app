@@ -9,7 +9,11 @@
   "amortizationsBtn": "Overpayments ({{count}})",
   "editData": "Edit details",
   "addLoan": "Add loan",
-  "tabs": { "tracking": "Monthly tracking", "simulation": "Simulation", "table": "Annual table" },
+  "tabs": {
+    "tracking": "Monthly tracking",
+    "simulation": "Simulation",
+    "table": "Annual table"
+  },
   "capitalEvolution": "CAPITAL OVER TIME",
   "payments": "PAYMENTS",
   "capitalSeries": "Outstanding capital",
@@ -74,7 +78,13 @@
     "errPct": "%",
     "errFixedExceeds": "Can't exceed the total term",
     "errInvalid": "Invalid value",
-    "errIntegerGte0": "Integer ≥ 0"
+    "errIntegerGte0": "Integer ≥ 0",
+    "tenorLabel": "Euribor index",
+    "tenorManual": "Manual (no tracking)",
+    "tenor3m": "3-month Euribor",
+    "tenor6m": "6-month Euribor",
+    "tenor12m": "12-month Euribor",
+    "tenorHint": "With an index set, the app tracks Euribor (ECB monthly average) and projects your next payment revision."
   },
   "amort": {
     "title": "Overpayments",
@@ -132,5 +142,18 @@
     "noAmort": "No overpayments",
     "withAmort": "With overpayments",
     "calculating": "Calculating scenario…"
+  },
+  "revision": {
+    "label": "NEXT REVISION",
+    "tenorMeta": "{{tenor}}",
+    "tenor": {
+      "3m": "Euribor 3M",
+      "6m": "Euribor 6M",
+      "12m": "Euribor 12M"
+    },
+    "deltaUp": "your payment should rise ~{{value}}/month",
+    "deltaDown": "your payment should drop ~{{value}}/month",
+    "deltaFlat": "your payment should stay flat",
+    "detail": "Current payment {{current}} → projected {{projected}}, with Euribor at {{euribor}} % ({{month}} average). Estimate uses the latest rate; the actual revision uses the previous month's average."
   }
 }

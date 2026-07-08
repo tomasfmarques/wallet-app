@@ -25,6 +25,7 @@ export interface Loan {
   bonificacaoMensal?: number | null
   bonificacaoMeses?: number | null
   taeg?: number | null
+  euriborTenor?: '3m' | '6m' | '12m' | null
 }
 
 export interface LoanPayment {

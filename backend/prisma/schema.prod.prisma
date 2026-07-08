@@ -206,6 +206,7 @@ model Loan {
   bonificacaoMensal Float? @map("bonificacao_mensal")
   bonificacaoMeses  Int?   @map("bonificacao_meses")
   taeg              Float?
+  euriborTenor      String? @map("euribor_tenor")
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments      LoanPayment[]
@@ -250,6 +251,19 @@ model EuriborHistory {
 
   @@unique([loanId, ym])
   @@map("euribor_history")
+}
+
+// Global Euribor market data (ECB monthly averages) — fetched by the daily
+// cron, shared by all users. NOT user data → EXCLUDED from export/import.
+model EuriborRate {
+  id        String   @id @default(uuid())
+  tenor     String
+  month     String
+  value     Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([tenor, month])
+  @@map("euribor_rates")
 }
 
 // ── Portfolio ─────────────────────────────────────────────────────

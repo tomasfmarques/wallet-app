@@ -9,7 +9,11 @@
   "amortizationsBtn": "Amortizações ({{count}})",
   "editData": "Editar dados",
   "addLoan": "Adicionar crédito",
-  "tabs": { "tracking": "Tracking mensal", "simulation": "Simulação", "table": "Tabela anual" },
+  "tabs": {
+    "tracking": "Tracking mensal",
+    "simulation": "Simulação",
+    "table": "Tabela anual"
+  },
   "capitalEvolution": "EVOLUÇÃO DO CAPITAL",
   "payments": "PAGAMENTOS",
   "capitalSeries": "Capital em dívida",
@@ -74,7 +78,13 @@
     "errPct": "%",
     "errFixedExceeds": "Não pode exceder o prazo total",
     "errInvalid": "Valor inválido",
-    "errIntegerGte0": "Inteiro ≥ 0"
+    "errIntegerGte0": "Inteiro ≥ 0",
+    "tenorLabel": "Indexante Euribor",
+    "tenorManual": "Manual (sem acompanhamento)",
+    "tenor3m": "Euribor 3 meses",
+    "tenor6m": "Euribor 6 meses",
+    "tenor12m": "Euribor 12 meses",
+    "tenorHint": "Com o indexante definido, a app acompanha a Euribor (média mensal do BCE) e projeta a próxima revisão da prestação."
   },
   "amort": {
     "title": "Amortizações",
@@ -132,5 +142,18 @@
     "noAmort": "Sem amortizações",
     "withAmort": "Com amortizações",
     "calculating": "A calcular cenário…"
+  },
+  "revision": {
+    "label": "PRÓXIMA REVISÃO",
+    "tenorMeta": "{{tenor}}",
+    "tenor": {
+      "3m": "Euribor 3M",
+      "6m": "Euribor 6M",
+      "12m": "Euribor 12M"
+    },
+    "deltaUp": "a prestação deve subir ~{{value}}/mês",
+    "deltaDown": "a prestação deve descer ~{{value}}/mês",
+    "deltaFlat": "a prestação deve manter-se",
+    "detail": "Prestação atual {{current}} → projetada {{projected}}, com a Euribor a {{euribor}} % (média de {{month}}). Estimativa com a taxa mais recente; a revisão usa a média do mês anterior à data."
   }
 }

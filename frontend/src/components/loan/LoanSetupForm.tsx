@@ -47,6 +47,7 @@ export function LoanSetupForm({
     initial?.euribor !== undefined ? (initial.euribor * 100).toString() : '2.1',
   )
   const [dataInicio, setDataInicio] = useState(initial?.dataInicio ?? '2024-01')
+  const [euriborTenor, setEuriborTenor] = useState<'' | '3m' | '6m' | '12m'>(initial?.euriborTenor ?? '')
   const [taegStr, setTaegStr] = useState(
     initial?.taeg != null ? (initial.taeg * 100).toString() : '',
   )
@@ -127,6 +128,7 @@ export function LoanSetupForm({
       bonificacaoMensal,
       bonificacaoMeses,
       taeg,
+      euriborTenor: rateMode === 'mixed' && euriborTenor !== '' ? euriborTenor : null,
     }
 
     try {
@@ -259,6 +261,23 @@ export function LoanSetupForm({
                 aria-invalid={!!errors.euribor}
               />
               {errors.euribor && <span className="field-error">{errors.euribor}</span>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="euriborTenor">
+                {t('setup.tenorLabel')} <span className="field-hint">{t('setup.optional')}</span>
+              </label>
+              <select
+                id="euriborTenor"
+                value={euriborTenor}
+                onChange={(e) => setEuriborTenor(e.target.value as '' | '3m' | '6m' | '12m')}
+              >
+                <option value="">{t('setup.tenorManual')}</option>
+                <option value="3m">{t('setup.tenor3m')}</option>
+                <option value="6m">{t('setup.tenor6m')}</option>
+                <option value="12m">{t('setup.tenor12m')}</option>
+              </select>
+              <span className="field-hint" style={{ marginTop: 4 }}>{t('setup.tenorHint')}</span>
             </div>
           </>
         )}

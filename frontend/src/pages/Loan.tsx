@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLoan, useDeleteLoan } from '@/hooks/useLoan'
 import { LoanKpis } from '@/components/loan/LoanKpis'
+import { RevisionCard } from '@/components/loan/RevisionCard'
 import { LoanSetupForm } from '@/components/loan/LoanSetupForm'
 import { YearAccordion } from '@/components/loan/YearAccordion'
 import { CapitalChart } from '@/components/loan/CapitalChart'
@@ -83,7 +84,7 @@ export function Loan() {
               name: loan.name, capital: loan.capital, prazoMeses: loan.prazoMeses, tanFixa: loan.tanFixa,
               mesesFixos: loan.mesesFixos, spread: loan.spread, euribor: loan.euribor, dataInicio: loan.dataInicio,
               bonificacaoMensal: loan.bonificacaoMensal, bonificacaoMeses: loan.bonificacaoMeses,
-              taeg: loan.taeg,
+              taeg: loan.taeg, euriborTenor: loan.euriborTenor,
             }}
             onSaved={() => setMode('view')}
             onCancel={() => setMode('view')}
@@ -150,6 +151,8 @@ export function Loan() {
         scheduleRows={schedule.rows}
         payments={loan.payments}
       />
+
+      <RevisionCard loanId={loan.id} euriborTenor={loan.euriborTenor} />
 
       <div className="subtabs" role="tablist">
         <button
