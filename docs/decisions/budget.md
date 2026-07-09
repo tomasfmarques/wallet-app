@@ -644,3 +644,50 @@ Two follow-ups to the loan link, both in `processImportItems`:
 - **Don't:** start storing the period amount in `amount` — that reintroduces the
   ripple this design avoids. The lump-in-one-month case (subsídio de férias) is the
   separate **one-off / 13th-month income** thread, still deferred.
+
+## 2026-07-09 — WS5: "Fecho do mês" month-in-review ritual
+
+Roadmap WS5 ([`../roadmap-2026-07-spec.md`](../roadmap-2026-07-spec.md)).
+**Frontend-only, no schema, no new endpoints** — every number comes from data
+the Budget/Portfolio/Loan pages already load (react-query cache).
+
+- **What:** a stepped card review (`components/budget/MonthCloseModal.tsx`)
+  of the latest month with imported actuals: SALDO (real income/expenses/
+  balance + vs plan) → ONDE FOI O DINHEIRO (top-3 categories + biggest
+  movement) → VS MÊS ANTERIOR (spend delta %, only when the previous month has
+  actuals) → PATRIMÓNIO (portfolio value+gain; loan outstanding + monthly
+  amortization delta from schedule rows) → CONSISTÊNCIA (streak of consecutive
+  months with actuals + a `check` icon, added to the Icon set in its style).
+  Dots + Back/Next/Concluir; cards without data self-omit.
+- **Month semantics:** review month = latest `startYm ≤ current` among
+  actuals (`latestActualsYm`). Real-lane math reuses `lib/budgetReal.realMonth`
+  — do NOT reimplement the fold logic in the modal.
+- **Triggers:** (a) auto-open after a statement import, once per month per
+  device — `ImportStatementModal` gained an `onImported` callback; Budget sets
+  `awaitClose` and a `useEffect` gated on `!isFetching` waits for the
+  post-import refetch so a FIRST-ever import is included, then checks the
+  `localStorage['w360:monthClose:<ym>']` seen-gate; (b) a "Fecho do mês"
+  button on the Análise tab (always available when any actuals exist, ignores
+  the seen-gate).
+- **i18n:** `budget:monthClose.*` pt+en (incl. `streak_one/_other` plurals);
+  the step heading uses a dynamic key → `StepKey` literal union + `as const`
+  on each step (the type-safe-i18n trap).
+- **Verified in the browser** (demo account, dark mode): all five cards with
+  hand-checked numbers (+€1.202 = 2.200 − 998,30; +5% vs June's 947,19; debt
+  −€487/month; 2-month streak). **Verify limitation:** the auto-open path
+  needs a real CSV import — mechanism reviewed, manual path shares all
+  downstream code; first real import will confirm.
+- **Don't:** compute the modal's numbers from new endpoints (drift risk);
+  don't drop the `isFetching` gate (first-import race).
+
+### WS5 review fixes folded in before ship
+
+- Card COMPOSITION is frozen at mount (`useState` initializer) — async
+  portfolio/loan queries resolving mid-review must not swap the card under
+  the user's step; trade-off: on a cold cache the património card waits for
+  the next open. Card DATA stays live.
+- `prevYmOf` delegates to `lib/format.ymAddMonths` (single source of ym math);
+  `.at(-1)` dropped (its typing only worked via an accidental @types/node
+  leak); categorias card self-omits on income-only months; `useImportBudget`
+  RETURNS the invalidation promise, making the auto-open's `!isFetching`
+  ordering an explicit react-query contract instead of an internals accident.

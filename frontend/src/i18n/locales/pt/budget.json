@@ -4,8 +4,14 @@
   "loadError": "Não foi possível carregar o teu orçamento.",
   "connectBank": "Ligar banco",
   "importStatement": "Importar extrato",
-  "tabs": { "tables": "Tabelas", "analysis": "Análise" },
-  "scope": { "overview": "Visão geral", "month": "Mês a mês" },
+  "tabs": {
+    "tables": "Tabelas",
+    "analysis": "Análise"
+  },
+  "scope": {
+    "overview": "Visão geral",
+    "month": "Mês a mês"
+  },
   "labels": {
     "fixedIncome": "RECEITAS FIXAS",
     "fixedExpenses": "DESPESAS FIXAS",
@@ -19,10 +25,14 @@
     "incomes": "Receitas"
   },
   "kind": {
-    "new": "Nova", "edit": "Editar",
-    "fixedF": "fixa", "variableF": "variável",
-    "income": "Receita", "expense": "Despesa",
-    "fixed": "Fixa", "variable": "Variável"
+    "new": "Nova",
+    "edit": "Editar",
+    "fixedF": "fixa",
+    "variableF": "variável",
+    "income": "Receita",
+    "expense": "Despesa",
+    "fixed": "Fixa",
+    "variable": "Variável"
   },
   "addFixed": "Adicionar fixa",
   "mojibake": {
@@ -124,7 +134,13 @@
     "quarterly": "Trimestral",
     "annual": "Anual",
     "amountLabel": "Valor {{unit}} (€)",
-    "unit": { "monthly": "mensal", "weekly": "semanal", "biweekly": "quinzenal", "quarterly": "trimestral", "annual": "anual" },
+    "unit": {
+      "monthly": "mensal",
+      "weekly": "semanal",
+      "biweekly": "quinzenal",
+      "quarterly": "trimestral",
+      "annual": "anual"
+    },
     "monthlyEquiv": "≈ {{value}}/mês",
     "meta": "{{label}} · {{period}}"
   },
@@ -273,5 +289,31 @@
     "loadingBanks": "A carregar bancos…",
     "noResults": "Sem resultados.",
     "afterAuth": "Depois de autorizares no site do banco, volta aqui e carrega em <1>⟳ Sincronizar transações</1>. As novas entradas caem em <3>Por classificar</3>, com as regras aprendidas aplicadas automaticamente."
+  },
+  "monthClose": {
+    "title": "Fecho de {{month}}",
+    "button": "Fecho do mês",
+    "progress": "Progresso",
+    "back": "Anterior",
+    "next": "Seguinte",
+    "done": "Concluir",
+    "step": {
+      "saldo": "SALDO DO MÊS",
+      "categorias": "ONDE FOI O DINHEIRO",
+      "variacao": "VS MÊS ANTERIOR",
+      "patrimonio": "PATRIMÓNIO",
+      "streak": "CONSISTÊNCIA"
+    },
+    "balanceSub": "{{income}} de receitas − {{expenses}} de despesas",
+    "vsPlan": "O teu plano mensal aponta para {{value}}.",
+    "biggest": "Maior movimento: {{name}} ({{value}})",
+    "spentLess": "Gastaste menos do que no mês anterior",
+    "spentMore": "Gastaste mais do que no mês anterior",
+    "variationSub": "{{current}} este mês vs {{previous}} no anterior",
+    "portfolio": "Carteira de investimentos",
+    "debt": "Dívida de crédito",
+    "streak_one": "{{count}} mês seguido com extrato importado",
+    "streak_other": "{{count}} meses seguidos com extrato importado",
+    "streakSub": "Continua a importar todos os meses para manteres a visão completa."
   }
 }

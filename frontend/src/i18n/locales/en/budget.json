@@ -4,8 +4,14 @@
   "loadError": "Couldn't load your budget.",
   "connectBank": "Connect bank",
   "importStatement": "Import statement",
-  "tabs": { "tables": "Tables", "analysis": "Analysis" },
-  "scope": { "overview": "Overview", "month": "Month by month" },
+  "tabs": {
+    "tables": "Tables",
+    "analysis": "Analysis"
+  },
+  "scope": {
+    "overview": "Overview",
+    "month": "Month by month"
+  },
   "labels": {
     "fixedIncome": "FIXED INCOME",
     "fixedExpenses": "FIXED EXPENSES",
@@ -19,10 +25,14 @@
     "incomes": "Income"
   },
   "kind": {
-    "new": "New", "edit": "Edit",
-    "fixedF": "fixed", "variableF": "variable",
-    "income": "Income", "expense": "Expense",
-    "fixed": "Fixed", "variable": "Variable"
+    "new": "New",
+    "edit": "Edit",
+    "fixedF": "fixed",
+    "variableF": "variable",
+    "income": "Income",
+    "expense": "Expense",
+    "fixed": "Fixed",
+    "variable": "Variable"
   },
   "addFixed": "Add fixed",
   "mojibake": {
@@ -124,7 +134,13 @@
     "quarterly": "Quarterly",
     "annual": "Annual",
     "amountLabel": "{{unit}} amount (€)",
-    "unit": { "monthly": "Monthly", "weekly": "Weekly", "biweekly": "Biweekly", "quarterly": "Quarterly", "annual": "Annual" },
+    "unit": {
+      "monthly": "Monthly",
+      "weekly": "Weekly",
+      "biweekly": "Biweekly",
+      "quarterly": "Quarterly",
+      "annual": "Annual"
+    },
     "monthlyEquiv": "≈ {{value}}/mo",
     "meta": "{{label}} · {{period}}"
   },
@@ -273,5 +289,31 @@
     "loadingBanks": "Loading banks…",
     "noResults": "No results.",
     "afterAuth": "After authorising on your bank's site, come back here and click <1>⟳ Sync transactions</1>. New entries land in <3>To classify</3>, with learned rules applied automatically."
+  },
+  "monthClose": {
+    "title": "{{month}} wrap-up",
+    "button": "Month close",
+    "progress": "Progress",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "step": {
+      "saldo": "MONTH BALANCE",
+      "categorias": "WHERE THE MONEY WENT",
+      "variacao": "VS PREVIOUS MONTH",
+      "patrimonio": "NET POSITION",
+      "streak": "CONSISTENCY"
+    },
+    "balanceSub": "{{income}} income − {{expenses}} expenses",
+    "vsPlan": "Your monthly plan points to {{value}}.",
+    "biggest": "Biggest movement: {{name}} ({{value}})",
+    "spentLess": "You spent less than the previous month",
+    "spentMore": "You spent more than the previous month",
+    "variationSub": "{{current}} this month vs {{previous}} before",
+    "portfolio": "Investment portfolio",
+    "debt": "Credit debt",
+    "streak_one": "{{count}} month in a row with a statement imported",
+    "streak_other": "{{count}} months in a row with statements imported",
+    "streakSub": "Keep importing every month to keep the full picture."
   }
 }

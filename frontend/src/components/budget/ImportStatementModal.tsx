@@ -11,6 +11,9 @@ import { eur2 } from '@/lib/format'
 interface Props {
   open: boolean
   onClose: () => void
+  // Fired once a statement import lands — Budget uses it to open the
+  // "Fecho do mês" review (after the budget query refetches).
+  onImported?: () => void
 }
 
 interface ReviewRow {
@@ -57,7 +60,7 @@ function sourceFromFilename(filename: string): string {
   return 'Extrato'
 }
 
-export function ImportStatementModal({ open, onClose }: Props) {
+export function ImportStatementModal({ open, onClose, onImported }: Props) {
   const { t } = useTranslation('budget')
   const importMut = useImportBudget()
   const { data: budget } = useBudget()
@@ -174,6 +177,7 @@ export function ImportStatementModal({ open, onClose }: Props) {
       const res = await importMut.mutateAsync(items)
       setDone(res.summary)
       setRows([])
+      onImported?.()
     } catch {
       setParseError(t('import.importError'))
     }

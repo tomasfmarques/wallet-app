@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 export type IconName =
   | 'trendingUp' | 'trendingDown' | 'home' | 'banknote' | 'wallet' | 'scale'
   | 'bulb' | 'flask' | 'lock' | 'search' | 'bank' | 'inbox' | 'tag'
-  | 'barChart' | 'alert' | 'user' | 'link' | 'minus'
+  | 'barChart' | 'alert' | 'user' | 'link' | 'minus' | 'check'
 
 const PATHS: Record<IconName, ReactNode> = {
   trendingUp: (<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>),
@@ -27,6 +27,7 @@ const PATHS: Record<IconName, ReactNode> = {
   user: (<><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></>),
   link: (<><path d="M10 13a5 5 0 0 0 7.1 0l2.5-2.5a5 5 0 0 0-7.1-7.1L11 4.9" /><path d="M14 11a5 5 0 0 0-7.1 0L4.4 13.5a5 5 0 0 0 7.1 7.1L13 19.1" /></>),
   minus: (<><path d="M5 12h14" /></>),
+  check: (<><circle cx="12" cy="12" r="9.5" /><path d="m7.5 12.5 3 3 6-6.5" /></>),
 }
 
 interface Props {

@@ -159,7 +159,10 @@ export function useImportBudget() {
   const qc = useQueryClient()
   return useMutation<ImportResult, ApiError, ImportItem[]>(
     (items) => api.post<ImportResult>('/api/budget/import', { items }),
-    { onSuccess: () => { qc.invalidateQueries(BUDGET_KEY) } },
+    // RETURN the invalidation promise — react-query then resolves mutateAsync
+    // only after the refetch kicks off, making the ordering the month-close
+    // auto-open relies on (Budget's !isFetching gate) an explicit contract.
+    { onSuccess: () => qc.invalidateQueries(BUDGET_KEY) },
   )
 }
 

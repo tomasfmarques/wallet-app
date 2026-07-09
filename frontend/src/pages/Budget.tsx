@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { useBudget, useDeleteIncome, useDeleteExpense, useCleanupEncoding } from '@/hooks/useBudget'
+import { MonthCloseModal, latestActualsYm, monthCloseSeen, markMonthCloseSeen } from '@/components/budget/MonthCloseModal'
 import { BudgetKpis } from '@/components/budget/BudgetKpis'
 import { IncomeModal } from '@/components/budget/IncomeModal'
 import { ExpenseModal } from '@/components/budget/ExpenseModal'
@@ -25,7 +26,7 @@ type AnalysisScope = 'overview' | 'month'
 
 export function Budget() {
   const { t } = useTranslation('budget')
-  const { data, isLoading, error, refetch } = useBudget()
+  const { data, isLoading, isFetching, error, refetch } = useBudget()
   const delIncome = useDeleteIncome()
   const delExpense = useDeleteExpense()
   const cleanupEncoding = useCleanupEncoding()
@@ -37,6 +38,21 @@ export function Budget() {
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
   const [bankOpen, setBankOpen] = useState(false)
+  // "Fecho do mês": auto-open once per month after an import (localStorage
+  // seen-gate), or manually from the Análise tab. `awaitClose` waits for the
+  // post-import refetch so the FIRST-ever import is included in the data.
+  const [monthCloseYm, setMonthCloseYm] = useState<string | null>(null)
+  const [awaitClose, setAwaitClose] = useState(false)
+
+  useEffect(() => {
+    if (!awaitClose || !data || isFetching) return
+    setAwaitClose(false)
+    const ym = latestActualsYm(data.actualIncomes, data.actualExpenses)
+    if (ym && !monthCloseSeen(ym)) {
+      markMonthCloseSeen(ym)
+      setMonthCloseYm(ym)
+    }
+  }, [awaitClose, data, isFetching])
 
   if (isLoading) return <div className="auth-loading"><div className="spinner" /></div>
   if (error) return (
@@ -59,6 +75,9 @@ export function Budget() {
     const { deleted } = await cleanupEncoding.mutateAsync()
     alert(t('mojibake.alert', { deleted }))
   }
+  // Latest month with imported actuals — the month the manual close reviews.
+  const closableYm = latestActualsYm(actualIncomes, actualExpenses)
+
   const fixedIncomes = incomes.filter((i) => i.type === 'fixed')
   const variableIncomes = incomes.filter((i) => i.type === 'variable')
   const fixedExpenses = expenses.filter((e) => e.type === 'fixed')
@@ -206,21 +225,31 @@ export function Budget() {
 
       {tab === 'analysis' && (
         <>
-          <div className="toggle-group analysis-scope-toggle">
-            <button
-              type="button"
-              className={`toggle-btn ${analysisScope === 'overview' ? 'toggle-btn-active' : ''}`}
-              onClick={() => setAnalysisScope('overview')}
-            >
-              {t('scope.overview')}
-            </button>
-            <button
-              type="button"
-              className={`toggle-btn ${analysisScope === 'month' ? 'toggle-btn-active' : ''}`}
-              onClick={() => setAnalysisScope('month')}
-            >
-              {t('scope.month')}
-            </button>
+          <div className="budget-section-head">
+            <div className="toggle-group analysis-scope-toggle">
+              <button
+                type="button"
+                className={`toggle-btn ${analysisScope === 'overview' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setAnalysisScope('overview')}
+              >
+                {t('scope.overview')}
+              </button>
+              <button
+                type="button"
+                className={`toggle-btn ${analysisScope === 'month' ? 'toggle-btn-active' : ''}`}
+                onClick={() => setAnalysisScope('month')}
+              >
+                {t('scope.month')}
+              </button>
+            </div>
+            {closableYm && (
+              <button
+                type="button" className="btn btn-ghost btn-sm"
+                onClick={() => setMonthCloseYm(closableYm)}
+              >
+                <Icon name="check" size={15} />{t('monthClose.button')}
+              </button>
+            )}
           </div>
 
           {analysisScope === 'overview' ? (
@@ -285,8 +314,16 @@ export function Budget() {
         expense={expenseModal.expense}
         defaultStartYm={expenseModal.defaultStartYm}
       />
-      <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} onImported={() => setAwaitClose(true)} />
       <BankConnectModal open={bankOpen} onClose={() => setBankOpen(false)} />
+      {monthCloseYm && (
+        <MonthCloseModal
+          open onClose={() => setMonthCloseYm(null)}
+          incomes={incomes} expenses={expenses}
+          actualIncomes={actualIncomes} actualExpenses={actualExpenses}
+          ym={monthCloseYm}
+        />
+      )}
     </div>
   )
 }
