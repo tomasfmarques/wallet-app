@@ -164,7 +164,12 @@
     "explainCorrelated": "Volatilidade anualizada da carteira, já a considerar a correlação entre ativos — a diversificação reduz o risco.",
     "diversification": "Sem diversificação seria {{weighted}} %; a correlação entre os teus ativos poupa {{saved}} pontos.",
     "coverage": "Calculado sobre {{value}} % do valor da carteira.",
-    "level": { "baixo": "Baixo", "medio": "Médio", "alto": "Alto", "muito_alto": "Muito alto" }
+    "level": {
+      "baixo": "Baixo",
+      "medio": "Médio",
+      "alto": "Alto",
+      "muito_alto": "Muito alto"
+    }
   },
   "csv": {
     "button": "Exportar CSV",
@@ -265,5 +270,40 @@
     "t212Step1": "No Trading 212: <1>Definições → Histórico → Exportar</1>.",
     "t212Step2": "Escolhe o período (máx. <1>1 ano</1> por ficheiro) e exporta o CSV.",
     "t212Step3": "Carrega aqui o(s) ficheiro(s). Juntamos as ordens em posições atuais."
+  },
+  "irs": {
+    "section": "IRS — MAIS-VALIAS",
+    "title": "IRS — Mais-valias",
+    "subtitle": "Anexo J (quadro 9.2A)",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "yearLabel": "Ano fiscal",
+    "exportCsv": "Exportar CSV",
+    "print": "Imprimir",
+    "empty": "Sem vendas nos dados importados. Importa o histórico de transações da corretora (CSV) para veres aqui as mais-valias realizadas.",
+    "emptyYear": "Sem vendas em {{year}}.",
+    "totalGain": "MAIS-VALIA LÍQUIDA",
+    "estimatedTax": "IMPOSTO ESTIMADO",
+    "taxMeta": "taxa autónoma de 28 %",
+    "incompleteWarning_one": "{{count}} linha com aquisição anterior aos dados importados — completa o valor de aquisição manualmente.",
+    "incompleteWarning_other": "{{count}} linhas com aquisição anterior aos dados importados — completa os valores de aquisição manualmente.",
+    "colAsset": "Ativo",
+    "colAcquired": "Aquisição",
+    "colSold": "Realização",
+    "colQty": "Qtd.",
+    "colCost": "Valor aquisição",
+    "colProceeds": "Valor realização",
+    "colGain": "Mais-valia",
+    "unknown": "—",
+    "csvName": "Ativo",
+    "csvAcquired": "Aquisicao (AAAA-MM)",
+    "csvSold": "Realizacao (AAAA-MM)",
+    "csvQty": "Quantidade",
+    "csvCost": "Valor aquisicao (EUR)",
+    "csvProceeds": "Valor realizacao (EUR)",
+    "csvGain": "Mais-valia (EUR)",
+    "csvIncomplete": "Incompleta",
+    "incompleteFlag": "sim",
+    "disclaimer": "Esta simulação não constitui aconselhamento fiscal. Os valores seguem o método FIFO exigido por lei e a taxa autónoma de 28 % (o englobamento pode ser mais vantajoso nalguns casos). Confirma sempre com um contabilista ou no Portal das Finanças."
   }
 }

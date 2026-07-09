@@ -372,13 +372,25 @@ router.post('/', async (req, res) => {
         if (rules.length > 0) await tx.classificationRule.createMany({ data: rules })
       }
 
-      // ── Applied broker order ids (CSV re-import dedup) ─────────
+      // ── Applied broker orders (re-import dedup + IRS gains data) ──
       if (isArr(payload.importedTxns)) {
         const seen = new Set<string>()
         const txns = (payload.importedTxns as unknown[]).slice(0, 50_000)
           .filter(isObj)
           .filter((t) => isStr(t.source) && isStr(t.externalId))
-          .map((t) => ({ userId, source: t.source as string, externalId: t.externalId as string }))
+          .map((t) => ({
+            userId,
+            source: t.source as string,
+            externalId: t.externalId as string,
+            // Gains columns (WS6) — nullable, absent in pre-2026-07 backups.
+            side:     t.side === 'buy' || t.side === 'sell' ? t.side : null,
+            isin:     isStr(t.isin) ? (t.isin as string).slice(0, 12) : null,
+            ticker:   isStr(t.ticker) ? (t.ticker as string).slice(0, 20) : null,
+            qty:      isNum(t.qty) ? t.qty : null,
+            totalEur: isNum(t.totalEur) ? t.totalEur : null,
+            ym:       isStr(t.ym) && YM_RE.test(t.ym as string) ? (t.ym as string) : null,
+            txnTime:  isStr(t.txnTime) ? (t.txnTime as string).slice(0, 32) : null,
+          }))
           // The table was just wiped, so only intra-payload dups matter
           // (skipDuplicates isn't supported on SQLite dev).
           .filter((t) => { const k = `${t.source}|${t.externalId}`; if (seen.has(k)) return false; seen.add(k); return true })

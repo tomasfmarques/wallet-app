@@ -11,6 +11,7 @@ import { getYahooChart } from '../lib/yahooFinance'
 import { annualizedVolatility, riskLevel, portfolioRisk, monthlyReturns, correlatedPortfolioVol } from '../lib/risk'
 import { convertPrice } from '../lib/fx'
 import { stripFormulaPrefix } from '../lib/sanitize'
+import { buildGainsReport } from '../lib/capitalGains'
 
 // Portfolio is reported in EUR. Yahoo returns prices in the native exchange
 // currency; we convert via Frankfurter before persisting.
@@ -182,6 +183,40 @@ router.get('/risk', async (req, res) => {
   }
 })
 
+// ── GET /api/portfolio/capital-gains?year=2026 ───────────────────
+// IRS mais-valias report (WS6): FIFO realized gains from the imported broker
+// transactions (lib/capitalGains), Anexo J-shaped rows. Display names resolve
+// from the user's holdings (isin → ticker fallback → raw instrument key).
+router.get('/capital-gains', async (req, res) => {
+  const yearRaw = Number(req.query.year)
+  const year = Number.isInteger(yearRaw) && yearRaw >= 2000 && yearRaw <= 2100
+    ? yearRaw
+    : new Date().getUTCFullYear()
+  try {
+    const userId = req.session.userId!
+    const [txns, assets] = await Promise.all([
+      prisma.importedTxn.findMany({
+        where: { userId, side: { not: null } },
+        select: { side: true, isin: true, ticker: true, qty: true, totalEur: true, ym: true, txnTime: true },
+      }),
+      prisma.portfolioAsset.findMany({ where: { userId }, select: { name: true, ticker: true, isin: true } }),
+    ])
+    const report = buildGainsReport(txns, year)
+    const nameByIsin = new Map(assets.filter((a) => a.isin).map((a) => [a.isin!.toUpperCase(), a.name]))
+    const nameByTicker = new Map(assets.map((a) => [a.ticker.toUpperCase(), a.name]))
+    const rows = report.rows.map((r) => ({
+      ...r,
+      name: (r.isin && nameByIsin.get(r.isin.toUpperCase()))
+        ?? (r.ticker && nameByTicker.get(r.ticker.toUpperCase()))
+        ?? r.ticker ?? r.instrument,
+    }))
+    res.json({ ...report, rows })
+  } catch (err) {
+    console.error('GET /api/portfolio/capital-gains failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ── POST /api/portfolio/assets ───────────────────────────────────
 router.post('/assets', async (req, res) => {
   const errors: Record<string, string> = {}
@@ -330,9 +365,13 @@ export async function applyPortfolioTransactions(
     byTicker.set(a.ticker.toUpperCase(), a)
   }
   const appliedRows = await prisma.importedTxn.findMany({
-    where: { userId, source: BROKER_SOURCE }, select: { externalId: true },
+    where: { userId, source: BROKER_SOURCE }, select: { externalId: true, side: true },
   })
   const applied = new Set(appliedRows.map((r) => r.externalId))
+  // Only rows that still lack gains data are backfill candidates — WITHOUT
+  // this, every re-import would re-update the full history every time (and
+  // time out the transaction for multi-year files).
+  const needsBackfill = new Set(appliedRows.filter((r) => r.side === null).map((r) => r.externalId))
 
   interface Plan {
     action: 'update' | 'create' | 'delete'
@@ -342,7 +381,15 @@ export async function applyPortfolioTransactions(
     newFlows: { ym: string; amount: number }[]
   }
   const plans: Plan[] = []
-  const newOrderIds: string[] = []
+  // Per-order metadata for the IRS capital-gains report (WS6): persisted with
+  // the dedup row on first apply; already-applied LEGACY rows (side null, from
+  // before 2026-07) get BACKFILLED on re-import instead of re-applied.
+  interface OrderMeta {
+    side: string; isin: string | null; ticker: string
+    qty: number; totalEur: number; ym: string | null; txnTime: string | null
+  }
+  const newOrderMeta = new Map<string, OrderMeta>()
+  const backfillMeta = new Map<string, OrderMeta>()
   let skipped = 0
 
   for (const raw of items) {
@@ -377,7 +424,17 @@ export async function applyPortfolioTransactions(
     const flowByYm = new Map<string, number>()
     let appliedAny = false
     for (const o of orders) {
-      if (o.orderId && applied.has(o.orderId)) { skipped++; continue } // already applied → idempotent
+      const meta: OrderMeta = {
+        side: o.side, isin, ticker, qty: o.shares, totalEur: o.total,
+        ym: o.ym, txnTime: o.time ? o.time.slice(0, 32) : null,
+      }
+      if (o.orderId && applied.has(o.orderId)) {
+        // Already applied → idempotent skip; queue a backfill ONLY for legacy
+        // dedup rows that predate the gains columns (side still null).
+        if (needsBackfill.has(o.orderId)) backfillMeta.set(o.orderId, meta)
+        skipped++
+        continue
+      }
       if (o.side === 'buy') {
         qty += o.shares; cost += o.total; value += o.total
         if (o.ym) flowByYm.set(o.ym, (flowByYm.get(o.ym) ?? 0) + o.total)
@@ -388,7 +445,7 @@ export async function applyPortfolioTransactions(
         qty -= sold
       }
       appliedAny = true
-      if (o.orderId) { newOrderIds.push(o.orderId); applied.add(o.orderId) }
+      if (o.orderId) { newOrderMeta.set(o.orderId, meta); applied.add(o.orderId) }
     }
     if (!appliedAny) continue // every order already applied → no change for this instrument
 
@@ -406,7 +463,7 @@ export async function applyPortfolioTransactions(
   }
 
   let created = 0, updated = 0, closed = 0
-  if (plans.length > 0 || newOrderIds.length > 0) {
+  if (plans.length > 0 || newOrderMeta.size > 0) {
     await prisma.$transaction(async (tx) => {
       for (const p of plans) {
         if (p.action === 'delete') {
@@ -420,14 +477,36 @@ export async function applyPortfolioTransactions(
           created++
         }
       }
-      if (newOrderIds.length > 0) {
-        // Already-applied ids were filtered out and the batch is de-duped above,
-        // so no constraint clash. (skipDuplicates isn't supported on SQLite dev.)
+      if (newOrderMeta.size > 0) {
+        // Already-applied ids were filtered out and the Map de-dupes, so no
+        // constraint clash. (skipDuplicates isn't supported on SQLite dev.)
         await tx.importedTxn.createMany({
-          data: [...new Set(newOrderIds)].map((externalId) => ({ userId, source: BROKER_SOURCE, externalId })),
+          data: [...newOrderMeta.entries()].map(([externalId, m]) => ({
+            userId, source: BROKER_SOURCE, externalId, ...m,
+          })),
         })
       }
     })
+  }
+
+  // Backfill LEGACY dedup rows (pre-2026-07, no gains columns) OUTSIDE the
+  // atomic transaction: it's independent, idempotent, metadata-only work — a
+  // multi-year first re-import can carry thousands of rows and must not blow
+  // the 5s interactive-transaction budget (it would roll back the holdings
+  // update AND retry the same oversized batch forever). Chunked writes; the
+  // `side: null` guard makes each write safe to repeat and means a partial
+  // failure simply leaves the remainder for the next re-import.
+  if (backfillMeta.size > 0) {
+    const entries = [...backfillMeta.entries()]
+    const CHUNK = 25
+    for (let i = 0; i < entries.length; i += CHUNK) {
+      await Promise.all(entries.slice(i, i + CHUNK).map(([externalId, m]) =>
+        prisma.importedTxn.updateMany({
+          where: { userId, source: BROKER_SOURCE, externalId, side: null },
+          data: m,
+        }),
+      ))
+    }
   }
   return { created, updated, closed, skipped }
 }

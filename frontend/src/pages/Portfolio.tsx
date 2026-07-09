@@ -10,6 +10,7 @@ import { FileImportModal } from '@/components/portfolio/FileImportModal'
 import { BrokerConnectModal } from '@/components/portfolio/BrokerConnectModal'
 import { Watchlist } from '@/components/portfolio/Watchlist'
 import { RiskCard } from '@/components/portfolio/RiskCard'
+import { CapitalGainsCard } from '@/components/portfolio/CapitalGainsCard'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { resolveWatchlist } from '@/hooks/useQuotes'
 
@@ -110,6 +111,13 @@ export function Portfolio() {
         <section>
           <h2 className="section-label">{t('risk.section')}</h2>
           <RiskCard />
+        </section>
+      )}
+
+      {hasAssets && (
+        <section>
+          <h2 className="section-label">{t('irs.section')}</h2>
+          <CapitalGainsCard />
         </section>
       )}
 

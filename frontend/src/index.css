@@ -4187,3 +4187,17 @@ body {
   background: var(--accent);
   transform: scale(1.25);
 }
+
+/* ── IRS mais-valias card ────────────────────────────────────── */
+.capital-gains-table .is-incomplete td { color: var(--amber); }
+/* Print: only the gains section (Anexo J working paper) — the toggle button
+   is the section's TITLE, so it must print too (accountant-readable header). */
+@media print {
+  body * { visibility: hidden; }
+  .capital-gains-section, .capital-gains-section * { visibility: visible; }
+  .capital-gains-section { position: absolute; inset: 0 auto auto 0; width: 100%; }
+  .capital-gains-section .trending-toggle { box-shadow: none; border: none; cursor: default; }
+  .capital-gains-section .trending-toggle .muted { display: none; }
+  .capital-gains-card { box-shadow: none; border: none; }
+  .capital-gains-card .btn, .capital-gains-card select, .capital-gains-card label { display: none; }
+}

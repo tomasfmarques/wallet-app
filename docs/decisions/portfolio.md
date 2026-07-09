@@ -514,3 +514,59 @@ resolution coverage. Live vs practice base URLs are key-scoped.
   set `BROKER_ENC_KEY` in Vercel. See [`docs/trading212-v2-spec.md`](../trading212-v2-spec.md).
 - **Don't:** log/return the key; drop the `brokerEncConfigured` gate; or add
   `BrokerConnection` to export/import (it holds secrets).
+
+## 2026-07-09 — WS6: Assistente IRS — mais-valias (Anexo J helper)
+
+Roadmap WS6 ([`../roadmap-2026-07-spec.md`](../roadmap-2026-07-spec.md)).
+
+- **Data reality check outcome:** `ImportedTxn` was dedup-keys-only → extended
+  with NULLABLE gains columns (`side/isin/ticker/qty/totalEur/ym/txnTime` —
+  additive migration `extend_imported_txn_for_gains`, BOTH schemas,
+  export/import updated). `applyPortfolioTransactions` now persists the
+  metadata on first apply AND **BACKFILLS legacy rows on re-import** (update
+  gated on `side IS NULL`; the txn itself stays idempotently skipped). So the
+  owner's existing history lights up by re-importing the same T212 CSV once.
+- **Engine (`lib/capitalGains.ts`, pure/unit-tested):** FIFO per instrument
+  (CIRS art. 43.º — legally mandated for securities), ordered by `txnTime`
+  then `ym`. One sale emits ONE ROW PER CONSUMED LOT — the exact Anexo J
+  quadro 9.2A shape (year+month granular, so `ym` precision is sufficient).
+  A sale exceeding imported buys emits an `incomplete` row (cost 0, flagged) —
+  positions predating the data are surfaced honestly, never guessed. Gains
+  belong to the SALE's calendar year. 28 % autonomous rate on positive net
+  gain only (englobamento mentioned in the disclaimer, not computed).
+- **API:** `GET /api/portfolio/capital-gains?year=` — rows + totals +
+  estimatedTax + incompleteCount + availableYears; display names resolved
+  from the user's holdings (isin → ticker → raw key).
+- **UI:** collapsible "IRS — Mais-valias" section on the Portfolio page
+  (`CapitalGainsCard`): year selector (from availableYears), net-gain +
+  estimated-tax KPIs, per-lot table (incomplete rows amber), CSV export
+  (formula-guarded), `window.print()` with a print stylesheet that isolates
+  the card, mandatory not-tax-advice disclaimer, empty states. i18n
+  `portfolio:irs.*` pt+en.
+- **Verified:** engine unit tests (spec scenario 10@10+10@20 sell 15@30 →
+  +200/+50, tax 70; fractional; sell-without-buy; partial coverage; year
+  filter — all green); end-to-end through the REAL apply endpoint (metadata
+  persisted, per-lot rows correct, €700 on €2 500); UI browser-checked.
+- **Don't:** drop the `side IS NULL` guard on backfill (would let a crafted
+  re-import rewrite history); don't compute englobamento; don't switch FIFO
+  to average-cost "for simplicity" (illegal for PT IRS).
+
+### WS6 review fixes folded in before ship
+
+- **Backfill scalability (was blocking):** only rows whose `side` is still
+  null are queued for backfill (the applied-orders query now selects `side`),
+  and the backfill runs OUTSIDE the atomic holdings transaction in chunks of
+  25 parallel updates — a multi-year first re-import can carry thousands of
+  legacy rows and must not blow the 5s interactive-transaction budget (which
+  would roll back the holdings AND retry the same oversized batch forever).
+  Partial failure just leaves the remainder for the next re-import (the
+  `side IS NULL` guard keeps every write idempotent). Verified: nulled a row,
+  re-imported → metadata restored, data-carrying sibling untouched, holdings
+  idempotently skipped.
+- **Engine tests are committed** (`backend/scripts/test-capital-gains.js`,
+  11 checks incl. free-share zero-cost lots and no-tax-on-loss; run after
+  `npm run build -w backend`). The zero-total-buy behaviour is now guarded by
+  an explicit comment in `capitalGains.ts` (free shares = zero-cost lots; do
+  NOT "fix" the filter to `<= 0`).
+- Print stylesheet includes the section heading (the toggle IS the title —
+  an accountant-readable header on the printed Anexo J working paper).

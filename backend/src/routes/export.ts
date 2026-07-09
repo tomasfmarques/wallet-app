@@ -63,10 +63,14 @@ router.post('/', async (req, res) => {
         select: { id: true, userId: true, institutionId: true, institutionName: true, logo: true, status: true, createdAt: true },
         // requisitionId excluded — it is a live bank-access handle, not backup data
       }),
-      // Applied broker order ids — carried so CSV re-import dedup survives a restore.
+      // Applied broker orders — dedup ids + the gains columns (WS6), so both
+      // re-import idempotency AND the IRS report survive a restore.
       prisma.importedTxn.findMany({
         where: { userId }, orderBy: { createdAt: 'asc' },
-        select: { source: true, externalId: true, createdAt: true },
+        select: {
+          source: true, externalId: true, createdAt: true,
+          side: true, isin: true, ticker: true, qty: true, totalEur: true, ym: true, txnTime: true,
+        },
       }),
       prisma.notificationPreference.findUnique({ where: { userId } }),
     ])

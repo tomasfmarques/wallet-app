@@ -371,6 +371,16 @@ model ImportedTxn {
   source     String   // "trading212"
   externalId String   @map("external_id") // broker order id, e.g. EOF53208567774
   createdAt  DateTime @default(now()) @map("created_at")
+  // Transaction details for the IRS capital-gains report (WS6). Nullable:
+  // rows created before 2026-07 are dedup-keys only — re-importing the same
+  // CSV BACKFILLS them (update where side is null) without re-applying.
+  side       String?  // "buy" | "sell"
+  isin       String?
+  ticker     String?
+  qty        Float?
+  totalEur   Float?   @map("total_eur") // EUR total of the order
+  ym         String?  // "AAAA-MM" (Anexo J is year+month granular)
+  txnTime    String?  @map("txn_time")  // raw broker timestamp — FIFO ordering
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

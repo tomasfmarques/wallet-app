@@ -164,7 +164,12 @@
     "explainCorrelated": "Annualized portfolio volatility, accounting for correlation between assets — diversification lowers risk.",
     "diversification": "Without diversification it would be {{weighted}} %; correlation between your assets saves {{saved}} points.",
     "coverage": "Computed on {{value}} % of portfolio value.",
-    "level": { "baixo": "Low", "medio": "Medium", "alto": "High", "muito_alto": "Very high" }
+    "level": {
+      "baixo": "Low",
+      "medio": "Medium",
+      "alto": "High",
+      "muito_alto": "Very high"
+    }
   },
   "csv": {
     "button": "Export CSV",
@@ -265,5 +270,40 @@
     "t212Step1": "In Trading 212: <1>Settings → History → Export</1>.",
     "t212Step2": "Pick the period (max <1>1 year</1> per file) and export the CSV.",
     "t212Step3": "Upload the file(s) here. We aggregate orders into current positions."
+  },
+  "irs": {
+    "section": "IRS — CAPITAL GAINS",
+    "title": "IRS — Capital gains",
+    "subtitle": "Anexo J (table 9.2A)",
+    "show": "Show",
+    "hide": "Hide",
+    "yearLabel": "Tax year",
+    "exportCsv": "Export CSV",
+    "print": "Print",
+    "empty": "No sales in the imported data. Import your broker transaction history (CSV) to see realized gains here.",
+    "emptyYear": "No sales in {{year}}.",
+    "totalGain": "NET CAPITAL GAIN",
+    "estimatedTax": "ESTIMATED TAX",
+    "taxMeta": "28 % autonomous rate",
+    "incompleteWarning_one": "{{count}} row acquired before the imported data — fill in the acquisition value manually.",
+    "incompleteWarning_other": "{{count}} rows acquired before the imported data — fill in the acquisition values manually.",
+    "colAsset": "Asset",
+    "colAcquired": "Acquired",
+    "colSold": "Sold",
+    "colQty": "Qty",
+    "colCost": "Acquisition value",
+    "colProceeds": "Realization value",
+    "colGain": "Gain",
+    "unknown": "—",
+    "csvName": "Asset",
+    "csvAcquired": "Acquired (YYYY-MM)",
+    "csvSold": "Sold (YYYY-MM)",
+    "csvQty": "Quantity",
+    "csvCost": "Acquisition (EUR)",
+    "csvProceeds": "Realization (EUR)",
+    "csvGain": "Gain (EUR)",
+    "csvIncomplete": "Incomplete",
+    "incompleteFlag": "yes",
+    "disclaimer": "This simulation is not tax advice. Figures follow the legally required FIFO method and the 28 % autonomous rate (aggregation may be better in some cases). Always confirm with an accountant or the Portal das Finanças."
   }
 }
