@@ -152,3 +152,32 @@ change (the prefs table came with WS3).
   mês" for users whose plan starts in a future month); plaintext alt gained
   the top-categories line; `frontend/src/lib/merchant.ts`'s parity comment now
   points at `backend/src/lib/merchantKey.ts`.
+
+## 2026-07-09 — Email/cron/push infrastructure (provider + DNS choices)
+
+Not visible from code — recorded so nobody re-derives it. All of this is Vercel
+env + external dashboards, no repo change.
+
+- **Provider = Resend** (transactional email), account on the owner's Gmail,
+  region **Ireland (eu-west-1)** to match the app's EU data residency. SMTP path
+  (`smtp.resend.com:587`, user `resend`, pass = a Resend API key). The API key is
+  the "Onboarding"/`wallet360-smtp` key — Resend shows a key's full value ONLY at
+  creation; the list truncates it, so to rotate you CREATE a new key (can't
+  re-reveal). `SMTP_FROM=noreply@wallet360.pt` (apex sender).
+- **Sender domain verified via `send.wallet360.pt` subdomain records** (Resend's
+  standard SES-backed setup): DKIM `resend._domainkey` TXT, SPF `send` TXT
+  (`v=spf1 include:amazonses.com ~all`), MX `send` →
+  `feedback-smtp.eu-west-1.amazonses.com` prio 10, DMARC `_dmarc` TXT. This
+  verifies the APEX for sending (send from `@wallet360.pt`).
+- **DNS lives at dominios.pt** (registrar; SolutEDNS panel at `my.dominios.pt`,
+  nameservers `dns1-4.host-redirect.com`) — NOT Vercel. **Their panel requires
+  TXT values wrapped in double quotes** or it errors "Content must be quoted".
+- **`privacy@wallet360.pt` INBOUND is still NOT set up** — the verified records
+  are for SENDING only (the `send` subdomain). Receiving mail at
+  privacy@wallet360.pt (the published legal contact, Next steps #5) needs a
+  separate inbound/forwarding setup. Sending as noreply@ works; receiving at
+  privacy@ does not yet.
+- **Verification method for SMTP going forward:** don't use the owner's
+  `forgot-password` (Google-only account → no send). Use
+  `GET /api/cron/daily?force=digest` with the `CRON_SECRET` bearer, then check
+  Resend → Emails (SMTP sends appear there). Confirmed **Delivered** 2026-07-09.
