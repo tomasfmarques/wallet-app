@@ -643,5 +643,13 @@ model HouseholdInvite {
 
 ---
 
-_Update this file's WS status lines as workstreams ship; keep STATE.md's
-Next steps pointing here instead of duplicating the detail._
+---
+
+## STATUS: ALL WORKSTREAMS SHIPPED (2026-07-08/09)
+
+WS1 `7d81be7` · WS2 `c49ca90` (+SW switch `1069041`) · WS3 `b890530` ·
+WS4 `5062d9f` · WS5 `57d3739` · WS6 `47f04a6` · WS7 `fe0c802` · WS8 (vite 8)
+shipped with the closing commit. Each workstream was code-reviewed pre-ship;
+deviations from this spec are logged in the module decision files. What
+remains is the OWNER activation table above (env vars) — until those are set,
+cron/push/digest run inert.
