@@ -17,7 +17,9 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/signin" replace state={{ from: location.pathname }} />
+    // Keep the QUERY STRING too — a household invite link (/casal/aceitar
+    // ?token=…) must survive the sign-in/sign-up round-trip.
+    return <Navigate to="/signin" replace state={{ from: location.pathname + location.search }} />
   }
 
   return <>{children}</>

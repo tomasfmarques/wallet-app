@@ -1,0 +1,38 @@
+{
+  "title": "Modo Casal",
+  "subtitle": "As finanças da casa, a dois — totais combinados, sem partilhar movimentos.",
+  "overviewTitle": "{{name}}",
+  "combined": "TOTAL DO CASAL",
+  "perMember": "Por pessoa",
+  "me": "(eu)",
+  "portfolio": "Investimentos",
+  "gainLoss": "Ganho / perda",
+  "debt": "Dívida de crédito",
+  "nextPayments": "Prestações mensais",
+  "income": "Receitas mensais",
+  "expenses": "Despesas mensais",
+  "balance": "Saldo mensal",
+  "settings": {
+    "intro": "Partilha uma visão combinada das finanças com o teu par. Cada um vê apenas os TOTAIS do outro (carteira, dívida, saldo) — nunca os movimentos.",
+    "create": "Criar agregado",
+    "invite": "Criar convite",
+    "inviteHint": "O link é de utilização única e expira em 7 dias. Envia-o ao teu par.",
+    "copy": "Copiar link",
+    "copied": "Copiado!",
+    "partner": "Par: {{name}}",
+    "waiting": "À espera do teu par — cria um convite e envia-lho.",
+    "leave": "Sair do agregado",
+    "leaveConfirm": "Sair do Modo Casal? Deixas de ver os totais combinados (os teus dados não são afetados).",
+    "open": "Ver visão do casal"
+  },
+  "join": {
+    "title": "Convite — Modo Casal",
+    "body": "Foste convidado(a) para partilhar uma visão combinada das finanças. Cada um vê apenas os totais do outro — nunca os movimentos.",
+    "accept": "Aceitar convite",
+    "decline": "Agora não",
+    "joining": "A entrar…",
+    "invalid": "O convite é inválido ou expirou. Pede um novo link ao teu par."
+  },
+  "loadError": "Não foi possível carregar a visão do casal.",
+  "notMember": "Ainda não pertences a um agregado. Ativa o Modo Casal nas Definições → Conta."
+}

@@ -19,6 +19,8 @@ import Portfolio from '@/pages/Portfolio'
 import Budget from '@/pages/Budget'
 import Settings from '@/pages/Settings'
 import Compare from '@/pages/Compare'
+import Household from '@/pages/Household'
+import HouseholdJoin from '@/pages/HouseholdJoin'
 import PrivacyPolicy from '@/pages/legal/PrivacyPolicy'
 import AccountDeletion from '@/pages/legal/AccountDeletion'
 
@@ -61,6 +63,8 @@ function AppRoutes() {
         <Route path="/investments" element={<Portfolio />} />
         <Route path="/budget" element={<Budget />} />
         <Route path="/comparar" element={<Compare />} />
+        <Route path="/casal" element={<Household />} />
+        <Route path="/casal/aceitar" element={<HouseholdJoin />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
 

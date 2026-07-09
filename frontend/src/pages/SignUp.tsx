@@ -1,15 +1,24 @@
 import { FormEvent, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation, Trans } from 'react-i18next'
 import { BrandMark } from '@/components/ui/BrandMark'
 import { useAuth, useSignup, fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
+
+interface LocationState {
+  from?: string
+}
 
 export function SignUp() {
   const { t } = useTranslation('auth')
   const { isAuthenticated, isLoading } = useAuth()
   const signup = useSignup()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Same contract as SignIn: an intended destination (e.g. a household invite
+  // link /casal/aceitar?token=…) survives the sign-UP round-trip too — the
+  // realistic invite case is a partner with no account yet.
+  const redirectTo = (location.state as LocationState | null)?.from ?? '/overview'
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -18,7 +27,7 @@ export function SignUp() {
   const [errors, setErrors] = useState<FieldErrors>({})
 
   if (!isLoading && isAuthenticated) {
-    return <Navigate to="/overview" replace />
+    return <Navigate to={redirectTo} replace />
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -41,7 +50,7 @@ export function SignUp() {
         email: email.trim(),
         password,
       })
-      navigate('/overview', { replace: true })
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       setErrors(fieldErrorsFrom(err))
     }
@@ -62,7 +71,7 @@ export function SignUp() {
           <div className="form-error" role="alert">{errors._form}</div>
         )}
 
-        <GoogleSignInButton text="signup_with" redirectTo="/overview" />
+        <GoogleSignInButton text="signup_with" redirectTo={redirectTo} />
         <AuthDivider />
 
         <form onSubmit={handleSubmit} noValidate>
@@ -146,7 +155,7 @@ export function SignUp() {
         </p>
 
         <p className="auth-footer">
-          {t('signUp.haveAccount')} <Link to="/signin">{t('signUp.signInLink')}</Link>
+          {t('signUp.haveAccount')} <Link to="/signin" state={location.state}>{t('signUp.signInLink')}</Link>
         </p>
       </div>
     </div>

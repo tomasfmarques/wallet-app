@@ -1,0 +1,38 @@
+{
+  "title": "Household mode",
+  "subtitle": "Your finances as a couple — combined totals, without sharing transactions.",
+  "overviewTitle": "{{name}}",
+  "combined": "HOUSEHOLD TOTAL",
+  "perMember": "Per person",
+  "me": "(me)",
+  "portfolio": "Investments",
+  "gainLoss": "Gain / loss",
+  "debt": "Credit debt",
+  "nextPayments": "Monthly payments",
+  "income": "Monthly income",
+  "expenses": "Monthly expenses",
+  "balance": "Monthly balance",
+  "settings": {
+    "intro": "Share a combined view of your finances with your partner. Each of you sees only the other’s TOTALS (portfolio, debt, balance) — never the transactions.",
+    "create": "Create household",
+    "invite": "Create invite",
+    "inviteHint": "The link is single-use and expires in 7 days. Send it to your partner.",
+    "copy": "Copy link",
+    "copied": "Copied!",
+    "partner": "Partner: {{name}}",
+    "waiting": "Waiting for your partner — create an invite and send it over.",
+    "leave": "Leave household",
+    "leaveConfirm": "Leave household mode? You stop seeing combined totals (your own data is unaffected).",
+    "open": "View household"
+  },
+  "join": {
+    "title": "Invite — Household mode",
+    "body": "You were invited to share a combined view of finances. Each of you sees only the other’s totals — never the transactions.",
+    "accept": "Accept invite",
+    "decline": "Not now",
+    "joining": "Joining…",
+    "invalid": "The invite is invalid or expired. Ask your partner for a new link."
+  },
+  "loadError": "Could not load the household view.",
+  "notMember": "You are not part of a household yet. Enable household mode in Settings → Account."
+}

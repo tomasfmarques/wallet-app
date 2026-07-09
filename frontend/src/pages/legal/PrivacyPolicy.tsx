@@ -60,6 +60,15 @@ export function PrivacyPolicy() {
         só as linhas que confirmas são enviadas para o servidor e guardadas como movimentos
         do orçamento. O ficheiro original não é carregado nem armazenado.</p>
 
+      <h2>3-A. Modo Casal (partilha entre duas contas)</h2>
+      <p>Se ativares o <strong>Modo Casal</strong> e o teu par aceitar o convite, cada um
+        passa a ver do outro <strong>apenas o primeiro nome e totais agregados</strong>
+        (valor da carteira, dívida de crédito, receitas/despesas mensais e saldo).
+        <strong> Nunca são partilhados movimentos individuais, extratos, nomes de
+        comerciantes, emails ou qualquer outro detalhe.</strong> Qualquer um dos membros
+        pode sair a qualquer momento (Definições → Conta), o que termina de imediato a
+        partilha nos dois sentidos; os dados de cada conta não são afetados.</p>
+
       <h2>4. Subcontratantes (alojamento e serviços)</h2>
       <table>
         <tbody>

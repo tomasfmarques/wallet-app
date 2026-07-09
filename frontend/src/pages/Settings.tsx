@@ -11,6 +11,7 @@ import { WatchlistSection } from '@/components/settings/WatchlistSection'
 import { LanguageSection } from '@/components/settings/LanguageSection'
 import { ThemeSection } from '@/components/settings/ThemeSection'
 import { NotificationsSection } from '@/components/settings/NotificationsSection'
+import { HouseholdSection } from '@/components/settings/HouseholdSection'
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection'
 
 // Four grouped tabs (was seven flat ones):
@@ -43,6 +44,8 @@ export function Settings() {
       {tab === 'account' && (
         <div className="settings-backup-stack">
           <AccountSection />
+          <h2 className="section-label" style={{ marginTop: 28 }}>{t('title', { ns: 'household' })}</h2>
+          <HouseholdSection />
           <DemoSection />
           <DangerZoneSection />
         </div>

@@ -8,6 +8,9 @@ import { prisma } from '../lib/prisma'
 // schema comment + DELETE /api/me. Don't add it to the per-user backup.
 // NOTE: EuriborRate is intentionally NOT exported either — it is global market
 // data (ECB monthly averages) refreshed by the daily cron, not user data.
+// NOTE: Household/HouseholdMember/HouseholdInvite are NOT exported — cross-user
+// data cannot be restored into a single-user backup (membership is re-created
+// by inviting again).
 
 const router = Router()
 router.use(requireAuth)

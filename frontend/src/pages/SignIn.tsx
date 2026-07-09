@@ -120,7 +120,7 @@ export function SignIn() {
         </form>
 
         <p className="auth-footer">
-          {t('signIn.noAccount')} <Link to="/signup">{t('signIn.createAccount')}</Link>
+          {t('signIn.noAccount')} <Link to="/signup" state={location.state}>{t('signIn.createAccount')}</Link>
         </p>
 
         <p className="auth-demo">
@@ -130,7 +130,7 @@ export function SignIn() {
             className="linklike"
             disabled={demo.isLoading}
             onClick={async () => {
-              try { await demo.mutateAsync(); navigate('/overview', { replace: true }) }
+              try { await demo.mutateAsync(); navigate(redirectTo, { replace: true }) }
               catch { /* surfaced below */ }
             }}
           >

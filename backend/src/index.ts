@@ -27,6 +27,7 @@ import simulateRouter from './routes/simulate'
 import cronRouter from './routes/cron'
 import pushRouter from './routes/push'
 import emailRouter from './routes/email'
+import householdRouter from './routes/household'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -185,6 +186,7 @@ app.use('/api/simulate', simulateRouter)
 app.use('/api/cron', cronRouter)
 app.use('/api/push', pushRouter)
 app.use('/api/email', emailRouter)
+app.use('/api/household', householdRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
