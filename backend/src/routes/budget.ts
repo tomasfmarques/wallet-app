@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { stripFormulaPrefix } from '../lib/sanitize'
 import { loanPrestacoes, syncedAmount } from '../lib/loanSync'
+import { merchantKey } from '../lib/merchantKey'
 
 const router = Router()
 router.use(requireAuth)
@@ -98,21 +99,9 @@ function dupSignature(
   return `${kind}|${ym}|${dd}|${amount.toFixed(2)}|${n}`
 }
 
-// ── Merchant key (for learned classification rules) ──────────────
-// Normalize a transaction description down to a stable merchant key so that
-// "CONTINENTE BELAS - Cartao 2824" and "CONTINENTE SINTRA - Cartao 3001" both
-// map to "continente belas"/"continente sintra"… actually we strip the card
-// suffix and digits so recurring merchants collapse to the same key.
-function merchantKey(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')             // strip accents
-    .replace(/-\s*(cartao|terminal|cart)\b.*$/i, '')     // drop "- Cartao 2824 …"
-    .replace(/\b\d[\d.,/-]*\b/g, ' ')                    // drop numbers (card/ref)
-    .replace(/[^a-z\s]/g, ' ')                           // drop punctuation
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+// ── Merchant key ─────────────────────────────────────────────────
+// merchantKey moved VERBATIM to lib/merchantKey.ts (shared with the digest);
+// the frontend-parity rule (CLAUDE.md #3) applies there now.
 
 // An imported actual is any row carrying a `source` (set only by the import /
 // bank-sync pipeline; manual rows never have one). Everything else is the

@@ -101,3 +101,54 @@ the owner sets the VAPID env vars in Vercel.**
   keep flowing to a device someone else now controls.
 - Toggle revert is functional (per-key), send-failure logs are terse (no
   push-service response dumps).
+
+## 2026-07-09 — WS4: automatic monthly email digest
+
+Roadmap WS4. **Zero user config, opt-OUT** (`NotificationPreference.
+emailMonthlyDigest`, default true — toggle shipped with WS3's Settings
+section; plus a session-free unsubscribe link in every email). No schema
+change (the prefs table came with WS3).
+
+- **Pipeline:** `/api/cron/daily` runs `sendMonthlyDigests()` on **day 1**
+  (UTC) — or any day via `?force=digest` (still Bearer-gated; owner testing +
+  missed-run recovery). Paged user loop (50/page), per-user try/catch, skips:
+  demo accounts, opted-out, and users with zero data.
+- **Content** (`lib/digest.ts` → `buildDigestData`): previous calendar month.
+  Budget block mirrors **frontend `budgetReal.ts` semantics** — actuals
+  (source + startYm === month) + folded recurring FIXED plan rows not
+  represented by a same-merchant actual; variable = actuals only; plan-only
+  fallback with a "sem extrato importado" note. Loan-linked amounts via
+  `lib/loanSync` (live prestação). Plan-net line for comparison. Top-3 expense
+  categories. Portfolio value/invested/gain. Per-loan outstanding/%/payment +
+  the WS2 revision projection when ≤2 months away. **Wedge line deferred to
+  v2** — the compare engine lives inline in `routes/simulate.ts` (not
+  callable); extract it first if the line is wanted.
+- **merchantKey moved VERBATIM to `lib/merchantKey.ts`** (byte-identical —
+  verified programmatically) so the digest reuses it without importing a
+  router; the frontend-parity trap (CLAUDE.md #3) now points there.
+- **Email** (`lib/email.ts` → `sendMonthlyDigestEmail`): inline-styled HTML +
+  plain-text alt, pt/en via `notifyCopy` digest keys, locale-aware EUR
+  formatting. This file is the ONE sanctioned home of hardcoded colours
+  (email clients can't read CSS vars). Console fallback when SMTP unset.
+- **Unsubscribe** (`routes/email.ts`, `GET /api/email/unsubscribe?u&sig`,
+  **no session**): HMAC-SHA256 of `digest-unsub:<userId>` under
+  `SESSION_SECRET`, constant-time compare; flips the pref via upsert; answers
+  with a tiny standalone pt HTML page. `email.ts` imports `DigestData` as a
+  **type-only import** — don't turn it into a value import (circular require).
+- **Verified:** builder output hand-checked against demo data (folded salary,
+  June actuals, top categories, live prestação); pt render via console
+  fallback incl. unsubscribe URL; tampered sig → 400; valid sig → page + pref
+  false; forced cron run: 6 sent / 6 skipped on the dev DB.
+- **Owner prerequisite unchanged:** SMTP_* in Vercel (also fixes reset
+  emails). Until set, prod digests only console-log.
+
+### WS4 code-review fixes folded in before ship
+
+- **HTML injection (blocking):** expense/category/loan names can originate
+  from bank-statement imports — `escapeHtml()` in `lib/email.ts` now escapes
+  every user-controlled value in the digest's HTML branch (the plain-text alt
+  stays raw — no HTML context). Verified with a hostile `<img onerror>` name.
+- Budget section gates on rows actually IN the month (no all-zero "Saldo do
+  mês" for users whose plan starts in a future month); plaintext alt gained
+  the top-categories line; `frontend/src/lib/merchant.ts`'s parity comment now
+  points at `backend/src/lib/merchantKey.ts`.

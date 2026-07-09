@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express'
 import { timingSafeEqual } from 'crypto'
 import { fetchAndStoreEuribor } from '../lib/euribor'
 import { evaluatePushNotifications } from '../lib/notifications'
+import { sendMonthlyDigests } from '../lib/digest'
 
 // ── Daily cron dispatcher ────────────────────────────────────────
 // Vercel Cron (see vercel.json "crons") GETs /api/cron/daily once a day; the
@@ -48,7 +49,17 @@ async function runDaily(req: Request, res: Response): Promise<void> {
     tasks.push = `error: ${err instanceof Error ? err.message : 'unknown'}`
   }
 
-  // WS4 (monthly digest, day-1 only) plugs in here as a further block.
+  // Monthly digest: day 1 only. `?force=digest` (still Bearer-gated) runs it
+  // on any day — for owner testing and for recovering a missed day-1 run.
+  if (new Date().getUTCDate() === 1 || req.query.force === 'digest') {
+    try {
+      const { sent, skipped } = await sendMonthlyDigests()
+      tasks.digest = `ok (${sent} sent, ${skipped} skipped)`
+    } catch (err) {
+      console.error('[cron] digest task failed:', err)
+      tasks.digest = `error: ${err instanceof Error ? err.message : 'unknown'}`
+    }
+  }
 
   res.json({ ok: true, tasks })
 }
