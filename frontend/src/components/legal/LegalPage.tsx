@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/ui/BrandMark'
 
 interface LegalPageProps {
@@ -13,9 +14,11 @@ interface LegalPageProps {
  * Shared chrome for the public legal pages (privacy policy, account deletion).
  * Public routes — rendered outside the AuthGuard, so they work whether or not
  * the visitor is signed in (and stay inside the SPA/PWA on mobile rather than
- * breaking out to a static file). Content is pt-PT for now; EN is a follow-up.
+ * breaking out to a static file). Chrome strings are i18n'd; the page BODIES
+ * are per-language JSX blocks in pages/legal/* (see the note there).
  */
 export function LegalPage({ title, meta, children }: LegalPageProps) {
+  const { t } = useTranslation('auth')
   useEffect(() => {
     const prev = document.title
     document.title = `${title} — Wallet360`
@@ -29,7 +32,7 @@ export function LegalPage({ title, meta, children }: LegalPageProps) {
           <BrandMark size={30} />
           <span className="brand-text">wallet<span className="brand-360">360</span></span>
         </Link>
-        <Link to="/" className="legal-back">← Voltar à aplicação</Link>
+        <Link to="/" className="legal-back">← {t('legal.back')}</Link>
       </header>
 
       <main className="legal-content">
@@ -38,9 +41,9 @@ export function LegalPage({ title, meta, children }: LegalPageProps) {
         {children}
 
         <footer className="legal-footer">
-          <Link to="/privacidade">Política de privacidade</Link>
+          <Link to="/privacidade">{t('legal.privacy')}</Link>
           <span aria-hidden> · </span>
-          <Link to="/eliminar-conta">Eliminar conta</Link>
+          <Link to="/eliminar-conta">{t('legal.deletion')}</Link>
         </footer>
       </main>
     </div>

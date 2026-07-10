@@ -321,3 +321,22 @@ Backend-only, no schema change.
   6th attempt after 5 fails → 429 even with the correct password and any casing.
 - **Don't:** remove the raw-input fallback lookups without first migrating any
   mixed-case rows; don't key the login lockout on userId (existence probe).
+
+## 2026-07-10 — EN legal pages: per-language JSX blocks, not JSON keys
+
+The two public legal pages (`/privacidade`, `/eliminar-conta`) are now bilingual,
+switched on the active i18n language (`asAppLanguage(i18n.resolvedLanguage)`).
+
+- **Deliberate exception to the "all UI strings via JSON keys" rule:** each page
+  keeps its body as two whole JSX blocks (`PolicyPt`/`PolicyEn`, `DeletionPt`/
+  `DeletionEn`). Splitting ~100 lines of legal prose with embedded links/tables
+  into dozens of `<Trans>` fragments would make legal review and docs-parity
+  diffing impossible. Only the LegalPage *chrome* (back link, footer) uses keys
+  (`auth:legal.back/privacy/deletion`).
+- **PT is the binding version.** The EN block opens with a courtesy-translation
+  note ("the Portuguese version prevails"). Source of record stays
+  `docs/legal/*.md` (pt) — keep the PT JSX in sync with it; the EN JSX is a
+  faithful translation of the PT text (no separate EN md mirror, to avoid a
+  three-way sync burden).
+- The "last updated" dates deliberately stayed 27 June 2026 — the translation
+  changed no legal content.
