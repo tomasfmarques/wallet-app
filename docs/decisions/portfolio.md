@@ -570,3 +570,16 @@ Roadmap WS6 ([`../roadmap-2026-07-spec.md`](../roadmap-2026-07-spec.md)).
   NOT "fix" the filter to `<= 0`).
 - Print stylesheet includes the section heading (the toggle IS the title —
   an accountant-readable header on the printed Anexo J working paper).
+
+## 2026-07-11 — Public simulators reuse the backend engines via `@engines` Vite alias
+
+The landing-funnel tools (`/simuladores/*`) compile `backend/src/lib/loanEngine.ts`
+and `backend/src/lib/capitalGains.ts` DIRECTLY into the frontend bundle through a
+`@engines` Vite alias (+ tsconfig paths). Chosen over a shared npm workspace
+because both files have **zero imports** — a workspace added CJS/ESM and Vercel
+function-bundling risk for nothing. Consequences:
+- Those two files must stay import-free and side-effect-free (warning comment at
+  the top of each; the client build breaks otherwise).
+- There is deliberately NO duplicated engine — no merchant.ts-style parity trap.
+- SW precache consciously includes the marketing/tool chunks (+~96 KiB): installed
+  users get the simulators offline. Revisit only if precache size becomes a problem.

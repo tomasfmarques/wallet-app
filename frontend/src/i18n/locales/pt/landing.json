@@ -1,0 +1,218 @@
+{
+  "nav": {
+    "mainAria": "Navegação principal",
+    "tools": "Simuladores",
+    "signin": "Entrar",
+    "signup": "Criar conta"
+  },
+  "banner": {
+    "message": "Instala a Wallet360 e leva as tuas finanças contigo — grátis.",
+    "signin": "Entrar",
+    "dismiss": "Fechar aviso"
+  },
+  "install": {
+    "installApp": "Instalar a app",
+    "openApp": "Abrir a app",
+    "createAccount": "Criar conta grátis",
+    "iosSheetTitle": "Instalar no ecrã principal",
+    "iosStep1": "Toca no ícone Partilhar (o quadrado com a seta) na barra do Safari.",
+    "iosStep2": "Escolhe \"Adicionar ao Ecrã Principal\" e confirma.",
+    "iosClose": "Entendi",
+    "sectionTitle": "Instala a Wallet360",
+    "sectionSubtitle": "Sem loja de aplicações — instala diretamente do browser em segundos e leva as tuas finanças no bolso."
+  },
+  "footer": {
+    "tagline": "As tuas finanças, de todos os ângulos. Créditos, investimentos e orçamento num só sítio.",
+    "linksAria": "Ligações do rodapé",
+    "privacy": "Privacidade",
+    "deletion": "Eliminar conta",
+    "signin": "Entrar",
+    "signup": "Criar conta",
+    "rights": "© {{year}} Wallet360",
+    "contact": {
+      "title": "Fala connosco",
+      "intro": "Dúvidas, sugestões ou um erro num simulador? Escreve-nos.",
+      "name": "Nome",
+      "email": "Email",
+      "message": "Mensagem",
+      "send": "Enviar",
+      "sending": "A enviar…",
+      "success": "Mensagem enviada — obrigado! Respondemos por email.",
+      "error": "Não foi possível enviar a mensagem. Tenta novamente."
+    }
+  },
+  "hero": {
+    "title": "As tuas finanças, claras.",
+    "subtitle": "Simuladores gratuitos de crédito, Euribor, IRS e investimento — feitos para Portugal.",
+    "ctaPrimary": "Experimentar grátis",
+    "ctaSecondary": "Entrar"
+  },
+  "tools": {
+    "sectionTitle": "Simuladores gratuitos",
+    "sectionSubtitle": "Sem registo, sem cartão de crédito. Os cálculos correm no teu browser.",
+    "freeBadge": "Grátis · sem registo",
+    "irs": {
+      "name": "IRS — Mais-valias",
+      "oneLiner": "Importa o extrato da Trading 212 e vê o teu Anexo J em segundos."
+    },
+    "credito": {
+      "name": "Crédito habitação",
+      "oneLiner": "Simula a prestação, o TAN e o total pago do teu crédito."
+    },
+    "compare": {
+      "name": "Amortizar ou investir",
+      "oneLiner": "Descobre se compensa mais amortizar o crédito ou investir o dinheiro."
+    },
+    "euribor": {
+      "name": "Revisão Euribor",
+      "oneLiner": "Calcula quanto sobe (ou desce) a tua prestação na próxima revisão."
+    }
+  },
+  "why": {
+    "title": "Porquê a Wallet360",
+    "privacy": {
+      "title": "Privacidade em primeiro lugar",
+      "body": "Os teus ficheiros são lidos no teu browser — nunca saem do teu computador."
+    },
+    "portugal": {
+      "title": "Feito para Portugal",
+      "body": "Euribor, TAN, Anexo J — os simuladores falam a língua do fisco português."
+    },
+    "free": {
+      "title": "Grátis para começar",
+      "body": "Usa os simuladores sem criar conta. Cria conta quando quiseres guardar os teus dados."
+    }
+  },
+  "pricing": {
+    "title": "Grátis vs Pro",
+    "free": {
+      "title": "Grátis",
+      "item1": "Todos os simuladores públicos, sem limite",
+      "item2": "Conta com crédito, investimentos e orçamento",
+      "item3": "Instalação como app (PWA)",
+      "item4": "Sem anúncios dentro da app"
+    },
+    "pro": {
+      "title": "Pro",
+      "badge": "brevemente",
+      "item1": "Sincronização automática com o teu banco",
+      "item2": "Alertas e projeções avançadas",
+      "item3": "Modo Casal com mais contas",
+      "item4": "Suporte prioritário"
+    },
+    "note": "A app Wallet360 não tem anúncios — a Pro é sobre funcionalidades extra, não sobre remover publicidade."
+  },
+  "toolsIndex": {
+    "metaTitle": "Simuladores gratuitos de finanças pessoais — Wallet360",
+    "metaDescription": "Simuladores gratuitos e sem registo: IRS mais-valias, crédito habitação, amortizar ou investir e revisão Euribor. Feitos para Portugal.",
+    "title": "Simuladores gratuitos",
+    "intro": "Quatro ferramentas gratuitas, sem registo, com os cálculos a correr no teu browser. Escolhe uma para começar."
+  },
+  "common": {
+    "faqTitle": "Perguntas frequentes",
+    "backToTools": "← Todos os simuladores"
+  },
+  "tool": {
+    "irs": {
+      "metaTitle": "Simulador de IRS — Mais-valias Trading 212 (Anexo J) — Wallet360",
+      "metaDescription": "Importa o extrato da Trading 212 e calcula as mais-valias realizadas por FIFO, grátis e sem registo. Pré-visualização das primeiras 5 linhas do teu Anexo J.",
+      "h1": "Simulador de IRS — Mais-valias (Trading 212)",
+      "uploadTitle": "Carrega o(s) extrato(s) CSV da Trading 212",
+      "uploadHint": "Definições → Histórico → Exportar → CSV. Podes carregar vários ficheiros (um por ano).",
+      "dropCta": "Arrasta o ficheiro ou clica para escolher",
+      "privacyNote": "O ficheiro nunca sai do teu computador.",
+      "yearLabel": "Ano fiscal",
+      "errNotT212": "Não reconhecemos este ficheiro como um extrato da Trading 212. Confirma que exportaste em Definições → Histórico → Exportar → CSV.",
+      "errNoSales": "Não encontrámos vendas neste ficheiro — só compras geram posições, não mais-valias.",
+      "colAsset": "Ativo",
+      "colAcquired": "Adquirido",
+      "colSold": "Vendido",
+      "colQty": "Qtd.",
+      "colCost": "Custo",
+      "colProceeds": "Valor de venda",
+      "colGain": "Mais-valia",
+      "unknown": "—",
+      "incompleteWarning_one": "{{count}} linha com aquisição anterior aos dados importados — o valor de aquisição fica incompleto.",
+      "incompleteWarning_other": "{{count}} linhas com aquisição anterior aos dados importados — os valores de aquisição ficam incompletos.",
+      "totalGain": "Mais-valia total",
+      "estimatedTax": "Imposto estimado",
+      "taxMeta": "taxa autónoma de 28 %",
+      "gateTitle": "Cria conta gratuita ou instala a app para veres o relatório completo, com exportação para o Anexo J.",
+      "gateCta": "Criar conta grátis",
+      "disclaimer": "Isto não constitui aconselhamento fiscal. Os valores seguem o método FIFO exigido por lei e a taxa autónoma de 28 % (o englobamento pode ser mais vantajoso nalguns casos). Confirma sempre com um contabilista ou no Portal das Finanças.",
+      "rowsShown": "A mostrar {{shown}} de {{total}} linhas"
+    },
+    "credito": {
+      "metaTitle": "Simulador de crédito habitação — prestação, TAN e juros — Wallet360",
+      "metaDescription": "Simula a prestação mensal, o TAN e o total de juros do teu crédito habitação. Gratuito, ilimitado e sem registo.",
+      "h1": "Simulador de crédito habitação",
+      "amountLabel": "Montante do crédito (€)",
+      "termLabel": "Prazo (anos)",
+      "rateTypeLabel": "Tipo de taxa",
+      "fixedLabel": "Taxa fixa",
+      "mixedLabel": "Mista (fixa + Euribor)",
+      "tanLabel": "TAN (%)",
+      "tanFixedLabel": "TAN fixa (%)",
+      "fixedYearsLabel": "Anos a taxa fixa",
+      "spreadLabel": "Spread (%)",
+      "euriborLabel": "Euribor atual (%)",
+      "resultTitle": "Resultado",
+      "installmentLabel": "Prestação inicial",
+      "totalPaidLabel": "Total pago",
+      "totalInterestLabel": "Juros totais",
+      "termEndLabel": "Fim do crédito",
+      "chartTitle": "Evolução do capital em dívida",
+      "ctaSave": "Guarda este crédito na app",
+      "errInvalid": "Verifica os valores — todos têm de ser positivos.",
+      "prefillSaved": "Valores guardados neste browser para o simulador \"Amortizar ou investir\"."
+    },
+    "compare": {
+      "metaTitle": "Amortizar o crédito ou investir? Simulador gratuito — Wallet360",
+      "metaDescription": "Compara amortizar o crédito habitação com investir o mesmo montante. Simulador gratuito, sem registo.",
+      "h1": "Amortizar ou investir?",
+      "needCreditFirst": "Preenche primeiro os dados do teu crédito (ou usa o simulador de crédito habitação).",
+      "useCreditSim": "Simular crédito habitação →",
+      "prefilledNote": "Valores pré-preenchidos a partir do simulador de crédito habitação.",
+      "extraAmountLabel": "Montante disponível (€)",
+      "returnLabel": "Retorno anual esperado do investimento (%)",
+      "calculate": "Calcular",
+      "verdictAmortizeTitle": "Compensa mais amortizar",
+      "verdictInvestTitle": "Compensa mais investir",
+      "verdictEquivalentTitle": "É praticamente equivalente",
+      "interestSavedLabel": "Juros poupados ao amortizar",
+      "investGainLabel": "Ganho estimado do investimento",
+      "investGainMeta": "bruto, sem imposto sobre mais-valias",
+      "chartTitle": "Capital em dívida — com e sem amortização",
+      "chartNoAmort": "Sem amortizar",
+      "chartWithAmort": "A amortizar",
+      "ctaSave": "Simula o teu crédito na app"
+    },
+    "euribor": {
+      "metaTitle": "Simulador de revisão da Euribor — nova prestação — Wallet360",
+      "metaDescription": "Calcula quanto sobe ou desce a tua prestação na próxima revisão da Euribor. Gratuito e sem registo.",
+      "h1": "Simulador de revisão da Euribor",
+      "debtLabel": "Capital em dívida (€)",
+      "remainingTermLabel": "Prazo restante (meses)",
+      "spreadLabel": "Spread (%)",
+      "indexLabel": "Indexante",
+      "index3m": "Euribor 3 meses",
+      "index6m": "Euribor 6 meses",
+      "index12m": "Euribor 12 meses",
+      "currentPaymentLabel": "Prestação atual (€) — opcional",
+      "calculate": "Calcular nova prestação",
+      "calculating": "A obter a Euribor…",
+      "currentEuriborLabel": "Euribor atual",
+      "asOf": "média de {{month}}",
+      "newPaymentLabel": "Nova prestação estimada",
+      "deltaLabel": "Variação mensal",
+      "deltaUp": "sobe {{value}}/mês",
+      "deltaDown": "desce {{value}}/mês",
+      "deltaFlat": "mantém-se",
+      "errFetch": "Não foi possível obter a Euribor atual. Tenta novamente."
+    }
+  },
+  "meta": {
+    "title": "Wallet360 — Simuladores gratuitos de crédito, Euribor e IRS",
+    "description": "Simuladores gratuitos de crédito habitação, Euribor, IRS mais-valias e amortizar-ou-investir, feitos para Portugal. Sem registo."
+  }
+}

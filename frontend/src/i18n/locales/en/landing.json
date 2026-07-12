@@ -1,0 +1,218 @@
+{
+  "nav": {
+    "mainAria": "Main navigation",
+    "tools": "Simulators",
+    "signin": "Sign in",
+    "signup": "Create account"
+  },
+  "banner": {
+    "message": "Install Wallet360 and take your finances with you — free.",
+    "signin": "Sign in",
+    "dismiss": "Dismiss banner"
+  },
+  "install": {
+    "installApp": "Install the app",
+    "openApp": "Open the app",
+    "createAccount": "Create a free account",
+    "iosSheetTitle": "Add to your home screen",
+    "iosStep1": "Tap the Share icon (the square with an arrow) in Safari's toolbar.",
+    "iosStep2": "Choose \"Add to Home Screen\" and confirm.",
+    "iosClose": "Got it",
+    "sectionTitle": "Install Wallet360",
+    "sectionSubtitle": "No app store needed — install straight from your browser in seconds and keep your finances in your pocket."
+  },
+  "footer": {
+    "tagline": "Your finances, from every angle. Credit, investments and budgeting in one place.",
+    "linksAria": "Footer links",
+    "privacy": "Privacy",
+    "deletion": "Delete account",
+    "signin": "Sign in",
+    "signup": "Create account",
+    "rights": "© {{year}} Wallet360",
+    "contact": {
+      "title": "Get in touch",
+      "intro": "Questions, suggestions, or found a bug in a simulator? Write to us.",
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "send": "Send",
+      "sending": "Sending…",
+      "success": "Message sent — thank you! We'll reply by email.",
+      "error": "Couldn't send the message. Please try again."
+    }
+  },
+  "hero": {
+    "title": "Your finances, made clear.",
+    "subtitle": "Free Portuguese credit, Euribor, IRS and investing simulators.",
+    "ctaPrimary": "Try it free",
+    "ctaSecondary": "Sign in"
+  },
+  "tools": {
+    "sectionTitle": "Free simulators",
+    "sectionSubtitle": "No sign-up, no credit card. All calculations run in your browser.",
+    "freeBadge": "Free · no sign-up",
+    "irs": {
+      "name": "IRS — Capital gains",
+      "oneLiner": "Import your Trading 212 statement and see your Anexo J in seconds."
+    },
+    "credito": {
+      "name": "Mortgage simulator",
+      "oneLiner": "Simulate your monthly payment, rate and total cost."
+    },
+    "compare": {
+      "name": "Pay down or invest",
+      "oneLiner": "Find out whether paying down your mortgage or investing pays off more."
+    },
+    "euribor": {
+      "name": "Euribor revision",
+      "oneLiner": "Calculate how much your payment will rise (or fall) at the next revision."
+    }
+  },
+  "why": {
+    "title": "Why Wallet360",
+    "privacy": {
+      "title": "Privacy first",
+      "body": "Your files are read in your browser — they never leave your computer."
+    },
+    "portugal": {
+      "title": "Built for Portugal",
+      "body": "Euribor, TAN, Anexo J — the simulators speak the language of Portuguese tax rules."
+    },
+    "free": {
+      "title": "Free to start",
+      "body": "Use the simulators without creating an account. Sign up whenever you want to save your data."
+    }
+  },
+  "pricing": {
+    "title": "Free vs Pro",
+    "free": {
+      "title": "Free",
+      "item1": "All public simulators, unlimited",
+      "item2": "An account with credit, investments and budgeting",
+      "item3": "Install as an app (PWA)",
+      "item4": "No ads inside the app"
+    },
+    "pro": {
+      "title": "Pro",
+      "badge": "coming soon",
+      "item1": "Automatic bank syncing",
+      "item2": "Advanced alerts and projections",
+      "item3": "Couple Mode with more accounts",
+      "item4": "Priority support"
+    },
+    "note": "The Wallet360 app has no ads — Pro is about extra features, not removing advertising."
+  },
+  "toolsIndex": {
+    "metaTitle": "Free personal-finance simulators — Wallet360",
+    "metaDescription": "Free, no-signup simulators: IRS capital gains, mortgage, pay-down-or-invest, and Euribor revision. Built for Portugal.",
+    "title": "Free simulators",
+    "intro": "Four free tools, no sign-up, with the calculations running in your browser. Pick one to get started."
+  },
+  "common": {
+    "faqTitle": "Frequently asked questions",
+    "backToTools": "← All simulators"
+  },
+  "tool": {
+    "irs": {
+      "metaTitle": "IRS simulator — Trading 212 capital gains (Anexo J) — Wallet360",
+      "metaDescription": "Import your Trading 212 statement and calculate FIFO realized capital gains, free and with no sign-up. Preview of the first 5 rows of your Anexo J.",
+      "h1": "IRS simulator — Capital gains (Trading 212)",
+      "uploadTitle": "Upload your Trading 212 CSV statement(s)",
+      "uploadHint": "Settings → History → Export → CSV. You can upload several files (one per year).",
+      "dropCta": "Drag a file here or click to choose one",
+      "privacyNote": "The file never leaves your computer.",
+      "yearLabel": "Tax year",
+      "errNotT212": "We couldn't recognise this file as a Trading 212 statement. Make sure you exported it via Settings → History → Export → CSV.",
+      "errNoSales": "No sales found in this file — only buys generate positions, not capital gains.",
+      "colAsset": "Asset",
+      "colAcquired": "Acquired",
+      "colSold": "Sold",
+      "colQty": "Qty.",
+      "colCost": "Cost",
+      "colProceeds": "Proceeds",
+      "colGain": "Gain",
+      "unknown": "—",
+      "incompleteWarning_one": "{{count}} row with an acquisition that predates the imported data — the acquisition value is incomplete.",
+      "incompleteWarning_other": "{{count}} rows with an acquisition that predates the imported data — the acquisition values are incomplete.",
+      "totalGain": "Total gain",
+      "estimatedTax": "Estimated tax",
+      "taxMeta": "28 % flat rate",
+      "gateTitle": "Create a free account or install the app to see the full report, with Anexo J export.",
+      "gateCta": "Create a free account",
+      "disclaimer": "This is not tax advice. Values follow the legally required FIFO method and the 28 % flat rate (opting for aggregation may be more advantageous in some cases). Always confirm with an accountant or on the Portal das Finanças.",
+      "rowsShown": "Showing {{shown}} of {{total}} rows"
+    },
+    "credito": {
+      "metaTitle": "Mortgage simulator — payment, rate and interest — Wallet360",
+      "metaDescription": "Simulate your monthly mortgage payment, rate and total interest. Free, unlimited and no sign-up.",
+      "h1": "Mortgage simulator",
+      "amountLabel": "Loan amount (€)",
+      "termLabel": "Term (years)",
+      "rateTypeLabel": "Rate type",
+      "fixedLabel": "Fixed rate",
+      "mixedLabel": "Mixed (fixed + Euribor)",
+      "tanLabel": "Rate (%)",
+      "tanFixedLabel": "Fixed rate (%)",
+      "fixedYearsLabel": "Years at the fixed rate",
+      "spreadLabel": "Spread (%)",
+      "euriborLabel": "Current Euribor (%)",
+      "resultTitle": "Result",
+      "installmentLabel": "Initial payment",
+      "totalPaidLabel": "Total paid",
+      "totalInterestLabel": "Total interest",
+      "termEndLabel": "Loan ends",
+      "chartTitle": "Outstanding balance over time",
+      "ctaSave": "Save this loan in the app",
+      "errInvalid": "Check the values — all of them must be positive.",
+      "prefillSaved": "Values saved in this browser for the \"Pay down or invest\" simulator."
+    },
+    "compare": {
+      "metaTitle": "Pay down your mortgage or invest? Free simulator — Wallet360",
+      "metaDescription": "Compare paying down your mortgage against investing the same amount. Free simulator, no sign-up.",
+      "h1": "Pay down or invest?",
+      "needCreditFirst": "First fill in your loan details (or use the mortgage simulator).",
+      "useCreditSim": "Simulate a mortgage →",
+      "prefilledNote": "Values pre-filled from the mortgage simulator.",
+      "extraAmountLabel": "Amount available (€)",
+      "returnLabel": "Expected annual investment return (%)",
+      "calculate": "Calculate",
+      "verdictAmortizeTitle": "Paying down pays off more",
+      "verdictInvestTitle": "Investing pays off more",
+      "verdictEquivalentTitle": "It's roughly equivalent",
+      "interestSavedLabel": "Interest saved by paying down",
+      "investGainLabel": "Estimated investment gain",
+      "investGainMeta": "gross, before capital gains tax",
+      "chartTitle": "Outstanding balance — with and without paying down",
+      "chartNoAmort": "Without paying down",
+      "chartWithAmort": "Paying down",
+      "ctaSave": "Simulate your loan in the app"
+    },
+    "euribor": {
+      "metaTitle": "Euribor revision simulator — new payment — Wallet360",
+      "metaDescription": "Calculate how much your mortgage payment will rise or fall at the next Euribor revision. Free and no sign-up.",
+      "h1": "Euribor revision simulator",
+      "debtLabel": "Outstanding capital (€)",
+      "remainingTermLabel": "Remaining term (months)",
+      "spreadLabel": "Spread (%)",
+      "indexLabel": "Index",
+      "index3m": "Euribor 3 months",
+      "index6m": "Euribor 6 months",
+      "index12m": "Euribor 12 months",
+      "currentPaymentLabel": "Current payment (€) — optional",
+      "calculate": "Calculate new payment",
+      "calculating": "Fetching Euribor…",
+      "currentEuriborLabel": "Current Euribor",
+      "asOf": "average of {{month}}",
+      "newPaymentLabel": "Estimated new payment",
+      "deltaLabel": "Monthly change",
+      "deltaUp": "up {{value}}/month",
+      "deltaDown": "down {{value}}/month",
+      "deltaFlat": "stays the same",
+      "errFetch": "Couldn't fetch the current Euribor. Please try again."
+    }
+  },
+  "meta": {
+    "title": "Wallet360 — Free Portuguese credit, Euribor and IRS simulators",
+    "description": "Free Portuguese mortgage, Euribor, IRS capital-gains and pay-down-or-invest simulators. No sign-up required."
+  }
+}

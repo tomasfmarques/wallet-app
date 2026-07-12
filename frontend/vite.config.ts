@@ -65,6 +65,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      // Public simulators reuse the backend's pure, zero-import engines
+      // straight from source (docs/landing-spec.md A2) — one file, one
+      // engine, zero parity drift. Only loanEngine.ts and capitalGains.ts
+      // are meant to be imported through this alias, and only from
+      // lazy-loaded tool-page chunks (never the app's main chunk).
+      '@engines': resolve(__dirname, '../backend/src/lib'),
     },
   },
   server: {

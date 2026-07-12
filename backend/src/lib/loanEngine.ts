@@ -7,6 +7,10 @@
 //   • 'prestacao' → keep remaining term, recompute PMT (lower monthly)
 //
 // Pure functions, no I/O, no DB. Safe to import from anywhere.
+//
+// ⚠️ ALSO COMPILED INTO THE FRONTEND BUNDLE via the `@engines` Vite alias
+// (public simulators — docs/landing-spec.md A2). Keep this file free of
+// imports, Node APIs and side effects, or the client build breaks.
 
 export interface LoanInput {
   capital: number       // initial principal (€)

@@ -8,6 +8,10 @@
 // transactions within a month.
 //
 // Pure module — no Prisma imports — so it is trivially unit-testable.
+//
+// ⚠️ ALSO COMPILED INTO THE FRONTEND BUNDLE via the `@engines` Vite alias
+// (public IRS simulator — docs/landing-spec.md A2). Keep this file free of
+// imports, Node APIs and side effects, or the client build breaks.
 
 export interface GainTxn {
   side: string | null       // "buy" | "sell" (null = legacy dedup-only row)

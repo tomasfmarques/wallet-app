@@ -201,3 +201,29 @@ export async function sendMonthlyDigestEmail(
   }
   await transporter.sendMail({ from, to, subject, text, html })
 }
+
+// ── Public contact form (landing pages, WS-L7) ───────────────────
+// Sends the message to the owner. `replyTo` is the visitor's address so a
+// plain reply in the mail client answers them. Same console fallback as the
+// other senders when SMTP_* is not configured. Destination overridable via
+// CONTACT_TO (D4 in docs/landing-spec.md); defaults to the owner's Gmail
+// until a hello@ mailbox exists.
+export async function sendContactEmail(
+  name: string,
+  replyTo: string,
+  message: string,
+): Promise<void> {
+  const transporter = buildTransporter()
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@wallet360.pt'
+  const to = process.env.CONTACT_TO ?? 'fmarques.tomas@gmail.com'
+  const subject = `[Wallet360 contacto] ${name}`.slice(0, 120)
+  const text = `Nome: ${name}\nEmail: ${replyTo}\n\n${message}`
+
+  if (!transporter) {
+    console.log('\n── contact email (SMTP not configured) ─────────')
+    console.log(`to: ${to}\nsubject: ${subject}\n${text}`)
+    console.log('────────────────────────────────────────────────\n')
+    return
+  }
+  await transporter.sendMail({ from, to, replyTo, subject, text })
+}

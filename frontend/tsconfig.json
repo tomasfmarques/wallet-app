@@ -18,7 +18,10 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      // Mirrors the Vite `@engines` alias (docs/landing-spec.md A2). Only
+      // loanEngine.ts and capitalGains.ts are meant to be imported this way.
+      "@engines/*": ["../backend/src/lib/*"]
     },
     // Silence "baseUrl is deprecated" hard error. "5.0" is the only valid
     // value in TS 5.x — Render uses this version range.
@@ -30,6 +33,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "../backend/src/lib/loanEngine.ts",
+    "../backend/src/lib/capitalGains.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

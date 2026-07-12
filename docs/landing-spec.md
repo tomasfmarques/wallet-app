@@ -73,23 +73,25 @@ plain public routes like the legal pages. No separate app, no subdomain, no
 base-path move (PWA scope, SW, OAuth origins, TWA asset-links all stay
 untouched).
 
-### A2. Engines shared into the client — new `shared/` workspace
+### A2. Engines shared into the client — Vite alias (REVISED 2026-07-11)
 
 `backend/src/lib/loanEngine.ts` and `backend/src/lib/capitalGains.ts` are
-**pure modules (documented: no Prisma, no I/O)**. The tools must run fully
-client-side ("no memory" privacy promise), so:
+**pure modules with ZERO import statements** (verified) — fully
+self-contained TS. So the original shared-workspace idea is over-engineering;
+the minimal-risk sharing mechanism is:
 
-- Create npm workspace `shared/` (`@wallet360/engines`): move `loanEngine.ts`,
-  `capitalGains.ts` (and their types) there **verbatim**; backend re-exports
-  from the old paths so existing imports/tests don't churn.
-- Frontend imports the same package — **one engine, zero parity drift** (we
-  refuse to create another merchant.ts-style parity trap).
-- ⚠️ CJS/ESM: backend is CommonJS (ts-node-dev), frontend is Vite ESM. Ship
-  the package as **TS source** with `"main"/"types"` pointing at `src/`, no
-  build step: Vite consumes TS directly; backend's ts-node/tsc compiles it via
-  project references or `transpileOnly` include. Acceptance: `npm run build`
-  (both workspaces) + backend unit tests green, `api/index.ts` Vercel function
-  still bundles (check `includeFiles`).
+- **Vite alias** `@engines` → `../backend/src/lib/` (in `vite.config.ts`
+  `resolve.alias` + matching `paths` entry in `frontend/tsconfig.json`), and
+  frontend `include` extended to those two files for type-checking.
+- Frontend imports `computeSchedule`/`buildGainsReport` etc. straight from the
+  backend source files — **one file, one engine, zero parity drift** (no new
+  merchant.ts-style trap), and the **backend is 100% untouched** (no CJS/ESM
+  dance, no Vercel-function bundling risk, no workspace churn).
+- Guard: a comment atop both engine files noting they are ALSO compiled into
+  the frontend bundle — keep them dependency-free and side-effect-free.
+- Acceptance: both workspace builds green; `api/index.ts` function untouched;
+  the two files appear in the frontend bundle only via the tool routes'
+  lazy-loaded chunks (not in the app's main chunk).
 - Euribor rates for the revision tool: reuse the public daily-cron-fed values
   via a tiny public endpoint (WS-L4) — rates aren't personal data.
 - T212 CSV parsing is already client-side (`frontend/src/lib/trading212Parser.ts`) — reuse as-is.
@@ -136,9 +138,20 @@ legal-pages pattern (per-language JSX blocks) — logged exception in
   conta), pt/en switch.
 - `usePageMeta(title, description, canonical)` hook; JSON-LD helper
   (`WebApplication` for tools, `FAQPage` for explainer accordions).
-- PWA install CTA component: captures `beforeinstallprompt`, shows real
-  install button when eligible; falls back to "Adicionar ao ecrã principal"
-  instructions on iOS.
+- **Device-aware install CTA** (`useInstallPrompt` hook + `InstallCta`
+  component) — the SAME component adapts to the visitor's device (owner
+  requirement 2026-07-11):
+  | Context | Detection | CTA behaviour |
+  |---|---|---|
+  | Already installed | `display-mode: standalone` media query or `navigator.standalone` | Hide install CTAs entirely; show "Abrir a app" → `/` |
+  | Android / desktop Chromium | `beforeinstallprompt` fired (capture + stash the event) | "Instalar a app" button → `event.prompt()` native install dialog |
+  | iOS Safari | UA iPhone/iPad + no `beforeinstallprompt` support | Button opens a small inline sheet: "Toca em Partilhar → Adicionar ao ecrã principal" with the share-icon glyph |
+  | Anything else (Firefox etc.) | fallback | CTA becomes "Criar conta grátis" → `/signup` |
+  - When the Play Store listing exists (STATE.md Next steps), the Android
+    branch swaps to the Play badge via an env/flag — leave a marked TODO.
+  - The hook must be SSR/prerender-safe (guard all `window`/`navigator`
+    access) and register the `beforeinstallprompt` listener once at
+    MarketingLayout level so deep pages don't miss the early event.
 - Routes: `/simuladores` (index listing the 4), `/simuladores/irs-mais-valias`,
   `/simuladores/credito-habitacao`, `/simuladores/amortizar-ou-investir`,
   `/simuladores/revisao-euribor`.
@@ -247,6 +260,14 @@ banner → contact footer. Ads slots per WS-L6 (inert until enabled).
 - Acceptance: with env unset nothing loads (verify bundle); with a test client
   ID, consent banner appears once, slots render placeholders, app routes
   clean.
+- ⚠️ **CSP will block AdSense as-is** (found in the 2026-07-11 code review):
+  the backend helmet config whitelists only `'self'` +
+  `accounts.google.com` in `scriptSrc`. Before ever setting
+  `VITE_ADSENSE_CLIENT`, extend CSP (`backend/src/index.ts`) with the Google
+  ads origins (`pagead2.googlesyndication.com`,
+  `googleads.g.doubleclick.net`, `tpc.googlesyndication.com`, plus
+  `frameSrc`/`connectSrc` equivalents per Google's current docs) — otherwise
+  ads are silently blocked in prod and revenue is zero with no visible error.
 
 **Owner box (WS-L6):** create AdSense account, add site, pass review (needs
 WS-L2/L3/L5 live first — AdSense rejects thin tool-only sites; our explainer

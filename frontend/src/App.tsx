@@ -1,8 +1,9 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { useTranslation } from 'react-i18next'
 
-import { AuthProvider } from '@/hooks/useAuth'
+import { AuthProvider, useAuth } from '@/hooks/useAuth'
 import { ThemeProvider } from '@/hooks/useTheme'
 import { LockProvider } from '@/hooks/useLock'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -23,6 +24,38 @@ import Household from '@/pages/Household'
 import HouseholdJoin from '@/pages/HouseholdJoin'
 import PrivacyPolicy from '@/pages/legal/PrivacyPolicy'
 import AccountDeletion from '@/pages/legal/AccountDeletion'
+
+// ── Public marketing / free-tools funnel (docs/landing-spec.md) ──────────
+// Lazy-loaded so none of this (nor the @engines-powered tool logic) enters
+// the authenticated app's main chunk.
+const Landing = lazy(() => import('@/pages/marketing/Landing'))
+const ToolsIndex = lazy(() => import('@/pages/marketing/ToolsIndex'))
+const IrsMaisValias = lazy(() => import('@/pages/marketing/tools/IrsMaisValias'))
+const CreditoHabitacao = lazy(() => import('@/pages/marketing/tools/CreditoHabitacao'))
+const AmortizarOuInvestir = lazy(() => import('@/pages/marketing/tools/AmortizarOuInvestir'))
+const RevisaoEuribor = lazy(() => import('@/pages/marketing/tools/RevisaoEuribor'))
+
+// "/" — Landing for signed-out visitors, /overview for signed-in ones
+// (docs/landing-spec.md A1). Renders nothing while the session is resolving
+// (no spinner, no landing-then-redirect flash for bookmarked signed-in users).
+function RootGate() {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) return null
+  if (isAuthenticated) return <Navigate to="/overview" replace />
+  return (
+    <Suspense fallback={null}>
+      <Landing />
+    </Suspense>
+  )
+}
+
+// Unknown routes: signed-in users keep the existing behaviour (→ /overview);
+// signed-out visitors land on the marketing page instead of a dead end.
+function CatchAll() {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) return null
+  return <Navigate to={isAuthenticated ? '/overview' : '/'} replace />
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +79,14 @@ function AppRoutes() {
       <Route path="/privacidade" element={<PrivacyPolicy />} />
       <Route path="/eliminar-conta" element={<AccountDeletion />} />
 
+      {/* Public marketing / free-tools funnel (docs/landing-spec.md) — lazy-loaded,
+          reachable whether or not the visitor is signed in. */}
+      <Route path="/simuladores" element={<Suspense fallback={null}><ToolsIndex /></Suspense>} />
+      <Route path="/simuladores/irs-mais-valias" element={<Suspense fallback={null}><IrsMaisValias /></Suspense>} />
+      <Route path="/simuladores/credito-habitacao" element={<Suspense fallback={null}><CreditoHabitacao /></Suspense>} />
+      <Route path="/simuladores/amortizar-ou-investir" element={<Suspense fallback={null}><AmortizarOuInvestir /></Suspense>} />
+      <Route path="/simuladores/revisao-euribor" element={<Suspense fallback={null}><RevisaoEuribor /></Suspense>} />
+
       {/* Protected routes — AuthGuard checks the session, Layout renders the navbar */}
       <Route
         element={
@@ -68,9 +109,9 @@ function AppRoutes() {
         <Route path="/settings" element={<Settings />} />
       </Route>
 
-      {/* Defaults */}
-      <Route path="/" element={<Navigate to="/overview" replace />} />
-      <Route path="*" element={<Navigate to="/overview" replace />} />
+      {/* Defaults — "/" and unknown paths are session-aware (docs/landing-spec.md A1) */}
+      <Route path="/" element={<RootGate />} />
+      <Route path="*" element={<CatchAll />} />
     </Routes>
   )
 }

@@ -28,6 +28,7 @@ import cronRouter from './routes/cron'
 import pushRouter from './routes/push'
 import emailRouter from './routes/email'
 import householdRouter from './routes/household'
+import publicRouter from './routes/public'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -187,6 +188,7 @@ app.use('/api/cron', cronRouter)
 app.use('/api/push', pushRouter)
 app.use('/api/email', emailRouter)
 app.use('/api/household', householdRouter)
+app.use('/api/public', publicRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
