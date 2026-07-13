@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLoan, useDeleteLoan } from '@/hooks/useLoan'
 import { LoanKpis } from '@/components/loan/LoanKpis'
@@ -16,12 +17,24 @@ type Tab = 'tracking' | 'simulacao' | 'tabela'
 
 export function Loan() {
   const { t } = useTranslation('loan')
+  const navigate = useNavigate()
   const { data, isLoading, error, refetch } = useLoan()
   const del = useDeleteLoan()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('view')
   const [tab, setTab] = useState<Tab>('tracking')
   const [amortOpen, setAmortOpen] = useState(false)
+
+  // After creating a loan, if the backend auto-added a linked budget expense,
+  // take the user to Saldo to review it (a success banner there explains what
+  // happened — nav state, so a refresh won't re-show it); otherwise stay here.
+  const handleCreated = (result?: { linkedExpenseCreated?: boolean }) => {
+    if (result?.linkedExpenseCreated) {
+      navigate('/budget', { state: { loanLinkedExpense: true } })
+      return
+    }
+    setMode('view')
+  }
 
   if (isLoading) {
     return <div className="auth-loading"><div className="spinner" /></div>
@@ -46,7 +59,7 @@ export function Loan() {
           {t('emptyText')}
         </p>
         <div className="card">
-          <LoanSetupForm submitLabel={t('createSubmit')} />
+          <LoanSetupForm submitLabel={t('createSubmit')} onSaved={handleCreated} />
         </div>
       </div>
     )
@@ -60,7 +73,7 @@ export function Loan() {
         <div className="card">
           <LoanSetupForm
             submitLabel={t('createSubmit')}
-            onSaved={() => setMode('view')}
+            onSaved={handleCreated}
             onCancel={() => setMode('view')}
           />
         </div>

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { AuthProvider, useAuth } from '@/hooks/useAuth'
 import { ThemeProvider } from '@/hooks/useTheme'
 import { LockProvider } from '@/hooks/useLock'
+import { isStandalone } from '@/lib/standalone'
 import AuthGuard from '@/components/auth/AuthGuard'
 import LockGate from '@/components/auth/LockGate'
 import Layout from '@/components/layout/Layout'
@@ -38,10 +39,16 @@ const RevisaoEuribor = lazy(() => import('@/pages/marketing/tools/RevisaoEuribor
 // "/" — Landing for signed-out visitors, /overview for signed-in ones
 // (docs/landing-spec.md A1). Renders nothing while the session is resolving
 // (no spinner, no landing-then-redirect flash for bookmarked signed-in users).
+//
+// The public marketing landing is a browser-only acquisition surface. When the
+// app runs as an INSTALLED PWA (standalone display-mode), the visitor has
+// already converted, so "/" goes straight into the app — /overview if signed
+// in, else /signin — instead of showing the landing as a dead detour.
 function RootGate() {
   const { isAuthenticated, isLoading } = useAuth()
   if (isLoading) return null
   if (isAuthenticated) return <Navigate to="/overview" replace />
+  if (isStandalone()) return <Navigate to="/signin" replace />
   return (
     <Suspense fallback={null}>
       <Landing />

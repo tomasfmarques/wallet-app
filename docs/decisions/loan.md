@@ -230,3 +230,58 @@ export and whitelisted in import.
   new `euriborTenor`.
 - **Don't:** feed `EuriborRate.value` to the engine without ÷100; move the
   revision card into `LoanKpis` (it fetches its own endpoint, gated on tenor).
+
+## 2026-07-13 — Loan create auto-links a budget expense (mortgage triple-representation)
+
+- **What:** creating a loan (`PUT /api/loan`, create branch only) now also
+  creates a **linked fixed budget expense** — `prisma.expense.create({ type:
+  'fixed', category: 'Habitação', loanId: loan.id, amount: currentPrestacao,
+  frequency: 'monthly', active: true })`. The route returns
+  `linkedExpenseCreated`; the frontend (`LoanSetupForm` → `Loan.tsx`
+  `handleCreated`) then `navigate('/budget', { state: { loanLinkedExpense:
+  true } })`, and `Budget.tsx` shows a **dismissible success banner**
+  (`budget:loanLinked.banner`) seeded from that nav-state, clearing
+  `window.history.replaceState({}, '')` so a reload/back won't resurface it.
+  **No schema change** — `Expense.loanId` already existed (2026-06-20 link in
+  [`budget.md`](budget.md)); this just stops the user having to wire it by hand.
+- **Why:** the prestação was triple-tracked (Loan module, budget plan, budget
+  actual) and **unlinked by default** — the user had to manually add a fixed
+  expense and pick the loan, or the budget simply didn't reflect the mortgage.
+  Auto-creating the linked plan row makes the loan the single source of the
+  planned figure out of the box. (The budget *actual* still absorbs into the
+  plan via `matchHint`/kind-agnostic import matching — unchanged.)
+- **Delete = unlink + freeze, not cascade.** `DELETE /api/loan/:id` computes the
+  current prestação (with the loan's amortizations) and, in one `$transaction`,
+  `updateMany`s any `{ loanId }` expense to `{ loanId: null, amount: frozen }`
+  before deleting the loan. So the expense survives as a normal manual fixed
+  line at its last synced value — no dangling soft-ref pointing at a deleted
+  loan. (The soft-ref fallback in budget GET would also have coped, but
+  freezing keeps the amount accurate instead of reverting to the initial one.)
+- **Best-effort create:** `createLinkedBudgetExpense` is wrapped in try/catch and
+  returns false on any failure (or when the prestação is ≤ 0) — a budget-write
+  problem must never fail the loan create. `useUpsertLoan`/`useDeleteLoan` now
+  also invalidate `BUDGET_KEY` (a loan edit changes the linked expense's synced
+  amount too).
+- **Why a nav-state banner, not `window.alert`:** an initial cut used
+  `alert()` — it blocks the JS thread (and the browser automation) and is cruder
+  UX. The banner reuses the `.encoding-banner` style + `common:actions.close`.
+- **Known edges (see STATE open threads):** the expense defaults to category
+  *Habitação* (right for a mortgage, editable for a car credit), and it's created
+  for **every** loan type, not just mortgages. Acceptable defaults; revisit if a
+  non-housing credit flow needs a different category.
+- **Don't:** add a Prisma FK/cascade for `Expense.loanId` (the soft-ref avoids
+  cross-schema FK churn + the "deleted loan breaks the budget" mode); don't drop
+  the `history.replaceState` (the banner would re-show on every reload).
+
+## 2026-07-13 — Installed PWA skips the marketing landing at `/`
+
+- **What:** `App.tsx` `RootGate` now, for a signed-out visitor, checks
+  `isStandalone()` (`frontend/src/lib/standalone.ts`, shared with
+  `useInstallPrompt`) and `Navigate`s to `/signin` instead of rendering the
+  public `Landing`. Signed-in → `/overview` (unchanged); normal browser →
+  landing (unchanged). Refines landing-spec A1.
+- **Why:** the landing is a browser-only acquisition surface. A user who
+  installed the PWA has already converted — opening the app to a marketing page
+  is a dead detour; they want the app (or the sign-in gate).
+- **Don't:** duplicate the `matchMedia('(display-mode: standalone)')` /
+  `navigator.standalone` check — it's the shared `isStandalone()` now.

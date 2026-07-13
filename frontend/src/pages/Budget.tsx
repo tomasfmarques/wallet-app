@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { useBudget, useDeleteIncome, useDeleteExpense, useCleanupEncoding } from '@/hooks/useBudget'
@@ -38,6 +39,18 @@ export function Budget() {
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
   const [bankOpen, setBankOpen] = useState(false)
+  // Success notice after arriving from a loan create that auto-added a linked
+  // fixed expense (nav state from Loan.tsx). Seeded once, then the history
+  // state is cleared so a refresh / back-forward won't resurface it.
+  const location = useLocation()
+  const [showLoanLinkedNotice, setShowLoanLinkedNotice] = useState(
+    !!(location.state as { loanLinkedExpense?: boolean } | null)?.loanLinkedExpense,
+  )
+  useEffect(() => {
+    if ((location.state as { loanLinkedExpense?: boolean } | null)?.loanLinkedExpense) {
+      window.history.replaceState({}, '')
+    }
+  }, [])
   // "Fecho do mês": auto-open once per month after an import (localStorage
   // seen-gate), or manually from the Análise tab. `awaitClose` waits for the
   // post-import refetch so the FIRST-ever import is included in the data.
@@ -144,6 +157,20 @@ export function Budget() {
             onClick={handleCleanupEncoding}
           >
             {cleanupEncoding.isLoading ? t('mojibake.removing') : t('mojibake.remove', { count: mojibakeCount })}
+          </button>
+        </div>
+      )}
+
+      {showLoanLinkedNotice && (
+        <div className="encoding-banner">
+          <span className="encoding-banner-text">
+            <Trans i18nKey="loanLinked.banner" ns="budget" components={{ 1: <strong /> }} />
+          </span>
+          <button
+            type="button" className="btn btn-ghost btn-sm"
+            onClick={() => setShowLoanLinkedNotice(false)}
+          >
+            {t('actions.close', { ns: 'common' })}
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from 'react-query'
 import { api, ApiError } from '@/lib/api'
+import { BUDGET_KEY } from '@/hooks/useBudget'
 import type {
   Loan, LoanPayment, LoanAmortization, EuriborHistory,
 } from '@/types'
@@ -104,11 +105,20 @@ export function useLoanRevision(loanId: string | undefined, enabled: boolean) {
 }
 
 // ── Mutations ────────────────────────────────────────────────────
+// `linkedExpenseCreated` is true only when creating a NEW loan auto-added a
+// linked fixed expense to the budget (backend mirrors the prestação there).
+export interface UpsertLoanResult {
+  loan: Loan
+  linkedExpenseCreated?: boolean
+}
+
 export function useUpsertLoan() {
   const qc = useQueryClient()
-  return useMutation<{ loan: Loan }, ApiError, LoanInputBody>(
-    (input) => api.put<{ loan: Loan }>('/api/loan', input),
-    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
+  return useMutation<UpsertLoanResult, ApiError, LoanInputBody>(
+    (input) => api.put<UpsertLoanResult>('/api/loan', input),
+    // A loan create/edit changes the linked budget expense (created, or its
+    // synced prestação), so refresh the budget too — not just the loan list.
+    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY); qc.invalidateQueries(BUDGET_KEY) } },
   )
 }
 
@@ -116,7 +126,8 @@ export function useDeleteLoan() {
   const qc = useQueryClient()
   return useMutation<{ ok: true }, ApiError, string>(
     (id) => api.delete<{ ok: true }>(`/api/loan/${id}`),
-    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY) } },
+    // Deleting a loan unlinks (and freezes) its budget expense → refresh both.
+    { onSuccess: () => { qc.invalidateQueries(LOAN_KEY); qc.invalidateQueries(BUDGET_KEY) } },
   )
 }
 

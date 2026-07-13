@@ -53,6 +53,39 @@ async function ownedLoan(loanId: string, userId: string) {
   return loan && loan.userId === userId ? loan : null
 }
 
+type LoanRow = NonNullable<Awaited<ReturnType<typeof ownedLoan>>>
+
+// The next-payment figure (current prestação) for a loan, given its
+// amortizations. 0 when it can't be computed.
+function currentPrestacao(loan: LoanRow, amortizations: Array<{ ym: string; valor: number; modo: string }>): number {
+  const p = computeKpis(inputFromLoan(loan, amortizations)).proximaPrestacao
+  return Number.isFinite(p) && p > 0 ? p : 0
+}
+
+// When a loan is created, mirror its prestação into the budget as a linked
+// fixed expense (`Expense.loanId`) so the mortgage/credit isn't a triple-
+// tracked figure the user has to wire up by hand — the budget then reflects
+// the payment and the amount stays synced live from the loan (budget GET
+// overrides it). Best-effort: a failure here never fails the loan create.
+// Returns whether the expense was created.
+async function createLinkedBudgetExpense(loan: LoanRow, userId: string): Promise<boolean> {
+  try {
+    const prestacao = currentPrestacao(loan, [])
+    if (prestacao <= 0) return false
+    await prisma.expense.create({
+      data: {
+        userId, name: loan.name, amount: prestacao, type: 'fixed',
+        category: 'Habitação', loanId: loan.id, frequency: 'monthly',
+        active: true, pending: false,
+      },
+    })
+    return true
+  } catch (err) {
+    console.error('auto-create linked budget expense failed:', err)
+    return false
+  }
+}
+
 function inputFromLoan(loan: {
   capital: number; prazoMeses: number; tanFixa: number; mesesFixos: number
   spread: number; euribor: number; dataInicio: string
@@ -143,13 +176,15 @@ router.put('/', async (req, res) => {
 
   try {
     let loan
+    let linkedExpenseCreated = false
     if (id) {
       if (!(await ownedLoan(id, req.session.userId!))) { res.status(404).json({ error: 'Crédito não encontrado' }); return }
       loan = await prisma.loan.update({ where: { id }, data })
     } else {
       loan = await prisma.loan.create({ data: { ...data, userId: req.session.userId! } })
+      linkedExpenseCreated = await createLinkedBudgetExpense(loan, req.session.userId!)
     }
-    res.json({ loan })
+    res.json({ loan, linkedExpenseCreated })
   } catch (err) {
     console.error('PUT /api/loan failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
@@ -159,10 +194,26 @@ router.put('/', async (req, res) => {
 // ── DELETE /api/loan/:id ─────────────────────────────────────────
 router.delete('/:id', async (req, res) => {
   try {
-    if (!(await ownedLoan(req.params.id, req.session.userId!))) {
+    const userId = req.session.userId!
+    const loan = await ownedLoan(req.params.id, userId)
+    if (!loan) {
       res.status(404).json({ error: 'Crédito não encontrado' }); return
     }
-    await prisma.loan.delete({ where: { id: req.params.id } })
+    // Unlink any budget expense that mirrored this loan: freeze its amount to
+    // the current prestação (was live-synced while linked) and drop the
+    // loanId, so it survives as a normal manual fixed line instead of a
+    // dangling soft-ref pointing at a deleted loan.
+    const amortizations = await prisma.loanAmortization.findMany({
+      where: { loanId: loan.id }, orderBy: { ym: 'asc' },
+    })
+    const frozen = currentPrestacao(loan, amortizations)
+    await prisma.$transaction([
+      prisma.expense.updateMany({
+        where: { userId, loanId: loan.id },
+        data: frozen > 0 ? { loanId: null, amount: frozen } : { loanId: null },
+      }),
+      prisma.loan.delete({ where: { id: loan.id } }),
+    ])
     res.json({ ok: true })
   } catch (err) {
     console.error('DELETE /api/loan/:id failed:', err)

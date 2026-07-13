@@ -4,6 +4,9 @@
   "loadError": "Não foi possível carregar o teu orçamento.",
   "connectBank": "Ligar banco",
   "importStatement": "Importar extrato",
+  "loanLinked": {
+    "banner": "Adicionámos a prestação do teu crédito às <1>Despesas fixas</1>. O valor fica sincronizado com o crédito — ajusta-o abaixo se precisares."
+  },
   "tabs": {
     "tables": "Tabelas",
     "analysis": "Análise"

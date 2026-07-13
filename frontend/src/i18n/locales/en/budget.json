@@ -4,6 +4,9 @@
   "loadError": "Couldn't load your budget.",
   "connectBank": "Connect bank",
   "importStatement": "Import statement",
+  "loanLinked": {
+    "banner": "We added your loan's payment to <1>Fixed expenses</1>. The amount stays synced with the loan — adjust it below if you need to."
+  },
   "tabs": {
     "tables": "Tables",
     "analysis": "Analysis"

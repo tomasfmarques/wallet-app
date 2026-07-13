@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { isStandalone } from '@/lib/standalone'
 
 // ── Device-aware PWA install CTA (WS-L1) ──────────────────────────
 // docs/landing-spec.md WS-L1 behaviour matrix:
@@ -42,13 +43,6 @@ function registerListenerOnce() {
 
 // Register as soon as this module loads (guarded — SSR/prerender-safe).
 registerListenerOnce()
-
-function isStandalone(): boolean {
-  if (typeof window === 'undefined') return false
-  const mqStandalone = window.matchMedia?.('(display-mode: standalone)').matches ?? false
-  const iosStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true
-  return mqStandalone || iosStandalone
-}
 
 function isIOSDevice(): boolean {
   if (typeof navigator === 'undefined') return false

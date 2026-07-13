@@ -6,7 +6,9 @@ import { fieldErrorsFrom, type FieldErrors } from '@/hooks/useAuth'
 interface Props {
   initial?: Partial<LoanInputBody>
   loanId?: string
-  onSaved?: () => void
+  // `linkedExpenseCreated` is set only when creating a new loan auto-added a
+  // linked budget expense (so the caller can notify + route to the budget).
+  onSaved?: (result?: { linkedExpenseCreated?: boolean }) => void
   onCancel?: () => void
   submitLabel?: string
 }
@@ -132,8 +134,9 @@ export function LoanSetupForm({
     }
 
     try {
-      await upsert.mutateAsync(body)
-      onSaved?.()
+      const result = await upsert.mutateAsync(body)
+      // Only a fresh loan (no loanId) can have auto-created a budget expense.
+      onSaved?.({ linkedExpenseCreated: !loanId && !!result.linkedExpenseCreated })
     } catch (err) {
       setErrors(fieldErrorsFrom(err))
     }
