@@ -123,7 +123,53 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 - ~~**Yahoo failover (F8)**~~ — **done** (`38aa136`): stale last-good cache in `getYahooChart` falls back when Yahoo breaks.
 - ~~Asset flows history view~~ (done 2026-06-20 — `FlowsModal`); ~~loan milestone table~~ (done `19feaf2`); email-change flow; ~~drag-to-reorder watchlist~~ (done 2026-06-20); ~~non-monthly cadences~~ (done `bb6058c`).
 
+## Platforms & services (what runs where)
+
+External accounts/services this project depends on, grouped by purpose. All
+secrets live in **Vercel env vars** (never the repo). EU region chosen
+throughout for GDPR data-residency.
+
+**Hosting & infra**
+| Service | Used for | Notes |
+|---|---|---|
+| **Vercel** | Hosts everything: serverless API (`api/index.ts`, Express) + static SPA; auto-deploys on push to `main`; **Cron** (`/api/cron/daily`, 06:00 UTC); env-var store | Plan: Hobby. Domain wallet360.pt. `vercel-build` runs `db:push:prod`. |
+| **Neon** | Postgres database (prod) | Frankfurt (EU); branch `production`; 6h PITR window; `db push` (not migrate) — destructive on rename, snapshot first |
+| **GitHub** | Repo `tomasfmarques/wallet-app` + **Actions CI** (build+audit, gitleaks secret-scan) | CI must be green before merge; `.gitleaks.toml` allowlists false positives |
+| **dominios.pt** | Domain registrar + **DNS** for wallet360.pt | Nameservers `dns1-4.host-redirect.com`; holds email DKIM/SPF/MX/DMARC; TXT values must be double-quoted |
+
+**Email · monitoring · reliability**
+| Service | Used for | Notes |
+|---|---|---|
+| **Resend** | Transactional email (SMTP): password reset + monthly digest | Ireland (EU); sends from `noreply@wallet360.pt`; live + Delivered-verified |
+| **Sentry** | Error monitoring (backend + frontend) | EU (`ingest.de`); projects `wallet360-backend` (Node) + `wallet360-frontend` (React); activated 2026-07-13 |
+| **Upstash** | Serverless Redis — shared rate-limit + login-lockout counters (cross-instance) | Free DB `wallet360-ratelimit`, Frankfurt (EU); in-memory fallback if unset; activated 2026-07-13 |
+
+**Auth & push**
+| Service | Used for | Notes |
+|---|---|---|
+| **Google Sign-In (GIS)** | OAuth sign-in option | `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`; email/password is the primary auth (bcryptjs + express-session) |
+| **Web Push (VAPID)** | Browser push notifications / daily reminders | Self-hosted VAPID keys; delivery via the browser's own push service (Android→FCM, iOS/Safari→Apple). Real-device subscribe verified 2026-07-13 |
+
+**Finance data (read-only external APIs)**
+| Service | Used for | Notes |
+|---|---|---|
+| **Trading 212 Public API** | Read-only broker sync — import open positions | **HTTP Basic auth** `base64(key:secret)` (pinned 2026-07-13); `live.trading212.com`; `BROKER_ENC_KEY` encrypts stored creds |
+| **Yahoo Finance** | Quotes, ticker/ISIN search, CAGR | `query1.finance.yahoo.com`; stale-cache failover in `getYahooChart` |
+| **Frankfurter** | FX rates → convert prices to EUR | `api.frankfurter.app`; no key |
+| **ECB** | Euribor rates (fed by the daily cron) | `data-api.ecb.europa.eu`; 3/6/12M tenors |
+| **Finnhub** | Optional quotes provider | `finnhub.io`; `FINNHUB_API_KEY` optional |
+
+**Growth / marketing**
+| Service | Used for | Notes |
+|---|---|---|
+| **Google AdSense** | Ad monetization on the **public marketing pages only** (never in-app) | ⏳ pending account + site review; env-gated on `VITE_ADSENSE_CLIENT`; CSP pre-widened (`d908d2a`) |
+| **Unsplash** | Source of the landing/marketing photos | Free licence, self-hosted WebP; provenance in `frontend/public/img/marketing/SOURCES.md` (never `plus.unsplash.com`) |
+
+**Retired:** GoCardless (bank-sync AISP — permanently closed; evaluate **Enable Banking** if bank sync is revisited) · Render (hosting — replaced by Vercel).
+
 ## Known traps (the ones that bite)
+
+- **CI secret-scan (gitleaks) flags `KEY = '...'` constants.** The gate runs `gitleaks:latest` on the working tree, whose ruleset moves; a localStorage/config **key-name constant** (e.g. `wallet360.landingBannerDismissed`) trips `generic-api-key`. Fix is a targeted allowlist in **`.gitleaks.toml`** (keeps `useDefault`, so real leaks still fail) — do NOT disable the rule. `backend/.env` findings are local-only noise (gitignored, absent from CI's clean checkout).
 
 - **Vercel env-var changes need a REDEPLOY to take effect.** Adding/editing a var does nothing to the running deployment until you redeploy (Deployments → ⋯ → Redeploy, or the "Redeploy" prompt on the env page). This bit us with `SMTP_PASS` on 2026-07-09 — it was set but the live deploy was 7h old, so email stayed in console-fallback until the redeploy.
 - **DNS for wallet360.pt is at dominios.pt (nameservers `dns1-4.host-redirect.com`), NOT Vercel.** Vercel only holds the apex A record + www CNAME; the authoritative zone is the dominios.pt "SolutEDNS" panel (`my.dominios.pt`). Any mail/verification records (DKIM/SPF/MX/DMARC) go THERE. **That panel requires TXT record CONTENT to be wrapped in double quotes** (`"v=spf1 …"`) — an unquoted TXT fails with "Content must be quoted"; it stores names fully-qualified (`resend._domainkey.wallet360.pt`).
