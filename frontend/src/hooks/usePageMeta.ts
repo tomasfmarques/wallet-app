@@ -23,8 +23,13 @@ function upsertMeta(selector: string, build: () => HTMLMetaElement, content: str
   }
 }
 
-/** canonicalPath, e.g. "/simuladores/credito-habitacao" — absolute URL is built against wallet360.pt. */
-export function usePageMeta(title: string, description: string, canonicalPath?: string) {
+/**
+ * canonicalPath, e.g. "/simuladores/credito-habitacao" — absolute URL is
+ * built against wallet360.pt. `preloadImageHref` (Design v2, docs/landing-spec.md)
+ * injects a high-priority `<link rel="preload" as="image">` for a route's LCP
+ * photo (e.g. the landing hero) — self-hosted marketing WebPs only.
+ */
+export function usePageMeta(title: string, description: string, canonicalPath?: string, preloadImageHref?: string) {
   const { i18n } = useTranslation()
   const resolvedLng = i18n.resolvedLanguage
 
@@ -33,6 +38,17 @@ export function usePageMeta(title: string, description: string, canonicalPath?: 
     document.title = title
 
     const restores: Array<() => void> = []
+
+    if (preloadImageHref) {
+      const link = document.createElement('link')
+      link.setAttribute('rel', 'preload')
+      link.setAttribute('as', 'image')
+      link.setAttribute('href', preloadImageHref)
+      link.setAttribute('type', 'image/webp')
+      link.setAttribute('fetchpriority', 'high')
+      document.head.appendChild(link)
+      restores.push(() => link.remove())
+    }
 
     restores.push(upsertMeta('meta[name="description"]', () => {
       const el = document.createElement('meta')
@@ -82,7 +98,7 @@ export function usePageMeta(title: string, description: string, canonicalPath?: 
       restores.forEach((restore) => restore())
       canonicalRestore?.()
     }
-  }, [title, description, canonicalPath, resolvedLng])
+  }, [title, description, canonicalPath, resolvedLng, preloadImageHref])
 }
 
 export default usePageMeta

@@ -5,6 +5,7 @@ import { MarketingLayout } from '@/components/marketing/MarketingLayout'
 import { InstallCta } from '@/components/marketing/InstallCta'
 import { AdSlot } from '@/components/marketing/AdSlot'
 import { Accordion } from '@/components/marketing/Accordion'
+import { PhotoDivider } from '@/components/marketing/PhotoDivider'
 import { Icon } from '@/components/ui/Icon'
 import { usePageMeta } from '@/hooks/usePageMeta'
 import { useJsonLd } from '@/hooks/useJsonLd'
@@ -257,6 +258,8 @@ export function IrsMaisValias() {
 
         <AdSlot />
 
+        <PhotoDivider src="/img/marketing/divider.webp" />
+
         <section className="mkt-tool-explainer">
           {lang === 'en' ? <IrsExplainerEn /> : <IrsExplainerPt />}
         </section>
@@ -276,28 +279,18 @@ export function IrsMaisValias() {
 function IrsIntroPt() {
   return (
     <>
-      Vendeste ações ou ETFs na Trading 212 e precisas de preencher o Anexo J do
-      IRS? Este simulador importa o teu extrato de transações (exportado da
-      própria Trading 212) e calcula as mais-valias realizadas pelo método{' '}
-      <strong>FIFO</strong> ("primeiro a entrar, primeiro a sair"), o método
-      exigido por lei em Portugal. Vês as primeiras 5 linhas do relatório
-      gratuitamente; para o relatório completo, com todas as linhas e exportação
-      pronta a usar, cria uma conta gratuita ou instala a app. O ficheiro é lido
-      inteiramente no teu browser — nunca é enviado para nenhum servidor.
+      Importa o extrato da Trading 212 e calcula as tuas mais-valias pelo método{' '}
+      <strong>FIFO</strong>, exigido por lei. Grátis, com as primeiras 5 linhas
+      visíveis — o ficheiro nunca sai do teu browser.
     </>
   )
 }
 function IrsIntroEn() {
   return (
     <>
-      Sold stocks or ETFs on Trading 212 and need to fill in your Anexo J tax
-      form? This simulator imports your transaction statement (exported from
-      Trading 212 itself) and calculates realized capital gains using the{' '}
-      <strong>FIFO</strong> method ("first in, first out"), the method required by
-      Portuguese law. You see the first 5 rows of the report for free; for the
-      full report, with every row and a ready-to-use export, create a free
-      account or install the app. The file is read entirely in your browser — it
-      is never sent to any server.
+      Import your Trading 212 statement and calculate your capital gains using
+      the legally required <strong>FIFO</strong> method. Free, with the first 5
+      rows visible — your file never leaves the browser.
     </>
   )
 }

@@ -6,6 +6,7 @@ import { MarketingLayout } from '@/components/marketing/MarketingLayout'
 import { InstallCta } from '@/components/marketing/InstallCta'
 import { AdSlot } from '@/components/marketing/AdSlot'
 import { Accordion } from '@/components/marketing/Accordion'
+import { PhotoDivider } from '@/components/marketing/PhotoDivider'
 import { usePageMeta } from '@/hooks/usePageMeta'
 import { useJsonLd } from '@/hooks/useJsonLd'
 import { asAppLanguage } from '@/i18n'
@@ -171,6 +172,8 @@ export function RevisaoEuribor() {
 
         <AdSlot />
 
+        <PhotoDivider src="/img/marketing/divider.webp" />
+
         <section className="mkt-tool-explainer">
           {lang === 'en' ? <EuriborExplainerEn /> : <EuriborExplainerPt />}
         </section>
@@ -190,24 +193,17 @@ export function RevisaoEuribor() {
 function EuriborIntroPt() {
   return (
     <>
-      A maioria dos créditos habitação em Portugal está indexada à Euribor,
-      revista periodicamente (a cada 3, 6 ou 12 meses, consoante o contrato).
-      Este simulador calcula a tua nova prestação estimada a partir do capital em
-      dívida, do prazo restante e do spread do teu banco, usando a Euribor mais
-      recente publicada. Se souberes a prestação atual, o simulador mostra também
-      quanto vai subir ou descer por mês. É gratuito e não guarda nenhum dado teu.
+      A maioria dos créditos em Portugal segue a Euribor, revista a cada 3, 6 ou
+      12 meses. Calcula a tua nova prestação estimada e quanto vai subir ou
+      descer.
     </>
   )
 }
 function EuriborIntroEn() {
   return (
     <>
-      Most Portuguese mortgages are indexed to Euribor, revised periodically
-      (every 3, 6 or 12 months, depending on the contract). This simulator
-      calculates your estimated new payment from the outstanding capital,
-      remaining term and your bank's spread, using the latest published Euribor.
-      If you know your current payment, it also shows how much it will rise or
-      fall per month. It's free and stores none of your data.
+      Most Portuguese mortgages track Euribor, revised every 3, 6 or 12 months.
+      Calculate your estimated new payment and how much it'll change.
     </>
   )
 }

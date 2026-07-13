@@ -11,13 +11,27 @@ export function ToolsIndex() {
   return (
     <MarketingLayout>
       <div className="mkt-container mkt-section">
-        <h1 style={{ fontSize: 26, marginBottom: 8 }}>{t('toolsIndex.title')}</h1>
-        <p className="muted" style={{ marginBottom: 20, maxWidth: 640 }}>{t('toolsIndex.intro')}</p>
+        <div className="mkt-section-head">
+          <h2>{t('toolsIndex.title')}</h2>
+          <p>{t('toolsIndex.intro')}</p>
+        </div>
         <div className="mkt-tools-grid">
-          <ToolCard to="/simuladores/irs-mais-valias" icon="barChart" name={t('tools.irs.name')} oneLiner={t('tools.irs.oneLiner')} />
-          <ToolCard to="/simuladores/credito-habitacao" icon="home" name={t('tools.credito.name')} oneLiner={t('tools.credito.oneLiner')} />
-          <ToolCard to="/simuladores/amortizar-ou-investir" icon="scale" name={t('tools.compare.name')} oneLiner={t('tools.compare.oneLiner')} />
-          <ToolCard to="/simuladores/revisao-euribor" icon="trendingUp" name={t('tools.euribor.name')} oneLiner={t('tools.euribor.oneLiner')} />
+          <ToolCard
+            to="/simuladores/irs-mais-valias" image="/img/marketing/tool-irs.webp" imageAlt={t('tools.irs.imageAlt')}
+            name={t('tools.irs.name')} oneLiner={t('tools.irs.oneLiner')}
+          />
+          <ToolCard
+            to="/simuladores/credito-habitacao" image="/img/marketing/tool-credito.webp" imageAlt={t('tools.credito.imageAlt')}
+            name={t('tools.credito.name')} oneLiner={t('tools.credito.oneLiner')}
+          />
+          <ToolCard
+            to="/simuladores/amortizar-ou-investir" image="/img/marketing/tool-comparar.webp" imageAlt={t('tools.compare.imageAlt')}
+            name={t('tools.compare.name')} oneLiner={t('tools.compare.oneLiner')}
+          />
+          <ToolCard
+            to="/simuladores/revisao-euribor" image="/img/marketing/tool-euribor.webp" imageAlt={t('tools.euribor.imageAlt')}
+            name={t('tools.euribor.name')} oneLiner={t('tools.euribor.oneLiner')}
+          />
         </div>
       </div>
     </MarketingLayout>

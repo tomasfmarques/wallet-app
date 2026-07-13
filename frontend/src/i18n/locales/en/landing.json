@@ -19,7 +19,7 @@
     "iosStep2": "Choose \"Add to Home Screen\" and confirm.",
     "iosClose": "Got it",
     "sectionTitle": "Install Wallet360",
-    "sectionSubtitle": "No app store needed — install straight from your browser in seconds and keep your finances in your pocket."
+    "sectionSubtitle": "No app store needed — install in seconds, straight from your browser."
   },
   "footer": {
     "tagline": "Your finances, from every angle. Credit, investments and budgeting in one place.",
@@ -43,45 +43,38 @@
   },
   "hero": {
     "title": "Your finances, made clear.",
-    "subtitle": "Free Portuguese credit, Euribor, IRS and investing simulators.",
-    "ctaPrimary": "Try it free",
-    "ctaSecondary": "Sign in"
+    "subtitle": "Free Portuguese credit, Euribor and IRS simulators.",
+    "ctaPrimary": "Try it free"
   },
   "tools": {
     "sectionTitle": "Free simulators",
-    "sectionSubtitle": "No sign-up, no credit card. All calculations run in your browser.",
-    "freeBadge": "Free · no sign-up",
+    "sectionSubtitle": "No sign-up. All calculations run in your browser.",
     "irs": {
       "name": "IRS — Capital gains",
-      "oneLiner": "Import your Trading 212 statement and see your Anexo J in seconds."
+      "oneLiner": "Import your Trading 212 statement, see your Anexo J.",
+      "imageAlt": "Laptop with investment charts on a desk"
     },
     "credito": {
       "name": "Mortgage simulator",
-      "oneLiner": "Simulate your monthly payment, rate and total cost."
+      "oneLiner": "Simulate your payment, rate and total cost.",
+      "imageAlt": "White Portuguese façade with bougainvillea"
     },
     "compare": {
       "name": "Pay down or invest",
-      "oneLiner": "Find out whether paying down your mortgage or investing pays off more."
+      "oneLiner": "See whether paying down or investing pays off more.",
+      "imageAlt": "White flat-lay desk setup"
     },
     "euribor": {
       "name": "Euribor revision",
-      "oneLiner": "Calculate how much your payment will rise (or fall) at the next revision."
+      "oneLiner": "Calculate how much your payment will change.",
+      "imageAlt": "White façade with balconies"
     }
   },
   "why": {
     "title": "Why Wallet360",
-    "privacy": {
-      "title": "Privacy first",
-      "body": "Your files are read in your browser — they never leave your computer."
-    },
-    "portugal": {
-      "title": "Built for Portugal",
-      "body": "Euribor, TAN, Anexo J — the simulators speak the language of Portuguese tax rules."
-    },
-    "free": {
-      "title": "Free to start",
-      "body": "Use the simulators without creating an account. Sign up whenever you want to save your data."
-    }
+    "privacy": "Your files never leave the browser.",
+    "portugal": "Euribor, TAN and Anexo J, done right.",
+    "free": "Free to start, no card needed."
   },
   "pricing": {
     "title": "Free vs Pro",
@@ -106,7 +99,7 @@
     "metaTitle": "Free personal-finance simulators — Wallet360",
     "metaDescription": "Free, no-signup simulators: IRS capital gains, mortgage, pay-down-or-invest, and Euribor revision. Built for Portugal.",
     "title": "Free simulators",
-    "intro": "Four free tools, no sign-up, with the calculations running in your browser. Pick one to get started."
+    "intro": "Four free simulators, no sign-up. Pick one to get started."
   },
   "common": {
     "faqTitle": "Frequently asked questions",

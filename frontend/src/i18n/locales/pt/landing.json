@@ -19,7 +19,7 @@
     "iosStep2": "Escolhe \"Adicionar ao Ecrã Principal\" e confirma.",
     "iosClose": "Entendi",
     "sectionTitle": "Instala a Wallet360",
-    "sectionSubtitle": "Sem loja de aplicações — instala diretamente do browser em segundos e leva as tuas finanças no bolso."
+    "sectionSubtitle": "Sem loja de aplicações — instala em segundos, direto do browser."
   },
   "footer": {
     "tagline": "As tuas finanças, de todos os ângulos. Créditos, investimentos e orçamento num só sítio.",
@@ -43,45 +43,38 @@
   },
   "hero": {
     "title": "As tuas finanças, claras.",
-    "subtitle": "Simuladores gratuitos de crédito, Euribor, IRS e investimento — feitos para Portugal.",
-    "ctaPrimary": "Experimentar grátis",
-    "ctaSecondary": "Entrar"
+    "subtitle": "Simuladores gratuitos de crédito, Euribor e IRS, feitos para Portugal.",
+    "ctaPrimary": "Experimentar grátis"
   },
   "tools": {
     "sectionTitle": "Simuladores gratuitos",
-    "sectionSubtitle": "Sem registo, sem cartão de crédito. Os cálculos correm no teu browser.",
-    "freeBadge": "Grátis · sem registo",
+    "sectionSubtitle": "Sem registo. Os cálculos correm no teu browser.",
     "irs": {
       "name": "IRS — Mais-valias",
-      "oneLiner": "Importa o extrato da Trading 212 e vê o teu Anexo J em segundos."
+      "oneLiner": "Importa o extrato da Trading 212, vê o Anexo J.",
+      "imageAlt": "Portátil com gráficos de investimento numa secretária"
     },
     "credito": {
       "name": "Crédito habitação",
-      "oneLiner": "Simula a prestação, o TAN e o total pago do teu crédito."
+      "oneLiner": "Simula a prestação, o TAN e o total pago.",
+      "imageAlt": "Fachada branca portuguesa com buganvília"
     },
     "compare": {
       "name": "Amortizar ou investir",
-      "oneLiner": "Descobre se compensa mais amortizar o crédito ou investir o dinheiro."
+      "oneLiner": "Descobre se compensa mais amortizar ou investir.",
+      "imageAlt": "Mesa de trabalho em tons brancos"
     },
     "euribor": {
       "name": "Revisão Euribor",
-      "oneLiner": "Calcula quanto sobe (ou desce) a tua prestação na próxima revisão."
+      "oneLiner": "Calcula quanto sobe a tua prestação na revisão.",
+      "imageAlt": "Fachada branca com varandas"
     }
   },
   "why": {
     "title": "Porquê a Wallet360",
-    "privacy": {
-      "title": "Privacidade em primeiro lugar",
-      "body": "Os teus ficheiros são lidos no teu browser — nunca saem do teu computador."
-    },
-    "portugal": {
-      "title": "Feito para Portugal",
-      "body": "Euribor, TAN, Anexo J — os simuladores falam a língua do fisco português."
-    },
-    "free": {
-      "title": "Grátis para começar",
-      "body": "Usa os simuladores sem criar conta. Cria conta quando quiseres guardar os teus dados."
-    }
+    "privacy": "Os teus ficheiros nunca saem do browser.",
+    "portugal": "Euribor, TAN e Anexo J, à portuguesa.",
+    "free": "Grátis para começar, sem cartão."
   },
   "pricing": {
     "title": "Grátis vs Pro",
@@ -106,7 +99,7 @@
     "metaTitle": "Simuladores gratuitos de finanças pessoais — Wallet360",
     "metaDescription": "Simuladores gratuitos e sem registo: IRS mais-valias, crédito habitação, amortizar ou investir e revisão Euribor. Feitos para Portugal.",
     "title": "Simuladores gratuitos",
-    "intro": "Quatro ferramentas gratuitas, sem registo, com os cálculos a correr no teu browser. Escolhe uma para começar."
+    "intro": "Quatro simuladores gratuitos, sem registo. Escolhe um para começar."
   },
   "common": {
     "faqTitle": "Perguntas frequentes",

@@ -5,6 +5,7 @@ import { MarketingLayout } from '@/components/marketing/MarketingLayout'
 import { InstallCta } from '@/components/marketing/InstallCta'
 import { AdSlot } from '@/components/marketing/AdSlot'
 import { Accordion } from '@/components/marketing/Accordion'
+import { PhotoDivider } from '@/components/marketing/PhotoDivider'
 import { usePageMeta } from '@/hooks/usePageMeta'
 import { useJsonLd } from '@/hooks/useJsonLd'
 import { asAppLanguage } from '@/i18n'
@@ -180,6 +181,8 @@ export function CreditoHabitacao() {
 
         <AdSlot />
 
+        <PhotoDivider src="/img/marketing/divider.webp" />
+
         <section className="mkt-tool-explainer">
           {lang === 'en' ? <CreditoExplainerEn /> : <CreditoExplainerPt />}
         </section>
@@ -200,13 +203,8 @@ export function CreditoHabitacao() {
 function CreditoIntroPt() {
   return (
     <>
-      Simula em segundos a prestação mensal, o total pago e os juros de um crédito
-      habitação em Portugal. Introduz o montante, o prazo e a taxa — fixa ou mista
-      (um período inicial a TAN fixa seguido de Euribor + spread, o formato mais
-      comum nos créditos habitação portugueses) — e o simulador calcula a prestação
-      pelo método de amortização francesa (prestação constante), o mesmo usado pelos
-      bancos. Vês também a evolução do capital em dívida ao longo do prazo. É
-      gratuito, sem limite de simulações e sem necessidade de criar conta — os
+      Simula a prestação mensal, o total pago e os juros do teu crédito habitação —
+      taxa fixa ou mista, à portuguesa. Grátis, sem limites e sem conta: os
       cálculos correm no teu browser.
     </>
   )
@@ -214,13 +212,9 @@ function CreditoIntroPt() {
 function CreditoIntroEn() {
   return (
     <>
-      Simulate your monthly mortgage payment, total cost and interest in seconds.
-      Enter the loan amount, term and rate — fixed, or mixed (an initial fixed-rate
-      period followed by Euribor + spread, the most common Portuguese mortgage
-      structure) — and the simulator computes the payment using the French
-      amortization method (constant instalment), the same one banks use. You also
-      see how the outstanding balance evolves over the term. It's free, unlimited
-      and doesn't require an account — all calculations run in your browser.
+      Simulate your mortgage payment, total cost and interest — fixed or mixed
+      rate, the Portuguese way. Free, unlimited and no account needed: everything
+      runs in your browser.
     </>
   )
 }

@@ -38,6 +38,14 @@ export default defineConfig({
       // what gets injected into the precache manifest.
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // Marketing photos (Design v2, docs/landing-spec.md) are large,
+        // network-first assets for a signed-out funnel, not app shell —
+        // keep them out of the install-size precache regardless of extension.
+        // NOTE: today this is belt-and-braces (globPatterns above doesn't
+        // match .webp anyway) — it's here so adding webp/jpg to globPatterns
+        // later can't silently balloon the precache. Beware: a user-supplied
+        // globIgnores REPLACES workbox's default ignore list, not merges.
+        globIgnores: ['**/img/marketing/**'],
       },
       // Keep the SW out of the way during `npm run dev` (no caching surprises).
       devOptions: { enabled: false },

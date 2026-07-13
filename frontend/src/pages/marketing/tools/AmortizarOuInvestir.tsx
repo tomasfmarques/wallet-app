@@ -5,6 +5,7 @@ import { MarketingLayout } from '@/components/marketing/MarketingLayout'
 import { InstallCta } from '@/components/marketing/InstallCta'
 import { AdSlot } from '@/components/marketing/AdSlot'
 import { Accordion } from '@/components/marketing/Accordion'
+import { PhotoDivider } from '@/components/marketing/PhotoDivider'
 import { usePageMeta } from '@/hooks/usePageMeta'
 import { useJsonLd } from '@/hooks/useJsonLd'
 import { asAppLanguage } from '@/i18n'
@@ -221,6 +222,8 @@ export function AmortizarOuInvestir() {
 
         <AdSlot />
 
+        <PhotoDivider src="/img/marketing/divider.webp" />
+
         <section className="mkt-tool-explainer">
           {lang === 'en' ? <CompareExplainerEn /> : <CompareExplainerPt />}
         </section>
@@ -240,26 +243,16 @@ export function AmortizarOuInvestir() {
 function CompareIntroPt() {
   return (
     <>
-      Tens dinheiro de parte e não sabes se compensa mais amortizar o crédito
-      habitação ou investi-lo? Este simulador compara os juros que poupas ao
-      amortizar (reduzindo o prazo) com o ganho estimado de investir o mesmo
-      montante à taxa de retorno que indicares. Não há resposta certa universal —
-      depende da tua taxa de crédito e do retorno esperado do investimento — mas
-      o simulador ajuda-te a comparar os dois cenários lado a lado. Os valores
-      podem vir pré-preenchidos do simulador de crédito habitação.
+      Tens dinheiro de parte? Compara quanto poupas a amortizar o crédito com o
+      que podias ganhar a investir o mesmo valor.
     </>
   )
 }
 function CompareIntroEn() {
   return (
     <>
-      Have some money set aside and not sure whether paying down your mortgage
-      or investing it pays off more? This simulator compares the interest you
-      save by paying down (shortening the term) with the estimated gain from
-      investing the same amount at the return rate you specify. There's no
-      universal right answer — it depends on your loan rate and the expected
-      investment return — but the simulator helps you compare both scenarios
-      side by side. Values may come pre-filled from the mortgage simulator.
+      Got money set aside? Compare how much you'd save paying down your
+      mortgage against investing that same amount.
     </>
   )
 }

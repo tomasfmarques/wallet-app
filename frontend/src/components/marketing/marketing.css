@@ -1,14 +1,67 @@
 /* ── Marketing / landing / free-tools funnel (docs/landing-spec.md) ───────
-   Reuses the app's design tokens (index.css :root vars) — no new colours,
-   no CSS-in-JS, no styling deps. Loaded only by MarketingLayout, so it stays
-   out of the authenticated app's CSS and out of the app's main JS chunk
-   (marketing pages are all lazy-loaded). */
+   Design v2 (2026-07-13): photo-led, white-first, minimal copy. Marketing
+   surfaces are a fixed bright brand surface — they must look identical
+   regardless of the app's light/dark toggle (`<html data-theme>`), so this
+   file re-declares the full LIGHT token set on `.mkt-shell`. Every shared
+   component class reused here (.card, .btn, .field, .kpi, .annual-table,
+   .compare-rec, .modal, …) reads these tokens, so re-declaring them closer
+   to the DOM root than `:root[data-theme="dark"]` forces light everywhere
+   inside the marketing shell — no new CSS-in-JS, no styling deps. Loaded
+   only by MarketingLayout, so it stays out of the authenticated app's CSS
+   and out of the app's main JS chunk (marketing pages are all lazy-loaded). */
 
 .mkt-shell {
+  /* Re-declared light token set (mirrors :root in index.css) — theme-independent. */
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --surface-3: #F0F4F9;
+  --text: #1C1F23;
+  --muted: #6B6E73;
+  --muted-l: #9A9DA3;
+  --accent: #2F74D8;
+  --accent-d: #245FB0;
+  --accent-l: #EAF1FB;
+  --accent-m: #CFE0F6;
+  --accent-b: #A9C8EE;
+  --ink: #0D2740;
+  --brand-green: #2FAA6A;
+  --brand-green-d: #258854;
+  --green: #059669;
+  --green-d: #047857;
+  --red: #DC2626;
+  --amber: #D97706;
+  --border: #E2E8F0;
+  --border-s: #F1F5F9;
+  --sh: 0 1px 3px rgba(15,23,42,.07), 0 1px 2px rgba(15,23,42,.04);
+  --sh-m: 0 4px 16px rgba(15,23,42,.08);
+  --sh-l: 0 8px 32px rgba(15,23,42,.12);
+  --bg-success: #ECFDF5; --bg-success-2: #D1FAE5;
+  --border-success: #A7F3D0; --border-success-2: #6EE7B7;
+  --bg-warning-0: #FFFBEB; --bg-warning: #FEF3C7; --bg-warning-2: #FDE68A; --bg-warning-3: #FFEDD5;
+  --border-warning: #FCD34D;
+  --text-warning: #92400E; --text-warning-2: #78350F; --text-warning-3: #B45309; --text-warning-orange: #C2410C;
+  --warn-solid: #F97316;
+  --bg-danger: #FEF2F2; --bg-danger-2: #FEE2E2;
+  --border-danger: #FECACA; --border-danger-2: #FCA5A5;
+  --text-danger-strong: #B91C1C; --danger-solid: #B91C1C;
+  --bg-info: #EFF6FF; --border-info: #BFDBFE;
+  --text-info: #1D4ED8; --text-info-2: #1E40AF; --text-info-3: #1E3A8A;
+  color-scheme: light; /* keep native form controls (date/file pickers) light */
+
+  /* Marketing-only design tokens (Design v2) — white base, brand blue accent,
+     one warm accent reserved for badges, per docs/landing-spec.md. */
+  --mkt-bg: #FFFFFF;
+  --mkt-ink: #17233A;
+  --mkt-muted: #5A6474;
+  --mkt-warm: #C2703A;
+  --mkt-warm-l: #FBEEE3;
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--mkt-bg);
+  color: var(--text);
 }
 
 /* ── Sticky dismissible top banner ────────────────────────────── */
@@ -20,9 +73,9 @@
   color: #FFFFFF;
 }
 .mkt-banner-inner {
-  max-width: 1100px;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,13 +110,13 @@
 
 /* ── Header ────────────────────────────────────────────────────── */
 .mkt-header {
-  background: var(--surface);
+  background: var(--mkt-bg);
   border-bottom: 1px solid var(--border);
 }
 .mkt-header-inner {
-  max-width: 1100px;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 14px 20px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -73,7 +126,7 @@
 .mkt-header-nav {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 .mkt-header-link {
   color: var(--muted);
@@ -86,213 +139,276 @@
 /* ── Main container ────────────────────────────────────────────── */
 .mkt-main { flex: 1; }
 .mkt-container {
-  max-width: 1100px;
+  max-width: 1160px;
   margin: 0 auto;
   padding: 0 20px;
 }
-.mkt-section { padding: 40px 0; }
+.mkt-section { padding: 96px 0; }
 .mkt-section-narrow { max-width: 760px; margin: 0 auto; padding: 0 20px; }
 
-/* ── Hero ──────────────────────────────────────────────────────── */
-.mkt-hero {
-  background: var(--brand-grad);
-  color: #FFFFFF;
-  padding: 56px 20px 64px;
+.mkt-section-head { max-width: 640px; margin: 0 0 32px; }
+.mkt-section-head h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(1.5rem, 1vw + 1.3rem, 2rem);
+  letter-spacing: -0.02em;
+  color: var(--mkt-ink);
+  margin-bottom: 8px;
 }
-:root[data-theme="dark"] .mkt-hero { background: var(--brand-grad-bright); }
+.mkt-section-head p { color: var(--mkt-muted); font-size: 15px; line-height: 1.6; }
+
+/* ── Hero (full-bleed photo, Design v2) ────────────────────────── */
+.mkt-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  max-height: 640px;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+}
+.mkt-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% center;
+}
+.mkt-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0.97) 0%,
+    rgba(255,255,255,0.92) 34%,
+    rgba(255,255,255,0.45) 62%,
+    rgba(255,255,255,0.05) 100%);
+}
 .mkt-hero-inner {
-  max-width: 760px;
+  position: relative;
+  z-index: 1;
+  max-width: 1160px;
   margin: 0 auto;
-  text-align: center;
+  padding: 0 20px;
+  width: 100%;
 }
 .mkt-hero-title {
-  font-size: 32px;
-  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(2rem, 4vw + 1rem, 3.6rem);
+  line-height: 1.08;
   letter-spacing: -0.02em;
-  margin-bottom: 12px;
-  color: #FFFFFF;
+  color: var(--mkt-ink);
+  max-width: 620px;
+  margin-bottom: 18px;
 }
 .mkt-hero-sub {
-  font-size: 16px;
-  color: rgba(255,255,255,0.92);
-  max-width: 560px;
-  margin: 0 auto 24px;
-  line-height: 1.55;
+  font-size: clamp(1rem, 0.5vw + 0.9rem, 1.15rem);
+  color: var(--mkt-muted);
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 30px;
 }
 .mkt-hero-actions {
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
-.mkt-hero-actions .btn-primary {
-  background: #FFFFFF;
-  color: var(--accent-d);
-  border-color: #FFFFFF;
-}
-.mkt-hero-actions .btn-primary:hover { background: #F1F5F9; }
-.mkt-hero-actions .btn-ghost-light {
-  background: transparent;
-  color: #FFFFFF;
-  border-color: rgba(255,255,255,0.5);
-}
-.mkt-hero-actions .btn-ghost-light:hover { background: rgba(255,255,255,0.12); }
+.mkt-hero-actions .btn { padding: 13px 26px; font-size: 15px; }
 
-@media (min-width: 640px) {
-  .mkt-hero-title { font-size: 40px; }
+@media (max-width: 640px) {
+  .mkt-hero { min-height: 480px; aspect-ratio: auto; }
+  .mkt-hero-scrim {
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.55) 0%,
+      rgba(255,255,255,0.94) 46%,
+      rgba(255,255,255,0.99) 100%);
+  }
+  .mkt-hero-title { max-width: 100%; }
+  .mkt-hero-sub { max-width: 100%; }
 }
 
-/* ── Tool cards ────────────────────────────────────────────────── */
+/* ── Tool cards (photo header) ────────────────────────────────── */
 .mkt-tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
 }
 .mkt-tool-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  background: var(--surface);
+  background: var(--mkt-bg);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
+  border-radius: 20px;
   box-shadow: var(--sh);
-  padding: 18px;
+  overflow: hidden;
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
 }
 .mkt-tool-card:hover {
   border-color: var(--accent-b);
   box-shadow: var(--sh-m);
-  transform: translateY(-1px);
+  transform: translateY(-3px);
 }
-.mkt-tool-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r);
-  background: var(--accent-l);
-  color: var(--accent-d);
-  margin-bottom: 4px;
+.mkt-tool-card-media {
+  aspect-ratio: 800 / 520;
+  background: var(--surface-2);
+  overflow: hidden;
 }
-.mkt-tool-name { font-weight: 700; font-size: 16px; }
-.mkt-tool-oneliner { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
-.mkt-tool-badge {
-  margin-top: 6px;
-  font-size: 11px;
+.mkt-tool-card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mkt-tool-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 22px 26px;
+}
+.mkt-tool-name {
+  font-family: 'Sora', sans-serif;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--green-d);
-  background: var(--bg-success);
-  border: 1px solid var(--border-success);
-  border-radius: 999px;
-  padding: 3px 10px;
+  font-size: 17.5px;
+  color: var(--mkt-ink);
+}
+.mkt-tool-oneliner { color: var(--mkt-muted); font-size: 14px; line-height: 1.55; }
+.mkt-tool-arrow {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
 }
 
-/* ── Why bullets ───────────────────────────────────────────────── */
-.mkt-why-grid {
+/* ── Why strip (3 slim items, Design v2) ──────────────────────── */
+.mkt-why-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  gap: 20px;
+  padding: 28px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
-.mkt-why-item { display: flex; flex-direction: column; gap: 8px; }
+.mkt-why-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .mkt-why-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--accent-l);
   color: var(--accent-d);
+  flex-shrink: 0;
 }
-.mkt-why-title { font-weight: 700; font-size: 15px; }
-.mkt-why-body { color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.mkt-why-text { color: var(--mkt-ink); font-size: 14.5px; font-weight: 500; line-height: 1.4; }
 
-/* ── Pricing (Grátis vs Pro) ───────────────────────────────────── */
+/* ── Photo divider band ───────────────────────────────────────── */
+.mkt-divider {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  height: 260px;
+  overflow: hidden;
+}
+.mkt-divider img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 640px) {
+  .mkt-divider { height: 160px; }
+}
+
+/* ── Pricing (Grátis vs Pro) — two airy cards ─────────────────── */
 .mkt-pricing-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: 18px;
 }
 @media (min-width: 640px) {
   .mkt-pricing-grid { grid-template-columns: 1fr 1fr; }
 }
 .mkt-pricing-col {
-  background: var(--surface);
+  background: var(--mkt-bg);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
+  border-radius: 20px;
   box-shadow: var(--sh);
-  padding: 22px;
+  padding: 32px 28px;
 }
 .mkt-pricing-col-pro {
-  border-style: dashed;
   border-color: var(--accent-b);
 }
 .mkt-pricing-title {
-  font-size: 17px;
+  font-family: 'Sora', sans-serif;
+  font-size: 19px;
   font-weight: 700;
+  color: var(--mkt-ink);
   margin-bottom: 4px;
 }
 .mkt-pricing-badge {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent-d);
-  background: var(--accent-l);
+  color: var(--mkt-warm);
+  background: var(--mkt-warm-l);
   border-radius: 999px;
-  padding: 2px 9px;
+  padding: 2px 10px;
   margin-left: 8px;
   vertical-align: middle;
 }
-.mkt-pricing-list { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.mkt-pricing-list { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
 .mkt-pricing-list li {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text);
 }
 .mkt-pricing-list li svg { flex-shrink: 0; margin-top: 2px; color: var(--green-d); }
-.mkt-pricing-note { margin-top: 16px; font-size: 12.5px; color: var(--muted); }
+.mkt-pricing-note { margin-top: 20px; font-size: 12.5px; color: var(--mkt-muted); }
 
-/* ── Install section ───────────────────────────────────────────── */
+/* ── Install banner (photo bg + white scrim, Design v2) ───────── */
 .mkt-install-section {
-  background: var(--surface-2);
-  border-radius: var(--r-xl);
-  padding: 32px 24px;
+  position: relative;
+  border-radius: 24px;
+  padding: 56px 28px;
   text-align: center;
+  overflow: hidden;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.75) 45%, rgba(255,255,255,0.92) 100%),
+    url('/img/marketing/install.webp');
+  background-size: cover;
+  background-position: center;
 }
-.mkt-install-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.mkt-install-sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+.mkt-install-title {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(1.4rem, 1vw + 1.2rem, 1.9rem);
+  font-weight: 700;
+  color: var(--mkt-ink);
+  margin-bottom: 8px;
+}
+.mkt-install-sub { color: var(--mkt-muted); font-size: 14.5px; margin-bottom: 22px; max-width: 440px; margin-left: auto; margin-right: auto; }
 
 /* ── Footer ────────────────────────────────────────────────────── */
 .mkt-footer {
   background: var(--ink);
   color: #E7ECF3;
-  padding: 36px 20px 24px;
+  padding: 56px 20px 28px;
   margin-top: 40px;
 }
 .mkt-footer-inner {
-  max-width: 1100px;
+  max-width: 1160px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
 }
 .mkt-footer-brand .brand-text { color: #FFFFFF; }
-.mkt-footer-tagline { color: #9BA8B9; font-size: 13px; margin-top: 6px; max-width: 420px; }
+.mkt-footer-tagline { color: #9BA8B9; font-size: 12.5px; margin-top: 6px; max-width: 400px; }
 .mkt-footer-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 18px;
 }
 .mkt-footer-links a {
   color: #CBD5E1;
-  font-size: 13.5px;
+  font-size: 13px;
   text-decoration: none;
 }
 .mkt-footer-links a:hover { color: #FFFFFF; text-decoration: underline; }
@@ -302,28 +418,28 @@
   color: #CBD5E1;
   border-radius: 999px;
   padding: 3px 12px;
-  font-size: 12.5px;
+  font-size: 12px;
   cursor: pointer;
   font-family: inherit;
 }
 .mkt-lang-toggle:hover { background: rgba(255,255,255,0.08); color: #FFFFFF; }
-.mkt-footer-rights { font-size: 12px; color: #6C7A8C; }
+.mkt-footer-rights { font-size: 11.5px; color: #6C7A8C; }
 
 /* Contact form sits on the dark footer — invert the shared .field styling */
 .mkt-contact-form {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--r-lg);
-  padding: 18px;
-  max-width: 460px;
+  padding: 16px;
+  max-width: 440px;
 }
-.mkt-contact-title { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
-.mkt-contact-intro { font-size: 12.5px; margin-bottom: 12px; }
+.mkt-contact-title { font-size: 14px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
+.mkt-contact-intro { font-size: 12px; margin-bottom: 12px; }
 .mkt-contact-form .field label { color: #9BA8B9; }
 .mkt-contact-form .field input,
 .mkt-contact-form .field textarea {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   padding: 9px 11px;
   border: 1px solid rgba(255,255,255,0.16);
   border-radius: var(--r);
@@ -358,14 +474,14 @@
   margin: 24px 0;
 }
 
-/* ── Tool page chrome ──────────────────────────────────────────── */
-.mkt-tool-header { padding: 32px 0 8px; }
+/* ── Tool page chrome (slim white header, Design v2) ──────────── */
+.mkt-tool-header { padding: 48px 0 8px; max-width: 720px; }
 .mkt-tool-back {
   display: inline-block;
   font-size: 13px;
   color: var(--muted);
   text-decoration: none;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 .mkt-tool-back:hover { color: var(--accent); }
 .mkt-sr-only {
@@ -376,16 +492,26 @@
   clip: rect(0 0 0 0);
 }
 .mkt-tool-header h1 {
-  font-size: 26px;
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(1.6rem, 1.5vw + 1.3rem, 2.3rem);
   font-weight: 700;
-  margin-bottom: 10px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--mkt-ink);
+  margin-bottom: 12px;
 }
-.mkt-tool-intro { color: var(--muted); font-size: 14.5px; line-height: 1.6; max-width: 720px; }
-.mkt-tool-panel { margin: 24px 0; }
-.mkt-tool-explainer { margin: 32px 0; }
-.mkt-tool-explainer h2 { font-size: 19px; margin-bottom: 6px; }
-.mkt-tool-explainer-intro { color: var(--muted); font-size: 14px; margin-bottom: 16px; line-height: 1.6; }
+.mkt-tool-intro { color: var(--mkt-muted); font-size: 15px; line-height: 1.65; max-width: 640px; }
+.mkt-tool-panel {
+  max-width: 880px;
+  margin: 40px auto;
+}
+.mkt-tool-explainer { max-width: 880px; margin: 0 auto 64px; }
+.mkt-tool-explainer h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: 21px;
+  color: var(--mkt-ink);
+  margin-bottom: 8px;
+}
+.mkt-tool-explainer-intro { color: var(--mkt-muted); font-size: 14.5px; margin-bottom: 18px; line-height: 1.65; }
 .mkt-tool-explainer p { font-size: 14px; line-height: 1.65; margin-bottom: 10px; }
 
 /* Privacy note under file drop-zones */
@@ -436,9 +562,6 @@
   padding: 20px;
   background: linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--surface) 32%);
 }
-:root[data-theme="dark"] .mkt-gate-card {
-  background: linear-gradient(180deg, rgba(22,32,46,0) 0%, var(--surface) 32%);
-}
 .mkt-gate-title { font-weight: 700; font-size: 15px; max-width: 320px; }
 
 /* ── FAQ accordion ─────────────────────────────────────────────── */
@@ -480,8 +603,11 @@
 
 /* ── Mobile tightening (375px baseline) ────────────────────────── */
 @media (max-width: 480px) {
-  .mkt-hero { padding: 40px 16px 48px; }
-  .mkt-hero-title { font-size: 26px; }
-  .mkt-section { padding: 28px 0; }
-  .mkt-footer-inner { gap: 18px; }
+  .mkt-section { padding: 56px 0; }
+  .mkt-tool-header { padding: 32px 0 8px; }
+  .mkt-tool-panel { margin: 28px auto; }
+  .mkt-tool-explainer { margin: 0 auto 40px; }
+  .mkt-install-section { padding: 40px 20px; }
+  .mkt-footer-inner { gap: 20px; }
+  .mkt-why-strip { padding: 20px 0; }
 }

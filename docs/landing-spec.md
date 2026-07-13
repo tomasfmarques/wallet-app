@@ -125,6 +125,45 @@ legal-pages pattern (per-language JSX blocks) — logged exception in
 
 ---
 
+## Design v2 (owner direction, 2026-07-13): photo-led, white, minimal copy
+
+Owner verdict on v1: too text-heavy, too app-looking. The marketing pages must
+read like a modern product website, NOT like screens of the app. Rules:
+
+- **White is the base.** Marketing pages are white-first REGARDLESS of the
+  app's light/dark toggle (deliberate: the app respects the theme; the
+  website is a fixed, bright brand surface). Large whitespace, thin hairline
+  dividers, soft shadows. Accent = the existing brand blue, used sparingly
+  (primary buttons, links, small highlights) + one warm accent for badges.
+- **Photos carry the page; words support.** Full-bleed hero image with a
+  short overlay claim; each tool card gets an image header; one wide
+  lifestyle image between sections. Photo art direction: bright airy
+  European-home / café / desk scenes, natural light, no stocky
+  suits-shaking-hands clichés. All images self-hosted in
+  `frontend/public/img/marketing/` (CSP forbids remote loads), compressed
+  (WebP ≤ 150 KB each, hero ≤ 250 KB), width-appropriate `srcset`, hero
+  preloaded, everything else `loading="lazy"`, and EXCLUDED from the SW
+  precache glob (keep install size flat).
+- **Cut the copy ~60%.** Hero: one claim + one sub-line + one CTA. Cards: name
+  + ONE line. "Porquê" section: 3 items of ≤ 8 words each. Grátis-vs-Pro:
+  keep, but as two airy cards with ≤ 4 bullets. Tool pages: the tool leads;
+  the SEO explainer/FAQ stays (search is the whole point) but moves BELOW
+  the fold into collapsed accordions with a photo divider above.
+- **Typography as design:** big Outfit display sizes for claims (clamp()-scaled),
+  generous line-height, muted #444-on-white body, no text walls.
+- **Structure per page:** landing = hero photo → 4 photo cards → 3-word-bullets
+  strip → free/pro cards → install banner (photo bg) → slim footer. Tool pages
+  = slim white header, tool card centered on white, photo divider, accordions,
+  footer.
+- i18n keys keep working — trimming copy means EDITING keys in both locales,
+  not hardcoding. All existing functionality (gates, engines, install CTA,
+  contact form, ads scaffolding) is untouched — this is a visual/copy layer.
+- **D5 DECIDED (owner, 2026-07-13): Unsplash free-licence photos.** 7 WebPs
+  live in `frontend/public/img/marketing/` (hero, 4 tool cards, divider,
+  install), each visually vetted; provenance + licence in `SOURCES.md` there
+  (keep it updated on every swap; never use `plus.unsplash.com` — that tier
+  is paid).
+
 ## Workstreams
 
 ### WS-L1 — Routing, marketing shell, meta (foundation)
