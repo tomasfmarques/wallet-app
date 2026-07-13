@@ -1,0 +1,14 @@
+# Gitleaks config for the CI secret-scan gate (.github/workflows/ci.yml).
+# gitleaks auto-loads this file from the repo root. We keep the FULL default
+# ruleset and only allowlist specific, verified false positives — so a real
+# leaked credential still fails CI.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Frontend localStorage key NAMES — UI constants, not secrets (trip the generic-api-key rule because they look like `KEY = '...'`)."
+regexTarget = "line"
+regexes = [
+  '''wallet360\.landingBannerDismissed''',
+]
