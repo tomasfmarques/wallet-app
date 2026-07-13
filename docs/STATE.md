@@ -3,7 +3,7 @@
 _The single source of truth for "where things stand." Replaces manual hand-offs.
 Read at the start of a session with `/catchup`; update at the end with `/handoff`._
 
-**Last updated:** 2026-07-10
+**Last updated:** 2026-07-13
 
 > **Secrets policy:** never put real values (DB password, `SESSION_SECRET`, API keys)
 > in this file or anywhere in the repo — it's public. Secrets live ONLY in Vercel →
@@ -49,10 +49,12 @@ Read at the start of a session with `/catchup`; update at the end with `/handoff
 
 **Owner / external (only Tomás can do these):**
 1. **Activate the shipped-but-gated integrations** — code is live; some still OFF until their Vercel env var is set:
-   - ✅ **DONE 2026-07-09:** `CRON_SECRET` (cron live), `VAPID_*` (Web Push live — but still needs a **real-device subscribe test**: open wallet360.pt → hard-refresh so the new SW loads → Definições → Preferências → Notificações → "Ativar notificações"), `SMTP_*` via Resend (email live + Delivered-verified).
-   - `SENTRY_DSN` (+ `VITE_SENTRY_DSN`) — back + front error monitoring. **Still off.**
-   - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — shared rate-limit/lockout (serverless-correct; in-memory until set). **Still off.**
-   - ✅ **`BROKER_ENC_KEY` DONE 2026-07-11** (set in Vercel, prod redeployed). **Remaining:** generate a **read-only Trading 212 API key**, then test "Ligar Trading 212" and report the connect status so the exact auth header is pinned (see [`docs/trading212-v2-spec.md`](docs/trading212-v2-spec.md)).
+   - ✅ **DONE 2026-07-09:** `CRON_SECRET` (cron live), `VAPID_*` (Web Push live), `SMTP_*` via Resend (email live + Delivered-verified).
+   - ✅ **Web Push real-device subscribe test DONE 2026-07-13** — owner enabled notifications on an Android device; a `push_subscriptions` row (endpoint `fcm.googleapis.com`) landed in Neon. Subscribe pipe verified end-to-end; live *delivery* fires on the daily cron / a real revision alert.
+   - ✅ **`SENTRY_DSN` + `VITE_SENTRY_DSN` DONE 2026-07-13** — org `wallet360.sentry.io`, projects `wallet360-backend` (Node) + `wallet360-frontend` (React), **EU region** (`ingest.de.sentry.io`). Frontend verified (DSN inlined in the prod bundle); backend inits on boot.
+   - ✅ **`UPSTASH_REDIS_REST_URL` + `_TOKEN` DONE 2026-07-13** — free Redis DB `wallet360-ratelimit`, **Frankfurt eu-central-1**. Verified live: `rl:api:*`/`rl:auth:*` keys appear from prod requests → rate-limit/lockout now cross-instance.
+   - ✅ **`BROKER_ENC_KEY` DONE 2026-07-11** + **T212 connect VERIFIED 2026-07-13.** A read-only key connected on device; `broker_connections` row has `account_ccy=EUR` (proves the API authenticated), key/secret encrypted at rest. **Auth header now PINNED: HTTP Basic `base64(key:secret)`** — fixed in `lib/trading212.ts` (was trying raw/Bearer → always 401); shipped `9193784`. (see [`docs/trading212-v2-spec.md`](docs/trading212-v2-spec.md)).
+   - **STILL PENDING (only remaining activation):** `VITE_ADSENSE_CLIENT` — needs an AdSense account + site review (days). CSP already pre-widened for it (gated, `d908d2a`). When approved: set the var + redeploy → ads + CSP activate together.
 2. ~~**Re-import the Trading 212 CSV once**~~ — **✅ DONE 2026-07-10.** The owner re-imported the full T212 history; all `imported_txns` gains columns are now populated (prod-verified: 20 orders, **`side IS NULL` count = 0**), so the IRS mais-valias report (WS6) is fully lit, including the two fully-exited positions' realized gains (TTWO +€118, CSNDX.SW +€12). ⚠️ The re-import had a **doubling side-effect** (original import predated per-order dedup → all 9 holdings inflated) that was diagnosed and repaired the same night — see the new trap below and Recent work. Portfolio now prod-verified correct (8 held assets exactly matching the ledger replay; flows rebuilt; 0 orphans).
 3. **Clean any remaining mojibake rows** — Saldo → "Remover N" banner → re-import (the encoding fix only corrects *new* imports).
 4. **Play Store** — generate an APK via PWABuilder (`https://wallet360.pt` → Android) or Bubblewrap (`wallet360-hub/PLAY-STORE.md`); needs Play account (€25) + asset-links fingerprint.
@@ -158,6 +160,7 @@ _Done (on `main`/deployed): **Deeper wedge** — `/api/simulate/compare` now (a)
 
 ## Recent work (newest first)
 
+- (infra/activation) **Gated integrations activated + verified (2026-07-13).** Owner created Sentry (EU) + Upstash (Frankfurt) accounts; env vars set in Vercel; CSP pre-widened for AdSense (gated on `VITE_ADSENSE_CLIENT`, `d908d2a`). All prod-verified: frontend Sentry DSN inlined, Upstash `rl:*` keys live, Web Push subscribe row landed. **T212 connect fixed + verified:** the app was authenticating with the raw key/Bearer → always 401; **T212 uses HTTP Basic `base64(key:secret)`** — pinned in `lib/trading212.ts` (`9193784`), connected on device (`account_ccy=EUR`, creds encrypted). Only `VITE_ADSENSE_CLIENT` remains (AdSense review pending). Details in Next steps #1.
 - (landing) **Design v2 — photo-led, white-first marketing pages (2026-07-13, shipped `506d0e2`).** Owner direction: less text, pretty photos, white main color. 7 Unsplash free-licence WebPs (provenance in `frontend/public/img/marketing/SOURCES.md` — keep updated on swaps, never `plus.unsplash.com`); marketing renders white in BOTH app themes (`.mkt-shell` redeclares light tokens); copy cut ~60% via i18n (parity kept); photos excluded from SW precache. Reviewed, zero blocking; prod-verified (images serve as `image/webp`). Spec D5 marked decided in [`docs/landing-spec.md`](landing-spec.md).
 
 - (legal) **EN versions of the two public legal pages (2026-07-10, shipped `abcc427`, on `main`/deployed).** `/privacidade` + `/eliminar-conta` are now bilingual, switched on the active i18n language (`asAppLanguage(i18n.resolvedLanguage)`); PT bodies byte-identical, EN blocks are courtesy translations that state PT prevails. LegalPage chrome moved to i18n keys (new `auth:legal.back`, pt+en parity). Deliberate exception to the JSON-keys rule (bodies stay whole JSX blocks so legal prose reviews as one piece) — decision in [`docs/decisions/auth.md`](decisions/auth.md). Closes the (d) item of the pre-public legal layer (Next steps #5). Browser-verified both routes in both languages; tsc+build clean.
