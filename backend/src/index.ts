@@ -55,14 +55,26 @@ if (IS_PROD) app.set('trust proxy', 1)
 // Services can communicate back from its popup window. The default
 // "same-origin" severs that cross-origin channel and silently breaks GIS.
 // CSP explicitly whitelists accounts.google.com for the same reason.
+// Google AdSense needs a wider CSP than the app's default. Only widen it when
+// ads are actually enabled — `VITE_ADSENSE_CLIENT` is the same var the frontend
+// gates the AdSlot on, and Vercel exposes it to this serverless function too,
+// so one env var flips both. Keeps the default policy tight (no ad origins
+// permitted until ads go live). ⚠️ Google rotates these origins; if ads are
+// blocked after go-live, read the browser CSP-violation reports and add the
+// reported hosts here. imgSrc already allows `https:`, so ad creatives are fine.
+const adsEnabled = !!process.env.VITE_ADSENSE_CLIENT
+const adScriptSrc = ['https://pagead2.googlesyndication.com', 'https://tpc.googlesyndication.com', 'https://partner.googleadservices.com', 'https://adservice.google.com']
+const adFrameSrc = ['https://googleads.g.doubleclick.net', 'https://tpc.googlesyndication.com', 'https://www.google.com']
+const adConnectSrc = ['https://pagead2.googlesyndication.com', 'https://googleads.g.doubleclick.net', 'https://ep1.adtrafficquality.google']
+
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'unsafe-none' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc:            ["'self'"],
-      scriptSrc:             ["'self'", 'https://accounts.google.com'],
-      frameSrc:              ["'self'", 'https://accounts.google.com'],
-      connectSrc:            ["'self'", 'https://accounts.google.com', 'https://oauth2.googleapis.com'],
+      scriptSrc:             ["'self'", 'https://accounts.google.com', ...(adsEnabled ? adScriptSrc : [])],
+      frameSrc:              ["'self'", 'https://accounts.google.com', ...(adsEnabled ? adFrameSrc : [])],
+      connectSrc:            ["'self'", 'https://accounts.google.com', 'https://oauth2.googleapis.com', ...(adsEnabled ? adConnectSrc : [])],
       imgSrc:                ["'self'", 'data:', 'https:'],
       styleSrc:              ["'self'", 'https:', "'unsafe-inline'"],
       fontSrc:               ["'self'", 'https://fonts.gstatic.com', 'data:'],
