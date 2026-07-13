@@ -6,10 +6,10 @@ import { convertPrice } from './fx'
 // them into Wallet360 portfolio-import items (ISIN→Yahoo symbol + EUR), reusing
 // the same import pipeline as the CSV importer.
 //
-// Auth model is in flux (older docs: a single key in `Authorization`; current:
-// a key + secret pair). We resolve it empirically: try the key, then the secret,
-// against /equity/account/info and use whichever authenticates. Build the header
-// behind this one adapter so it's trivial to adjust once confirmed live.
+// Auth: HTTP Basic — `Authorization: Basic base64(API_KEY:API_SECRET)`, where
+// the KEY is the key-ID and the SECRET is the secret shown once at generation
+// (pinned from the T212 docs 2026-07-13, after a raw-key connect returned 401).
+// A few legacy variants are kept as low-cost fallbacks behind the Basic try.
 //
 // Rate limits are per-account and strict, so: instruments metadata is cached 24h
 // (it's a large, slow-changing list), and sync is on-demand only (never polled).
@@ -44,13 +44,17 @@ async function get<T>(base: string, path: string, auth: string): Promise<T> {
 // header value + the account currency. Throws T212Error on auth/other failure.
 async function resolveAuth(creds: T212Creds): Promise<{ auth: string; accountCcy: string | null }> {
   const base = BASE[creds.env]
-  // The auth header form isn't pinned down (raw key vs key+secret vs Bearer), so
-  // try the plausible variants and use whichever authenticates. On a valid key
-  // the first match returns immediately; only a wrong key pays for extra tries.
+  // HTTP Basic (`base64(key:secret)`) is the documented scheme — try it first;
+  // a valid key authenticates immediately. The raw/Bearer forms are kept as
+  // cheap fallbacks (they just 401 fast) in case an older key type differs.
+  const basic = creds.secret
+    ? `Basic ${Buffer.from(`${creds.key}:${creds.secret}`).toString('base64')}`
+    : null
   const candidates = [
+    ...(basic ? [basic] : []),
     creds.key, `Bearer ${creds.key}`,
     ...(creds.secret ? [creds.secret, `Bearer ${creds.secret}`] : []),
-  ].filter((x) => x.length > 0)
+  ].filter((x): x is string => !!x && x.length > 0)
   let lastStatus = 0
   for (const auth of candidates) {
     let res: Response
