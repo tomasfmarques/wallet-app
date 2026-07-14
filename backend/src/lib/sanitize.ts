@@ -17,3 +17,15 @@ const FORMULA_PREFIX = /^[=+\-@\t\r]+/
 export function stripFormulaPrefix(s: string): string {
   return s.replace(FORMULA_PREFIX, '').trim()
 }
+
+// Control characters (C0 range 0x00-0x1F incl. the NUL byte, plus DEL + C1
+// 0x7F-0x9F) that a Postgres `text` column rejects outright — a malformed or
+// binary import (e.g. an .xlsx accidentally read as text) could otherwise carry
+// raw bytes into a name and crash the whole insert. Built via `new RegExp` from
+// a plain string so no literal control byte ever lives in this source file.
+// Defence in depth at the write boundary; normal input is unaffected.
+const CONTROL_CHARS = new RegExp('[\\u0000-\\u001F\\u007F-\\u009F]', 'g')
+
+export function stripControlChars(s: string): string {
+  return s.replace(CONTROL_CHARS, '')
+}

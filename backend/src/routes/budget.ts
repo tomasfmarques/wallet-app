@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { Prisma } from '@prisma/client'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
-import { stripFormulaPrefix } from '../lib/sanitize'
+import { stripFormulaPrefix, stripControlChars } from '../lib/sanitize'
 import { loanPrestacoes, syncedAmount } from '../lib/loanSync'
 import { merchantKey } from '../lib/merchantKey'
 
@@ -32,9 +32,11 @@ function asName(v: unknown, field: string, errors: Record<string, string>): stri
     errors[field] = `${field} obrigatório (1-80 caracteres)`
     return ''
   }
-  // Neutralise CSV/formula-injection prefixes at the write boundary (F5). Also
-  // guards the statement-import path, where names are attacker-controllable.
-  const clean = stripFormulaPrefix(v)
+  // Strip control chars FIRST (NUL/binary bytes would crash a Postgres text
+  // insert — e.g. a malformed import), THEN neutralise CSV/formula-injection
+  // prefixes at the write boundary (F5). Order matters: a leading NUL before a
+  // "=" must be removed so the "=" is then recognised as a formula trigger.
+  const clean = stripFormulaPrefix(stripControlChars(v))
   if (clean.length === 0) { errors[field] = `${field} inválido`; return '' }
   return clean
 }
@@ -42,7 +44,8 @@ function asName(v: unknown, field: string, errors: Record<string, string>): stri
 function asOptionalString(v: unknown, max = 200): string | null {
   if (v === undefined || v === null || v === '') return null
   if (typeof v !== 'string' || v.length > max) return null
-  return v.trim()
+  const clean = stripControlChars(v).trim()
+  return clean || null
 }
 
 function asOptionalYm(v: unknown, field: string, errors: Record<string, string>): string | null {

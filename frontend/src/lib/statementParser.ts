@@ -204,6 +204,14 @@ function parseCsv(text: string): ParsedTransaction[] {
 
   const delim = detectDelimiter(rawLines)
   const rows = rawLines.map((l) => splitCsvLine(l, delim))
+  return rowsToTransactions(rows)
+}
+
+// Column-mapping + row loop shared by the CSV path and the XLSX path (which
+// already has a cell grid). Same header detection, débito/crédito handling,
+// positional fallback and "never silently drop a row" rules.
+function rowsToTransactions(rows: string[][]): ParsedTransaction[] {
+  if (rows.length === 0) return []
 
   const headerIdx = findHeaderRow(rows)
   let cols: ColMap
@@ -297,10 +305,21 @@ export function dupSignature(
   return `${kind}|${ym}|${dd}|${amount.toFixed(2)}|${n}`
 }
 
+// Drop pure-noise lines (no amount AND no date) — keep everything the user
+// might still want to review/fix.
+function keepMeaningful(txns: ParsedTransaction[]): ParsedTransaction[] {
+  return txns.filter((t) => t.amount !== 0 || t.date !== null)
+}
+
 // ── Public entry point ───────────────────────────────────────────
 export function parseStatement(text: string, filename: string): ParsedTransaction[] {
   const looksOfx = /<OFX>|<STMTTRN>/i.test(text) || /\.ofx$/i.test(filename)
   const txns = looksOfx ? parseOfx(text) : parseCsv(text)
-  // Drop zero-amount noise lines but keep everything the user might want
-  return txns.filter((t) => t.amount !== 0 || t.date !== null)
+  return keepMeaningful(txns)
+}
+
+// Row-grid entry point for the XLSX path (cells already decoded by
+// xlsxStatementParser). Runs the same column-mapping as CSV.
+export function parseStatementRows(rows: string[][]): ParsedTransaction[] {
+  return keepMeaningful(rowsToTransactions(rows))
 }

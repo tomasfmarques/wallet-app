@@ -2,7 +2,7 @@ import { ChangeEvent, useMemo, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import { useBudget, useImportBudget, type ImportItem } from '@/hooks/useBudget'
-import { parseStatement, dupSignature, type ParsedTransaction } from '@/lib/statementParser'
+import { parseStatement, parseStatementRows, dupSignature, type ParsedTransaction } from '@/lib/statementParser'
 import {
   inferCategory, categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
@@ -109,7 +109,9 @@ export function ImportStatementModal({ open, onClose, onImported }: Props) {
     if (!file) return
     setParseError(null); setDone(null)
 
-    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf'
+    const lower = file.name.toLowerCase()
+
+    const isPdf = /\.pdf$/i.test(lower) || file.type === 'application/pdf'
     if (isPdf) {
       // pdf.js is heavy — load it only when a PDF is actually chosen.
       setParsing(true)
@@ -118,6 +120,29 @@ export function ImportStatementModal({ open, onClose, onImported }: Props) {
         finish(await parsePdfStatement(file), file.name)
       } catch {
         setParseError(t('import.pdfError'))
+      } finally {
+        setParsing(false)
+      }
+      return
+    }
+
+    // Legacy binary .xls (BIFF/OLE) isn't a ZIP — we can't read it. Guide the
+    // user to a supported export rather than mojibake it through the CSV path.
+    if (/\.xls$/i.test(lower)) {
+      setParseError(t('import.xlsUnsupported'))
+      return
+    }
+
+    // .xlsx / .xlsm are ZIP-of-XML — decode real cells (fflate is lazy-loaded),
+    // then run the same column-mapping as CSV. Reading them as text = mojibake.
+    if (/\.xlsx$/i.test(lower) || /\.xlsm$/i.test(lower)) {
+      setParsing(true)
+      try {
+        const { parseXlsxStatement } = await import('@/lib/xlsxStatementParser')
+        const buf = await file.arrayBuffer()
+        finish(parseStatementRows(parseXlsxStatement(buf)), file.name)
+      } catch {
+        setParseError(t('import.xlsxError'))
       } finally {
         setParsing(false)
       }
@@ -218,7 +243,8 @@ export function ImportStatementModal({ open, onClose, onImported }: Props) {
           >
             {parsing ? t('import.parsing') : t('import.chooseFile')}
             <input
-              type="file" accept=".pdf,.csv,.ofx,.txt,application/pdf,text/csv"
+              type="file"
+              accept=".pdf,.csv,.ofx,.txt,.xlsx,.xlsm,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={onFile} disabled={parsing} style={{ display: 'none' }}
             />
           </label>
