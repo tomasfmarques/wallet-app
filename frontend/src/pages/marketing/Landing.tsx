@@ -4,6 +4,7 @@ import { ToolCard } from '@/components/marketing/ToolCard'
 import { PhotoDivider } from '@/components/marketing/PhotoDivider'
 import { InstallCta } from '@/components/marketing/InstallCta'
 import { AdSlot } from '@/components/marketing/AdSlot'
+import { Reveal, useReveal } from '@/components/marketing/reveal'
 import { Icon } from '@/components/ui/Icon'
 import { usePageMeta } from '@/hooks/usePageMeta'
 
@@ -12,11 +13,16 @@ import { usePageMeta } from '@/hooks/usePageMeta'
  * the acquisition funnel. Render-pure: zero API calls before interaction, no
  * pop-ups, no Chart.js. Photo-led, white-first: hero photo → 4 photo cards →
  * "why" strip → photo divider → free/pro comparison → install banner (photo
- * bg) → footer (MarketingLayout).
+ * bg) → footer (MarketingLayout). Motion: CSS-only hero entrance + Ken Burns,
+ * IntersectionObserver scroll-reveals (reveal.tsx) — all disabled under
+ * `prefers-reduced-motion`.
  */
 export function Landing() {
   const { t } = useTranslation('landing')
   usePageMeta(t('meta.title'), t('meta.description'), '/', '/img/marketing/hero.webp')
+  const toolsGridRef = useReveal()
+  const whyStripRef = useReveal()
+  const pricingGridRef = useReveal()
 
   return (
     <MarketingLayout>
@@ -28,8 +34,10 @@ export function Landing() {
           width={1600}
           height={900}
           className="mkt-hero-img"
-          fetchPriority="high"
           decoding="async"
+          // Lowercase pass-through attr: React 18.2 doesn't know camelCase
+          // fetchPriority yet and warns; browsers only read the lowercase form.
+          {...({ fetchpriority: 'high' } as Record<string, string>)}
         />
         <div className="mkt-hero-scrim" aria-hidden="true" />
         <div className="mkt-hero-inner">
@@ -44,11 +52,11 @@ export function Landing() {
       <div className="mkt-container">
         {/* ── 4 tool cards ── */}
         <section id="simuladores" className="mkt-section">
-          <div className="mkt-section-head">
+          <Reveal className="mkt-section-head">
             <h2>{t('tools.sectionTitle')}</h2>
             <p>{t('tools.sectionSubtitle')}</p>
-          </div>
-          <div className="mkt-tools-grid">
+          </Reveal>
+          <div ref={toolsGridRef} className="mkt-tools-grid mkt-reveal-stagger">
             <ToolCard
               to="/simuladores/irs-mais-valias" image="/img/marketing/tool-irs.webp" imageAlt={t('tools.irs.imageAlt')}
               name={t('tools.irs.name')} oneLiner={t('tools.irs.oneLiner')}
@@ -69,7 +77,7 @@ export function Landing() {
         </section>
 
         {/* ── Why Wallet360 — slim strip ── */}
-        <section className="mkt-why-strip">
+        <section ref={whyStripRef} className="mkt-why-strip mkt-reveal-stagger">
           <div className="mkt-why-item">
             <span className="mkt-why-icon"><Icon name="lock" size={18} /></span>
             <span className="mkt-why-text">{t('why.privacy')}</span>
@@ -88,10 +96,10 @@ export function Landing() {
 
         {/* ── Grátis vs Pro ── */}
         <section className="mkt-section">
-          <div className="mkt-section-head">
+          <Reveal className="mkt-section-head">
             <h2>{t('pricing.title')}</h2>
-          </div>
-          <div className="mkt-pricing-grid">
+          </Reveal>
+          <div ref={pricingGridRef} className="mkt-pricing-grid mkt-reveal-stagger">
             <div className="mkt-pricing-col">
               <div className="mkt-pricing-title">{t('pricing.free.title')}</div>
               <ul className="mkt-pricing-list">
@@ -121,11 +129,13 @@ export function Landing() {
 
         {/* ── Install banner (photo bg) ── */}
         <section className="mkt-section">
-          <div className="mkt-install-section">
-            <div className="mkt-install-title">{t('install.sectionTitle')}</div>
-            <p className="mkt-install-sub">{t('install.sectionSubtitle')}</p>
-            <InstallCta />
-          </div>
+          <Reveal>
+            <div className="mkt-install-section">
+              <div className="mkt-install-title">{t('install.sectionTitle')}</div>
+              <p className="mkt-install-sub">{t('install.sectionSubtitle')}</p>
+              <InstallCta />
+            </div>
+          </Reveal>
         </section>
       </div>
     </MarketingLayout>

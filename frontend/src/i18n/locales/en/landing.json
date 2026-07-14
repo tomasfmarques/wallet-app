@@ -6,7 +6,7 @@
     "signup": "Create account"
   },
   "banner": {
-    "message": "Install Wallet360 and take your finances with you — free.",
+    "message": "Take Wallet360 with you — free.",
     "signin": "Sign in",
     "dismiss": "Dismiss banner"
   },
@@ -19,10 +19,10 @@
     "iosStep2": "Choose \"Add to Home Screen\" and confirm.",
     "iosClose": "Got it",
     "sectionTitle": "Install Wallet360",
-    "sectionSubtitle": "No app store needed — install in seconds, straight from your browser."
+    "sectionSubtitle": "Straight from your browser, in seconds."
   },
   "footer": {
-    "tagline": "Your finances, from every angle. Credit, investments and budgeting in one place.",
+    "tagline": "Credit, investments and budgeting in one place.",
     "linksAria": "Footer links",
     "privacy": "Privacy",
     "deletion": "Delete account",
@@ -42,8 +42,8 @@
     }
   },
   "hero": {
-    "title": "Your finances, made clear.",
-    "subtitle": "Free Portuguese credit, Euribor and IRS simulators.",
+    "title": "Your finances, from every angle.",
+    "subtitle": "Credit, Euribor and IRS — free simulators, built for Portugal.",
     "ctaPrimary": "Try it free"
   },
   "tools": {
@@ -93,7 +93,7 @@
       "item3": "Couple Mode with more accounts",
       "item4": "Priority support"
     },
-    "note": "The Wallet360 app has no ads — Pro is about extra features, not removing advertising."
+    "note": "No ads inside the app — Pro is extra features only."
   },
   "toolsIndex": {
     "metaTitle": "Free personal-finance simulators — Wallet360",

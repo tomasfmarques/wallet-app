@@ -6,7 +6,7 @@
     "signup": "Criar conta"
   },
   "banner": {
-    "message": "Instala a Wallet360 e leva as tuas finanças contigo — grátis.",
+    "message": "Leva a Wallet360 contigo — grátis.",
     "signin": "Entrar",
     "dismiss": "Fechar aviso"
   },
@@ -19,10 +19,10 @@
     "iosStep2": "Escolhe \"Adicionar ao Ecrã Principal\" e confirma.",
     "iosClose": "Entendi",
     "sectionTitle": "Instala a Wallet360",
-    "sectionSubtitle": "Sem loja de aplicações — instala em segundos, direto do browser."
+    "sectionSubtitle": "Direto do browser, em segundos."
   },
   "footer": {
-    "tagline": "As tuas finanças, de todos os ângulos. Créditos, investimentos e orçamento num só sítio.",
+    "tagline": "Créditos, investimentos e orçamento num só sítio.",
     "linksAria": "Ligações do rodapé",
     "privacy": "Privacidade",
     "deletion": "Eliminar conta",
@@ -42,8 +42,8 @@
     }
   },
   "hero": {
-    "title": "As tuas finanças, claras.",
-    "subtitle": "Simuladores gratuitos de crédito, Euribor e IRS, feitos para Portugal.",
+    "title": "As tuas finanças, de todos os ângulos.",
+    "subtitle": "Crédito, Euribor e IRS — simuladores gratuitos, feitos para Portugal.",
     "ctaPrimary": "Experimentar grátis"
   },
   "tools": {
@@ -93,7 +93,7 @@
       "item3": "Modo Casal com mais contas",
       "item4": "Suporte prioritário"
     },
-    "note": "A app Wallet360 não tem anúncios — a Pro é sobre funcionalidades extra, não sobre remover publicidade."
+    "note": "Sem anúncios dentro da app — a Pro é só funcionalidades extra."
   },
   "toolsIndex": {
     "metaTitle": "Simuladores gratuitos de finanças pessoais — Wallet360",
