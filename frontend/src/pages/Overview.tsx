@@ -103,6 +103,8 @@ export function Overview() {
           <CashflowChart
             incomes={budget.data?.incomes ?? []}
             expenses={budget.data?.expenses ?? []}
+            actualIncomes={budget.data?.actualIncomes ?? []}
+            actualExpenses={budget.data?.actualExpenses ?? []}
           />
 
           <ModuleSummary

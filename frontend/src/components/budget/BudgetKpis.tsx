@@ -4,7 +4,10 @@ import type { BudgetKpis as Kpis } from '@/hooks/useBudget'
 
 interface Props { kpis: Kpis }
 
-// 5-card KPI strip: income, fixed, variable, saldo livre, saldo final.
+// 4-card KPI strip: income, fixed, saldo livre, saldo final. (The "variable
+// planned" card was dropped 2026-07 — planned variable is a soft budget, not a
+// commitment, and it read as double-counting next to Saldo final; the donuts
+// and month analysis still break variable spend down.)
 export function BudgetKpis({ kpis }: Props) {
   const { t } = useTranslation('budget')
   const netPositive = kpis.netMonthly >= 0
@@ -19,11 +22,6 @@ export function BudgetKpis({ kpis }: Props) {
         <div className="kpi-label">{t('kpis.fixedLabel')}</div>
         <div className="kpi-value">{eur(kpis.fixedTotal)}</div>
         <div className="kpi-meta">{t('kpis.fixedMeta')}</div>
-      </div>
-      <div className="kpi">
-        <div className="kpi-label">{t('kpis.variableLabel')}</div>
-        <div className="kpi-value">{eur(kpis.variableTotal)}</div>
-        <div className="kpi-meta">{t('kpis.variableMeta')}</div>
       </div>
       <div className="kpi">
         <div className="kpi-label">{t('kpis.discretionaryLabel')}</div>

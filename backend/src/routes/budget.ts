@@ -506,6 +506,7 @@ router.put('/bulk-update', async (req, res) => {
     startYm?: null
     endYm?: null
     active?: boolean
+    pending?: boolean
   } = {}
   if ('category' in patch) data.category = asOptionalString(patch.category, 40)
   if ('type' in patch) {
@@ -513,6 +514,10 @@ router.put('/bulk-update', async (req, res) => {
       res.status(400).json({ error: "type deve ser 'fixed' ou 'variable'" }); return
     }
     data.type = patch.type
+    // Choosing a type IS the classification — clear `pending` so lines picked
+    // via the bulk checkboxes leave the "Por classificar" box (no-op for rows
+    // that were never pending).
+    data.pending = false
     // Setting type to FIXED promotes the selected rows to recurring PLAN
     // entries: clear the imported `source` + month-scoping so they move out of
     // "Movimentos do mês" and into Receitas/Despesas Fixas, counting monthly.
@@ -533,6 +538,37 @@ router.put('/bulk-update', async (req, res) => {
       ops.push(prisma.income.updateMany({ where: { userId, id: { in: incomeIds } }, data }))
     if (expenseIds.length > 0)
       ops.push(prisma.expense.updateMany({ where: { userId, id: { in: expenseIds } }, data }))
+
+    // When a type is set, also LEARN merchant rules — same contract as the
+    // per-row /classify ("the app learns the merchant"), so future imports of
+    // these merchants auto-classify instead of landing pending again. Rule
+    // category = the patched category if given, else the row's own.
+    if (data.type) {
+      const [incRows, expRows] = await Promise.all([
+        incomeIds.length > 0
+          ? prisma.income.findMany({ where: { userId, id: { in: incomeIds } }, select: { name: true, category: true } })
+          : Promise.resolve([]),
+        expenseIds.length > 0
+          ? prisma.expense.findMany({ where: { userId, id: { in: expenseIds } }, select: { name: true, category: true } })
+          : Promise.resolve([]),
+      ])
+      const ruleOps = (kind: 'income' | 'expense', rows: Array<{ name: string; category: string | null }>) => {
+        const byKey = new Map<string, string | null>()
+        for (const r of rows) {
+          const key = merchantKey(r.name)
+          if (key && !byKey.has(key)) byKey.set(key, 'category' in data ? data.category ?? null : r.category)
+        }
+        return Array.from(byKey.entries()).map(([matchKey, category]) =>
+          prisma.classificationRule.upsert({
+            where: { userId_matchKey: { userId, matchKey } },
+            create: { userId, matchKey, kind, type: data.type!, category },
+            update: { kind, type: data.type!, category },
+          }),
+        )
+      }
+      ops.push(...ruleOps('income', incRows), ...ruleOps('expense', expRows))
+    }
+
     await prisma.$transaction(ops)
     res.json({ ok: true })
   } catch (err) {

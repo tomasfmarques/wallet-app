@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { Doughnut } from 'react-chartjs-2'
 import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
@@ -18,6 +18,10 @@ interface Props {
   title: string
   emptyText: string
   totalSuffix?: string   // appended to the total, e.g. "/mês"; "" for month views
+  /** Called with the canonical category (null = uncategorized) when a slice is
+   *  clicked. The collapsed "Outras" slice never fires. Cursor turns into a
+   *  pointer over slices only when provided. */
+  onSliceClick?: (category: string | null) => void
 }
 
 const UNCAT = 'Por classificar'  // internal bucket key (category is null/empty)
@@ -45,10 +49,15 @@ const MAX_SLICES = 7
 // Donut chart breaking down a budget list by category. Inactive items are
 // excluded — they don't count toward the active budget. Items without a
 // category fall into the "Por classificar" bucket.
-export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
+export function CategoryDonut({ items, title, emptyText, totalSuffix, onSliceClick }: Props) {
   const { t } = useTranslation('budget')
   const cc = useChartColors()
   const suffix = totalSuffix ?? t('donut.perMonth')
+  // Read the click handler through a ref so the chart config (and the memo)
+  // doesn't rebuild every render just because the parent passed a new closure.
+  const clickRef = useRef(onSliceClick)
+  clickRef.current = onSliceClick
+  const clickable = !!onSliceClick
   const { data, options, total, hasData } = useMemo(() => {
     const byCat = new Map<string, number>()
     for (const it of items) {
@@ -88,10 +97,26 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
         hoverOffset: 8,
       }],
     }
+    // Map a clicked slice back to its canonical category key. "Outras" is a
+    // synthetic bucket → not clickable; the uncategorized bucket maps to null.
+    const keys = entries.map(([k]) => k)
     const opts: ChartOptions<'doughnut'> = {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '62%',
+      onClick: (_evt, elements) => {
+        const cb = clickRef.current
+        if (!cb || elements.length === 0) return
+        const key = keys[elements[0].index]
+        if (key === '__others__') return
+        cb(key === UNCAT ? null : key)
+      },
+      onHover: (evt, elements) => {
+        const target = evt.native?.target as HTMLElement | undefined
+        if (!target) return
+        const overSlice = elements.length > 0 && keys[elements[0].index] !== '__others__'
+        target.style.cursor = clickable && overSlice ? 'pointer' : 'default'
+      },
       plugins: {
         legend: {
           position: 'right',
@@ -136,7 +161,7 @@ export function CategoryDonut({ items, title, emptyText, totalSuffix }: Props) {
       },
     }
     return { data: chartData, options: opts, total: tot, hasData: values.length > 0 }
-  }, [items, t, cc.segmentBorder, cc.text, cc.resolved])
+  }, [items, t, cc.segmentBorder, cc.text, cc.resolved, clickable])
 
   return (
     <div className="card card-pad-lg category-donut">

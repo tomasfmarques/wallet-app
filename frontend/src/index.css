@@ -2494,6 +2494,67 @@ body {
 }
 .pending-icon { display: inline-flex; align-items: center; color: var(--accent); }
 .pending-head-text { font-size: 13.5px; }
+/* Bulk bar: select-all + "Marcar como: Fixa/Variável" once anything is ticked */
+.pending-bulkbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  background: var(--surface-2);
+  border-radius: var(--r);
+  font-size: 13px;
+}
+.pending-bulk-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.pending-bulk-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pending-row-check { flex-shrink: 0; }
+
+/* ── Donut category drill-down modal (Análise) ───────────── */
+.donut-filter-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.donut-filter-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  background: var(--surface-2);
+  border-radius: var(--r);
+  font-size: 13.5px;
+}
+.donut-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.donut-filter-amount { font-weight: 600; white-space: nowrap; }
+.donut-filter-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
 .pending-list {
   display: flex;
   flex-direction: column;

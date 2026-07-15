@@ -33,6 +33,7 @@ export const EXPENSE_CATEGORIES = [
   'Vestuário',
   'Compras',
   'Viagens',
+  'Investimentos',
   'Impostos',
   'Transferências',
   'Outros',
@@ -52,6 +53,13 @@ const DICTIONARY: Record<string, string> = {
   'salario': 'Salário', 'ordenado': 'Salário', 'vencimento': 'Salário',
   'freelance': 'Freelance', 'recibos verdes': 'Freelance', 'projeto': 'Freelance',
   'dividendos': 'Investimentos', 'juros': 'Investimentos', 'mais valias': 'Investimentos',
+  // Brokers/exchanges — deposits INTO them are expense-side "Investimentos";
+  // the shared dictionary also covers withdrawals (income side has the same category).
+  'trading 212': 'Investimentos', 'trading212': 'Investimentos',
+  'degiro': 'Investimentos', 'xtb': 'Investimentos', 'etoro': 'Investimentos',
+  'interactive brokers': 'Investimentos', 'coinbase': 'Investimentos',
+  'certificados de aforro': 'Investimentos', 'aforronet': 'Investimentos',
+  'ppr': 'Investimentos', 'corretora': 'Investimentos',
   'rendas': 'Aluguer', 'aluguer recebido': 'Aluguer', 'arrendamento': 'Aluguer',
   'subsidio': 'Subsídios', 'apoio': 'Subsídios',
 

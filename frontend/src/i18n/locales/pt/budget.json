@@ -62,8 +62,6 @@
     "incomeMeta": "total ativo",
     "fixedLabel": "DESPESAS FIXAS",
     "fixedMeta": "recorrentes",
-    "variableLabel": "DESPESAS VARIÁVEIS",
-    "variableMeta": "planeadas",
     "discretionaryLabel": "SALDO LIVRE",
     "discretionaryMeta": "depois das fixas",
     "netLabel": "SALDO FINAL",
@@ -74,6 +72,7 @@
     "others": "Outras ({{count}})",
     "totalPrefix": "Total:",
     "perMonth": "/mês",
+    "filterSubtitle": "{{title}} · {{count}} itens",
     "emptyFixed": "Adiciona despesas fixas para ver a distribuição.",
     "emptyVariable": "Adiciona despesas variáveis para ver a distribuição.",
     "emptyIncome": "Adiciona receitas para ver a distribuição."
@@ -102,7 +101,11 @@
     "income": "Receita",
     "expense": "Despesa",
     "fixed": "Fixa",
-    "variable": "Variável"
+    "variable": "Variável",
+    "selectAll": "Selecionar tudo",
+    "selectRow": "Selecionar {{name}}",
+    "selectedCount": "{{count}} selecionadas",
+    "bulkMarkAs": "Marcar como:"
   },
   "timeline": {
     "head": "Histórico {{months}} meses",

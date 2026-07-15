@@ -62,8 +62,6 @@
     "incomeMeta": "active total",
     "fixedLabel": "FIXED EXPENSES",
     "fixedMeta": "recurring",
-    "variableLabel": "VARIABLE EXPENSES",
-    "variableMeta": "planned",
     "discretionaryLabel": "FREE BALANCE",
     "discretionaryMeta": "after fixed",
     "netLabel": "FINAL BALANCE",
@@ -74,6 +72,7 @@
     "others": "Others ({{count}})",
     "totalPrefix": "Total:",
     "perMonth": "/mo",
+    "filterSubtitle": "{{title}} · {{count}} items",
     "emptyFixed": "Add fixed expenses to see the breakdown.",
     "emptyVariable": "Add variable expenses to see the breakdown.",
     "emptyIncome": "Add income to see the breakdown."
@@ -102,7 +101,11 @@
     "income": "Income",
     "expense": "Expense",
     "fixed": "Fixed",
-    "variable": "Variable"
+    "variable": "Variable",
+    "selectAll": "Select all",
+    "selectRow": "Select {{name}}",
+    "selectedCount": "{{count}} selected",
+    "bulkMarkAs": "Mark as:"
   },
   "timeline": {
     "head": "Last {{months}} months",

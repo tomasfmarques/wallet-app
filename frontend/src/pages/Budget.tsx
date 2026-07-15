@@ -15,6 +15,7 @@ import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
+import { Modal } from '@/components/ui/Modal'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, currentYm } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
@@ -32,13 +33,18 @@ export function Budget() {
   const delExpense = useDeleteExpense()
   const cleanupEncoding = useCleanupEncoding()
 
-  const [tab, setTab] = useState<Tab>('tables')
+  // Análise first: the charts are the "how am I doing?" glance; Tabelas is for
+  // editing the plan.
+  const [tab, setTab] = useState<Tab>('analysis')
   const [analysisScope, setAnalysisScope] = useState<AnalysisScope>('overview')
   const [analysisYm, setAnalysisYm] = useState(currentYm())
   const [incomeModal, setIncomeModal] = useState<{ open: boolean; type: ExpenseType; income?: Income; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; type: ExpenseType; expense?: Expense; defaultStartYm?: string }>({ open: false, type: 'fixed' })
   const [importOpen, setImportOpen] = useState(false)
   const [bankOpen, setBankOpen] = useState(false)
+  // Category drill-down from the Análise donuts: which donut + which canonical
+  // category (null = the uncategorized bucket) — opens a listing modal.
+  const [donutFilter, setDonutFilter] = useState<{ list: 'fixed' | 'variable' | 'income'; category: string | null } | null>(null)
   // Success notice after arriving from a loan create that auto-added a linked
   // fixed expense (nav state from Loan.tsx). Seeded once, then the history
   // state is cleared so a refresh / back-forward won't resurface it.
@@ -183,15 +189,15 @@ export function Budget() {
 
       <div className="subtabs" role="tablist">
         <button
-          type="button" role="tab" aria-selected={tab === 'tables'}
-          className={`subtab ${tab === 'tables' ? 'is-active' : ''}`}
-          onClick={() => setTab('tables')}
-        >{t('tabs.tables')}</button>
-        <button
           type="button" role="tab" aria-selected={tab === 'analysis'}
           className={`subtab ${tab === 'analysis' ? 'is-active' : ''}`}
           onClick={() => setTab('analysis')}
         >{t('tabs.analysis')}</button>
+        <button
+          type="button" role="tab" aria-selected={tab === 'tables'}
+          className={`subtab ${tab === 'tables' ? 'is-active' : ''}`}
+          onClick={() => setTab('tables')}
+        >{t('tabs.tables')}</button>
       </div>
 
       {tab === 'tables' && (
@@ -300,16 +306,19 @@ export function Budget() {
                     items={fixedExpenses}
                     title={t('donutTitles.fixedExpenses')}
                     emptyText={t('donut.emptyFixed')}
+                    onSliceClick={(category) => setDonutFilter({ list: 'fixed', category })}
                   />
                   <CategoryDonut
                     items={variableExpenses}
                     title={t('donutTitles.variableExpenses')}
                     emptyText={t('donut.emptyVariable')}
+                    onSliceClick={(category) => setDonutFilter({ list: 'variable', category })}
                   />
                   <CategoryDonut
                     items={incomes}
                     title={t('donutTitles.incomes')}
                     emptyText={t('donut.emptyIncome')}
+                    onSliceClick={(category) => setDonutFilter({ list: 'income', category })}
                   />
                 </div>
               </section>
@@ -341,6 +350,45 @@ export function Budget() {
         expense={expenseModal.expense}
         defaultStartYm={expenseModal.defaultStartYm}
       />
+      {donutFilter && (() => {
+        // Same inclusion rule as the donut itself (active, amount > 0), same
+        // bucketing (empty/whitespace category = the uncategorized bucket).
+        const source: Array<Income | Expense> =
+          donutFilter.list === 'fixed' ? fixedExpenses
+          : donutFilter.list === 'variable' ? variableExpenses
+          : incomes
+        const rows = source
+          .filter((r) => r.active && r.amount > 0 && ((r.category?.trim() || null) === donutFilter.category))
+          .sort((a, b) => b.amount - a.amount)
+        const filterTotal = rows.reduce((s, r) => s + r.amount, 0)
+        const donutTitle = t(`donutTitles.${donutFilter.list === 'fixed' ? 'fixedExpenses' : donutFilter.list === 'variable' ? 'variableExpenses' : 'incomes'}`)
+        return (
+          <Modal
+            open onClose={() => setDonutFilter(null)}
+            title={donutFilter.category ? categoryLabel(donutFilter.category) : t('donut.uncategorized')}
+            maxWidth={480}
+          >
+            <p className="muted" style={{ marginTop: 0 }}>
+              {t('donut.filterSubtitle', { title: donutTitle, count: rows.length })}
+            </p>
+            <ul className="donut-filter-list">
+              {rows.map((r) => (
+                <li key={r.id}>
+                  <span className="donut-filter-name">
+                    {r.name}
+                    {r.startYm && <span className="muted"> · {r.startYm}</span>}
+                  </span>
+                  <span className="donut-filter-amount">{eur(r.amount)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="donut-filter-total">
+              <span>{t('donut.totalPrefix')}</span>
+              <strong>{eur(filterTotal)}</strong>
+            </div>
+          </Modal>
+        )
+      })()}
       <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} onImported={() => setAwaitClose(true)} />
       <BankConnectModal open={bankOpen} onClose={() => setBankOpen(false)} />
       {monthCloseYm && (

@@ -691,3 +691,42 @@ the Budget/Portfolio/Loan pages already load (react-query cache).
   leak); categorias card self-omits on income-only months; `useImportBudget`
   RETURNS the invalidation promise, making the auto-open's `!isFetching`
   ordering an explicit react-query contract instead of an internals accident.
+
+## 2026-07-14 — Saldo/Overview UX batch (6 fixes)
+
+- **Overview cashflow now shows the REAL lane** (`components/overview/CashflowChart.tsx`):
+  it summed only the recurring PLAN rows, so imported actuals never appeared and
+  history was flat/wrong ever since FX1 split the lanes. Now each month uses
+  `lib/budgetReal.realMonth` when it has actuals (actuals + folded fixed plan)
+  and falls back to the plan otherwise — the exact semantics of
+  `BudgetTimeline`, verified numerically (timeline avg ×12 == cashflow total).
+  **Don't** reimplement the fold inline; both charts must keep delegating to
+  `budgetReal.ts`.
+- **KPI strip is 4 cards** (`BudgetKpis.tsx`): dropped "DESPESAS VARIÁVEIS /
+  planeadas" — a soft budget, not a commitment; it read as double-counting next
+  to Saldo final. `kpis.variableTotal` still exists server-side (used in the
+  saldo math); only the card + its i18n keys went.
+- **Saldo default tab = Análise** (also reordered buttons Análise|Tabelas):
+  charts are the glance, tables are for editing.
+- **"Investimentos" is now an EXPENSE category too** (`categoryDictionary.ts`):
+  it already existed income-side; broker keywords added (trading 212, degiro,
+  xtb, etoro, ibkr, coinbase, aforro, ppr, corretora) so deposits auto-suggest.
+- **Bulk fixed/variable classification** (`PendingClassifier.tsx` + PUT
+  `/budget/bulk-update`): checkboxes + select-all + a "Marcar como: Fixa /
+  Variável" bar on "Por classificar", one `/bulk-update` call. Backend: setting
+  `type` via bulk-update now ALSO (a) clears `pending` (choosing a type IS the
+  classification) and (b) **learns classification rules** for each distinct
+  merchantKey (same contract as per-row `/classify`, so future imports
+  auto-classify). Side effect: the existing VariableMonths "Tipo →" bulk panel
+  now learns rules too — intentional parity, log here in case it surprises.
+- **Donut slices are clickable** (`CategoryDonut.tsx` + Budget.tsx): Análise
+  donuts take `onSliceClick(category|null)` → a modal lists that category's
+  rows (same inclusion rule as the donut: active, amount>0, same bucket) with
+  a total. The synthetic "Outras" slice never fires; the handler goes through
+  a ref so the chart config doesn't rebuild per render.
+  - **Caveat (pre-existing, now exercised more):** `ClassificationRule` is keyed
+    `@@unique([userId, matchKey])` — NOT kind-scoped. If a bulk selection (or the
+    VariableMonths "Tipo →" panel) mixes an income and an expense whose names
+    normalize to the same `merchantKey`, the two rule upserts collide and the
+    later one wins. Same limitation as per-row `/classify`; acceptable (such
+    collisions are rare and user-driven).

@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next'
 import type { ChartData, ChartOptions } from 'chart.js'
 import { eur, ymToShort, currentYm } from '@/lib/format'
 import { useChartColors } from '@/lib/chartTheme'
+import { realMonth } from '@/lib/budgetReal'
 import { StateBlock } from '@/components/ui/StateBlock'
 import type { Income, Expense } from '@/types'
 
 interface Props {
-  incomes: Income[]
+  incomes: Income[]          // recurring plan lane (source = null)
   expenses: Expense[]
+  actualIncomes: Income[]    // imported actuals lane (source set, month-scoped)
+  actualExpenses: Expense[]
 }
 
 type Mode = 'month' | 'year'
@@ -40,11 +43,18 @@ function isActiveInMonth(item: TimedItem, ym: string): boolean {
 // between monthly (last 12 months) and yearly (last 5 years) aggregation.
 // Bars show income up (green) and expenses down (red + amber); a blue line
 // tracks the resulting net saldo.
-export function CashflowChart({ incomes, expenses }: Props) {
+//
+// Month semantics mirror BudgetTimeline (FX1 lanes): a month WITH imported
+// actuals shows the REAL lane (actuals + folded recurring fixed plan, via
+// lib/budgetReal.realMonth — the single source of that fold logic); a month
+// without actuals falls back to the plan. Before this the chart summed the
+// plan lane only, so imported spend never showed and history was wrong.
+export function CashflowChart({ incomes, expenses, actualIncomes, actualExpenses }: Props) {
   const { t } = useTranslation('overview')
   const [mode, setMode] = useState<Mode>('month')
   const cc = useChartColors()
   const isEmpty = incomes.length === 0 && expenses.length === 0
+    && actualIncomes.length === 0 && actualExpenses.length === 0
 
   const { data, options, summary } = useMemo(() => {
     const today = currentYm()
@@ -54,14 +64,30 @@ export function CashflowChart({ incomes, expenses }: Props) {
     const varSer: number[] = []
     const netSer: number[] = []
 
+    // One month's (income, fixed, variable): real lane when the month has
+    // imported actuals, planned lane otherwise.
+    const monthSums = (ym: string): [number, number, number] => {
+      const rm = realMonth(incomes, expenses, actualIncomes, actualExpenses, ym)
+      if (rm.hasActuals) {
+        return [
+          rm.incomes.reduce((s, x) => s + x.amount, 0),
+          rm.fixedExpenses.reduce((s, x) => s + x.amount, 0),
+          rm.variableExpenses.reduce((s, x) => s + x.amount, 0),
+        ]
+      }
+      return [
+        incomes.filter((x) => isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0),
+        expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0),
+        expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0),
+      ]
+    }
+
     if (mode === 'month') {
       const start = ymAddMonths(today, -11)
       for (let i = 0; i < 12; i++) {
         const ym = ymAddMonths(start, i)
         labels.push(ymToShort(ym))
-        const inc = incomes.filter((x) => isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
-        const fixed = expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
-        const variable = expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
+        const [inc, fixed, variable] = monthSums(ym)
         incSer.push(inc); fixSer.push(fixed); varSer.push(variable); netSer.push(inc - fixed - variable)
       }
     } else {
@@ -71,9 +97,8 @@ export function CashflowChart({ incomes, expenses }: Props) {
         let inc = 0, fix = 0, vari = 0
         for (let m = 1; m <= 12; m++) {
           const ym = `${y}-${m.toString().padStart(2, '0')}`
-          inc += incomes.filter((x) => isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
-          fix += expenses.filter((x) => x.type === 'fixed' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
-          vari += expenses.filter((x) => x.type === 'variable' && isActiveInMonth(x, ym)).reduce((s, x) => s + x.amount, 0)
+          const [i2, f2, v2] = monthSums(ym)
+          inc += i2; fix += f2; vari += v2
         }
         labels.push(String(y))
         incSer.push(inc); fixSer.push(fix); varSer.push(vari); netSer.push(inc - fix - vari)
@@ -134,7 +159,7 @@ export function CashflowChart({ incomes, expenses }: Props) {
       net: netSer.reduce((s, v) => s + v, 0),
     }
     return { data: chartData, options: opts, summary: totals }
-  }, [incomes, expenses, mode, t, cc.grid, cc.text])
+  }, [incomes, expenses, actualIncomes, actualExpenses, mode, t, cc.grid, cc.text])
 
   // No budget data yet → a friendly prompt instead of an empty axes-only chart.
   if (isEmpty) {
