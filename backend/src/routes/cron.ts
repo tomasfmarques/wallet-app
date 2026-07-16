@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'crypto'
 import { fetchAndStoreEuribor } from '../lib/euribor'
 import { evaluatePushNotifications } from '../lib/notifications'
 import { sendMonthlyDigests } from '../lib/digest'
+import { syncAllBankConnections } from './bank'
 
 // ── Daily cron dispatcher ────────────────────────────────────────
 // Vercel Cron (see vercel.json "crons") GETs /api/cron/daily once a day; the
@@ -47,6 +48,18 @@ async function runDaily(req: Request, res: Response): Promise<void> {
   } catch (err) {
     console.error('[cron] push task failed:', err)
     tasks.push = `error: ${err instanceof Error ? err.message : 'unknown'}`
+  }
+
+  // Bank auto-sync: every linked Enable Banking connection, once a day — the
+  // "seamless" path (no manual Sincronizar needed). Dedup in the import
+  // pipeline makes it idempotent; one unattended pull/day sits comfortably
+  // inside the PSD2 unattended-access allowance. No-op while unconfigured.
+  try {
+    const { users, imported, skippedUsers } = await syncAllBankConnections()
+    tasks.bank = `ok (${users} users, ${imported} imported${skippedUsers ? `, ${skippedUsers} failed` : ''})`
+  } catch (err) {
+    console.error('[cron] bank sync task failed:', err)
+    tasks.bank = `error: ${err instanceof Error ? err.message : 'unknown'}`
   }
 
   // Monthly digest: day 1 only. `?force=digest` (still Bearer-gated) runs it

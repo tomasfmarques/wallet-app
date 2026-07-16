@@ -16,7 +16,7 @@ import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
 import { useBankCallback } from '@/hooks/useBank'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
-import { Modal } from '@/components/ui/Modal'
+import { CategoryDrilldownModal } from '@/components/budget/CategoryDrilldownModal'
 import { StateBlock } from '@/components/ui/StateBlock'
 import { eur, eur2, currentYm } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
@@ -26,6 +26,13 @@ import type { Income, Expense, ExpenseType } from '@/types'
 
 type Tab = 'tables' | 'analysis'
 type AnalysisScope = 'overview' | 'month'
+
+// Feature flag (2026-07-16): the fixed/variable triage box is hidden — imports
+// now land pre-classified as variable actuals (backend IMPORTS_AUTO_CLASSIFY)
+// and the user promotes lines to Fixa through the lists when needed. Flip to
+// true (with the backend flag off) to restore the triage flow; the component
+// is kept, not removed.
+const SHOW_PENDING_CLASSIFIER = false
 
 export function Budget() {
   const { t } = useTranslation('budget')
@@ -216,9 +223,17 @@ export function Budget() {
         </div>
       )}
 
-      <PendingClassifier pendingIncomes={pendingIncomes} pendingExpenses={pendingExpenses} />
+      {SHOW_PENDING_CLASSIFIER && (
+        <PendingClassifier pendingIncomes={pendingIncomes} pendingExpenses={pendingExpenses} />
+      )}
 
-      <UncategorizedBanner incomes={incomes} expenses={expenses} />
+      {/* Include the ACTUALS lanes: since FX1 split plan/actuals, imported and
+          bank-synced movements live there — without them the banner went blind
+          to exactly the rows that most need categorizing. */}
+      <UncategorizedBanner
+        incomes={[...incomes, ...actualIncomes]}
+        expenses={[...expenses, ...actualExpenses]}
+      />
 
       <BudgetKpis kpis={kpis} />
 
@@ -385,45 +400,16 @@ export function Budget() {
         expense={expenseModal.expense}
         defaultStartYm={expenseModal.defaultStartYm}
       />
-      {donutFilter && (() => {
-        // Same inclusion rule as the donut itself (active, amount > 0), same
-        // bucketing (empty/whitespace category = the uncategorized bucket).
-        const source: Array<Income | Expense> =
-          donutFilter.list === 'fixed' ? fixedExpenses
-          : donutFilter.list === 'variable' ? variableExpenses
-          : incomes
-        const rows = source
-          .filter((r) => r.active && r.amount > 0 && ((r.category?.trim() || null) === donutFilter.category))
-          .sort((a, b) => b.amount - a.amount)
-        const filterTotal = rows.reduce((s, r) => s + r.amount, 0)
-        const donutTitle = t(`donutTitles.${donutFilter.list === 'fixed' ? 'fixedExpenses' : donutFilter.list === 'variable' ? 'variableExpenses' : 'incomes'}`)
-        return (
-          <Modal
-            open onClose={() => setDonutFilter(null)}
-            title={donutFilter.category ? categoryLabel(donutFilter.category) : t('donut.uncategorized')}
-            maxWidth={480}
-          >
-            <p className="muted" style={{ marginTop: 0 }}>
-              {t('donut.filterSubtitle', { title: donutTitle, count: rows.length })}
-            </p>
-            <ul className="donut-filter-list">
-              {rows.map((r) => (
-                <li key={r.id}>
-                  <span className="donut-filter-name">
-                    {r.name}
-                    {r.startYm && <span className="muted"> · {r.startYm}</span>}
-                  </span>
-                  <span className="donut-filter-amount">{eur(r.amount)}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="donut-filter-total">
-              <span>{t('donut.totalPrefix')}</span>
-              <strong>{eur(filterTotal)}</strong>
-            </div>
-          </Modal>
-        )
-      })()}
+      {donutFilter && (
+        <CategoryDrilldownModal
+          list={donutFilter.list}
+          category={donutFilter.category}
+          items={donutFilter.list === 'fixed' ? fixedExpenses
+            : donutFilter.list === 'variable' ? variableExpenses
+            : incomes}
+          onClose={() => setDonutFilter(null)}
+        />
+      )}
       <ImportStatementModal open={importOpen} onClose={() => setImportOpen(false)} onImported={() => setAwaitClose(true)} />
       <BankConnectModal open={bankOpen} onClose={() => setBankOpen(false)} />
       {monthCloseYm && (
@@ -481,7 +467,7 @@ function BudgetList({
                 </div>
               )}
             </div>
-            <div className="budget-row-amount">{eur(r.amount)}</div>
+            <div className="budget-row-amount">{eur2(r.amount)}</div>
             <div className="budget-row-actions">
               <button type="button" className="btn btn-ghost btn-sm" onClick={r.onEdit}>{t('actions.edit', { ns: 'common' })}</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={r.onDelete}>{t('actions.remove', { ns: 'common' })}</button>

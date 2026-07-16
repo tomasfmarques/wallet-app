@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBulkDeleteBudget, useBulkUpdateBudget } from '@/hooks/useBudget'
-import { eur2, eurSigned, ymToShort, currentYm } from '@/lib/format'
+import { eur2, eurSigned, eur2Signed, ymToShort, currentYm } from '@/lib/format'
 import { merchantKey, merchantDisplayName } from '@/lib/merchant'
 import { categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/categoryDictionary'
 import type { Income, Expense, ExpenseType } from '@/types'
@@ -286,7 +286,7 @@ export function VariableMonths({
                     <span className="merchant-name">{g.name}</span>
                     {g.txns.length > 1 && <span className="merchant-count">{g.txns.length}×</span>}
                     <span className={`merchant-total ${g.total >= 0 ? 'gain-positive' : 'gain-negative'}`}>
-                      {eurSigned(g.total)}
+                      {eur2Signed(g.total)}
                     </span>
                   </button>
                 </div>

@@ -2,8 +2,17 @@ import { Router } from 'express'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
 import { brokerEncConfigured, encryptSecret, decryptSecret } from '../lib/crypto'
-import { validateT212, fetchT212ImportItems, T212Error, type T212Creds, type T212Env } from '../lib/trading212'
+import { validateT212, fetchT212ImportItems, T212Error, type T212Creds, type T212Env, type BrokerImportItem } from '../lib/trading212'
 import { reconcileBrokerSnapshot } from './portfolio'
+
+// Snapshot stash for the two-step sell flow: the preview (dry run) fetches from
+// T212; the user's confirm should apply EXACTLY that snapshot, not a fresh
+// fetch — re-fetching seconds later both tripped T212's rate limits (the
+// "too many attempts" bug) and could apply a different snapshot than the one
+// the user approved. In-memory per user, short-lived; on a cold serverless
+// instance the confirm just falls back to a fresh fetch.
+const previewStash = new Map<string, { items: BrokerImportItem[]; expiry: number }>()
+const PREVIEW_TTL_MS = 5 * 60 * 1000
 
 // ── Broker live-sync (Trading 212) ───────────────────────────────
 // Mirrors the GoCardless bank-connect flow: /status, /connect (validate + store
@@ -81,19 +90,31 @@ router.post('/sync', async (req, res) => {
     const conn = await prisma.brokerConnection.findUnique({ where: { userId_broker: { userId, broker: BROKER } } })
     if (!conn) { res.status(400).json({ error: 'Nenhuma corretora ligada.' }); return }
 
-    // Per-user cooldown — sync is on-demand; this stops rapid re-syncs from
-    // burning the broker's per-account rate limit.
-    if (conn.lastSyncAt && Date.now() - new Date(conn.lastSyncAt).getTime() < 15_000) {
+    const confirm = req.body?.confirm === true
+
+    // Per-user cooldown — sync is on-demand; this stops rapid re-syncs (and
+    // repeated preview clicks, which also fetch from T212) from burning the
+    // broker's per-account rate limit. The CONFIRM leg is exempt: it applies
+    // the stashed preview snapshot, so blocking it would break the sell flow.
+    if (!confirm && conn.lastSyncAt && Date.now() - new Date(conn.lastSyncAt).getTime() < 15_000) {
       res.status(429).json({ error: 'Sincronizado há instantes — espera uns segundos.' }); return
     }
 
-    const creds: T212Creds = {
-      key: decryptSecret(conn.keyEnc),
-      secret: conn.secretEnc ? decryptSecret(conn.secretEnc) : null,
-      env: asEnv(conn.env),
+    // Confirm leg: apply the snapshot the user just previewed (no second T212
+    // fetch). Falls back to a fresh fetch if the stash is cold/expired.
+    const stashed = confirm ? previewStash.get(userId) : undefined
+    let items: BrokerImportItem[]
+    if (stashed && stashed.expiry > Date.now()) {
+      items = stashed.items
+    } else {
+      const creds: T212Creds = {
+        key: decryptSecret(conn.keyEnc),
+        secret: conn.secretEnc ? decryptSecret(conn.secretEnc) : null,
+        env: asEnv(conn.env),
+      }
+      items = await fetchT212ImportItems(creds)
     }
-    const items = await fetchT212ImportItems(creds)
-    const confirm = req.body?.confirm === true
+    previewStash.delete(userId)
 
     // The live snapshot is authoritative, so reconciling it can CLOSE holdings
     // that are no longer present (i.e. sold). Don't do that silently: a dry run
@@ -101,6 +122,10 @@ router.post('/sync', async (req, res) => {
     // explicit confirm before applying.
     const preview = await reconcileBrokerSnapshot(userId, items, { apply: false })
     if (preview.closed > 0 && !confirm) {
+      previewStash.set(userId, { items, expiry: Date.now() + PREVIEW_TTL_MS })
+      // Start the cooldown here too, so spamming the sync button can't repeat
+      // the T212 fetch — the confirm leg is exempt from the cooldown above.
+      await prisma.brokerConnection.update({ where: { id: conn.id }, data: { lastSyncAt: new Date() } })
       res.json({ ok: true, preview: true, summary: preview }); return
     }
     const summary = await reconcileBrokerSnapshot(userId, items, { apply: true })

@@ -583,3 +583,25 @@ function-bundling risk for nothing. Consequences:
 - There is deliberately NO duplicated engine — no merchant.ts-style parity trap.
 - SW precache consciously includes the marketing/tool chunks (+~96 KiB): installed
   users get the simulators offline. Revisit only if precache size becomes a problem.
+
+## 2026-07-16 — T212 sync: fix the guaranteed 429 on the sell (preview→confirm) flow
+
+- **Symptom:** syncing after selling a position ALWAYS failed with "Limite de
+  pedidos do Trading 212" (too many attempts).
+- **Cause:** two compounding calls. (1) `fetchT212ImportItems` probed
+  `/equity/account/info` (T212's strictest limit, ~1 req/30 s) on EVERY sync via
+  `resolveAuth`. (2) A sell triggers the two-step preview→confirm, and the
+  confirm re-fetched the whole snapshot seconds after the preview — so the
+  info probe (and sometimes `/equity/portfolio`, 1 req/5 s) was rate-limited
+  every time.
+- **Fix:** (a) `lib/trading212.ts` — when both credentials exist, build the
+  pinned HTTP Basic header directly and skip the info probe entirely;
+  `/equity/portfolio`'s own 401 surfaces a bad key. Legacy secret-less
+  connections keep the probing path. (b) `routes/broker.ts` — the preview
+  stashes its snapshot in-memory (5 min, per user); confirm applies THAT
+  snapshot instead of re-fetching — which is also more correct: the user
+  approves exactly what they previewed. Cold serverless instance → fallback
+  fresh fetch (by then the user has taken >5 s to read the preview, clearing
+  the portfolio-endpoint limit).
+- **Don't:** reintroduce a per-sync `/equity/account/info` call; it's the
+  strictest limit T212 has and it silently caps sync frequency at ~2/min.

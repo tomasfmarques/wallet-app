@@ -77,9 +77,11 @@ export function Overview() {
       </header>
 
       {budget.data && (
+        // Actuals included: the categorize alert must surface on the main menu
+        // whenever ANY line (incl. imported/synced movements) lacks a category.
         <UncategorizedBanner
-          incomes={budget.data.incomes}
-          expenses={budget.data.expenses}
+          incomes={[...budget.data.incomes, ...budget.data.actualIncomes]}
+          expenses={[...budget.data.expenses, ...budget.data.actualExpenses]}
         />
       )}
 

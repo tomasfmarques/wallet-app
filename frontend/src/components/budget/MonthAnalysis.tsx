@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CategoryDonut } from './CategoryDonut'
-import { Modal } from '@/components/ui/Modal'
-import { eur, eurSigned, ymToLong, currentYm, ymAddMonths } from '@/lib/format'
+import { CategoryDrilldownModal } from './CategoryDrilldownModal'
+import { eur, eur2, eurSigned, ymToLong, currentYm, ymAddMonths } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
 import { realMonth } from '@/lib/budgetReal'
 import type { Income, Expense } from '@/types'
@@ -152,7 +152,7 @@ export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses
                         </div>
                       </div>
                       <div className="top-exp-amount">
-                        {eur(e.amount)}
+                        {eur2(e.amount)}
                         <span className="muted top-exp-share">{(share * 100).toFixed(0)}%</span>
                       </div>
                     </div>
@@ -164,45 +164,16 @@ export function MonthAnalysis({ incomes, expenses, actualIncomes, actualExpenses
         </>
       )}
 
-      {donutFilter && (() => {
-        // Same lane + bucketing as the clicked donut (active, amount > 0,
-        // empty/whitespace category → the uncategorized bucket).
-        const source: Array<Income | Expense> =
-          donutFilter.list === 'fixed' ? shown.fixedItems
-          : donutFilter.list === 'variable' ? shown.variableItems
-          : shown.incomeItems
-        const filterRows = source
-          .filter((r) => r.active && r.amount > 0 && ((r.category?.trim() || null) === donutFilter.category))
-          .sort((a, b) => b.amount - a.amount)
-        const filterTotal = filterRows.reduce((s, r) => s + r.amount, 0)
-        const donutTitle = t(`donutTitles.${donutFilter.list === 'fixed' ? 'fixedExpenses' : donutFilter.list === 'variable' ? 'variableExpenses' : 'incomes'}`)
-        return (
-          <Modal
-            open onClose={() => setDonutFilter(null)}
-            title={donutFilter.category ? categoryLabel(donutFilter.category) : t('donut.uncategorized')}
-            maxWidth={480}
-          >
-            <p className="muted" style={{ marginTop: 0 }}>
-              {t('donut.filterSubtitle', { title: donutTitle, count: filterRows.length })}
-            </p>
-            <ul className="donut-filter-list">
-              {filterRows.map((r) => (
-                <li key={r.id}>
-                  <span className="donut-filter-name">
-                    {r.name}
-                    {r.startYm && <span className="muted"> · {r.startYm}</span>}
-                  </span>
-                  <span className="donut-filter-amount">{eur(r.amount)}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="donut-filter-total">
-              <span>{t('donut.totalPrefix')}</span>
-              <strong>{eur(filterTotal)}</strong>
-            </div>
-          </Modal>
-        )
-      })()}
+      {donutFilter && (
+        <CategoryDrilldownModal
+          list={donutFilter.list}
+          category={donutFilter.category}
+          items={donutFilter.list === 'fixed' ? shown.fixedItems
+            : donutFilter.list === 'variable' ? shown.variableItems
+            : shown.incomeItems}
+          onClose={() => setDonutFilter(null)}
+        />
+      )}
     </>
   )
 }

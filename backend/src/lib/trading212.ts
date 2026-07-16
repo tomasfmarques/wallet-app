@@ -107,7 +107,15 @@ export async function validateT212(creds: T212Creds): Promise<{ accountCcy: stri
 // Pull open positions and map them to portfolio-import items.
 export async function fetchT212ImportItems(creds: T212Creds): Promise<BrokerImportItem[]> {
   const base = BASE[creds.env]
-  const { auth } = await resolveAuth(creds)
+  // Don't probe /equity/account/info on every sync — its rate limit (~1 req/30s)
+  // is the strictest of the lot, and it's what made the preview→confirm sell
+  // flow 429 every time ("too many attempts"). The Basic scheme is pinned
+  // (2026-07-13), so when we hold both credentials, build the header directly
+  // and let /equity/portfolio's own 401 surface a bad key. Only legacy
+  // secret-less connections still need the probing path.
+  const auth = creds.secret
+    ? `Basic ${Buffer.from(`${creds.key}:${creds.secret}`).toString('base64')}`
+    : (await resolveAuth(creds)).auth
   const positions = await get<T212Position[]>(base, '/equity/portfolio', auth)
   const instruments = await getInstruments(base, auth).catch(() => [] as T212Instrument[])
   const byTicker = new Map(instruments.filter((i) => i.ticker).map((i) => [i.ticker as string, i]))

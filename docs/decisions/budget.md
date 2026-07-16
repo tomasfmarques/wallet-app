@@ -753,3 +753,50 @@ the Budget/Portfolio/Loan pages already load (react-query cache).
   commercial contract, i.e. the Pro path.
 - **Don't:** revisit GoCardless (confirmed still closed to new signups, 2026);
   build against SIBS API Market directly (needs our own AISP licence).
+
+## 2026-07-16 — Saldo review batch: categorization gaps + cents
+
+- **UncategorizedBanner went blind to imported movements (regression since FX1):**
+  Budget.tsx fed it only the PLAN lanes, but since the plan/actual split every
+  imported/bank-synced line lives in `actualIncomes`/`actualExpenses` — exactly
+  the rows that need categorizing. Now the banner gets `[...plan, ...actuals]`.
+  (Pending rows stay out — they're the PendingClassifier's job.)
+- **Post-categorization path:** the donut drill-down modal was extracted into
+  `components/budget/CategoryDrilldownModal.tsx` (was duplicated verbatim in
+  Budget.tsx + MonthAnalysis.tsx — the drift risk the 2026-07-14 review
+  flagged) and gained an **inline category select per row**: Análise → click a
+  slice (incl. "Por classificar") → change the category right there; saves via
+  `/bulk-update` `{category}` (single id — doesn't touch type/pending, learns
+  no rule). The row leaves the list when it no longer matches the slice.
+- **Cents:** `eur()` (0 decimals) is for KPI aggregates only. Every
+  per-transaction amount (pending box, top expenses, drill-down rows,
+  plan-list rows, uncat banner groups) now uses `eur2()` — imported values
+  were being DISPLAYED rounded (stored values were always exact), which read
+  as "importing loses decimals".
+- **Don't:** pass pending lanes into the banner (double triage), or use
+  `eur()` on any row-level amount again.
+
+## 2026-07-16 — Imports land pre-classified; triage box hidden; cron bank auto-sync
+
+- **`IMPORTS_AUTO_CLASSIFY = true`** (backend `budget.ts`) + **`SHOW_PENDING_CLASSIFIER
+  = false`** (Budget.tsx): imported/synced lines no longer wait in the blue
+  fixed/variable triage box — they land immediately as classified **variable
+  actuals** (learned rules still apply their type/category; unmatched incomes
+  default variable, not the old provisional fixed). The user promotes a line to
+  Fixa through the lists (bulk "Tipo → Fixa" / classify), which is the rarer
+  action. GET /budget lazily sweeps legacy `pending:true` rows (keeps their
+  type). BOTH flags must flip together to restore the triage flow — the code
+  is hidden, not removed.
+- **The categorize alert is the single triage now** and shows wherever there is
+  anything uncategorized: Overview also feeds the actuals lanes to
+  `UncategorizedBanner` (it only had the plan lanes).
+- **Bank auto-sync in the daily cron:** `bank.ts` sync core extracted to
+  `syncUserBankConnections(userId)` + `syncAllBankConnections()`; the 06:00 UTC
+  cron runs it for every non-expired connection (`tasks.bank`). One unattended
+  pull/day is well inside the PSD2 unattended-access allowance; import dedup
+  makes it idempotent. Manual "Sincronizar" stays. No-op while Enable Banking
+  envs are unset.
+- **Cents:** added `eur2Signed` for the merchant-group totals (real-money sums
+  show cents; KPI aggregates stay rounded via `eurSigned`).
+- **Don't:** flip only one of the two triage flags; call `/equity/account/info`
+  or any strict-limit endpoint from the cron path.

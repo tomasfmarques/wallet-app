@@ -80,6 +80,13 @@ export function eurSigned(n: number): string {
   return sign + eurFmt().format(Math.abs(n))
 }
 
+/** Signed with cents — for real-transaction sums (merchant groups), where the
+ *  rounded eurSigned() reads as "the app lost my decimals". */
+export function eur2Signed(n: number): string {
+  const sign = n > 0 ? '+' : n < 0 ? '−' : ''
+  return sign + eur2Fmt().format(Math.abs(n))
+}
+
 export function eurCompact(n: number): string {
   const abs = Math.abs(n)
   const sign = n < 0 ? '−' : ''

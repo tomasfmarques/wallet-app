@@ -7,7 +7,7 @@ import { useBulkUpdateBudget } from '@/hooks/useBudget'
 import {
   inferCategory, categoryLabel, INCOME_CATEGORIES, EXPENSE_CATEGORIES,
 } from '@/lib/categoryDictionary'
-import { eur } from '@/lib/format'
+import { eur2 } from '@/lib/format'
 import { apiErrorMessage } from '@/lib/apiError'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -209,7 +209,7 @@ function ClassifyModal({ open, onClose, incomes, expenses }: ClassifyProps) {
 }
 
 function metaFor(g: Group, t: TFunction<'budget'>): string {
-  const parts = [eur(g.total)]
+  const parts = [eur2(g.total)]
   if (g.ids.length > 1) parts.push(t('uncat.linesMeta', { count: g.ids.length }))
   if (g.kind === 'expense' && g.type) parts.push(t(g.type === 'fixed' ? 'kind.fixedF' : 'kind.variableF'))
   return parts.join(' · ')

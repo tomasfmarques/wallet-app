@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { useTranslation, Trans } from 'react-i18next'
 import { useClassifyPending, useBulkUpdateBudget } from '@/hooks/useBudget'
-import { eur } from '@/lib/format'
+import { eur2 } from '@/lib/format'
 import { categoryLabel } from '@/lib/categoryDictionary'
 import type { Income, Expense, ExpenseType } from '@/types'
 
@@ -157,7 +157,8 @@ function PendingRow({ kind, item, checked, onToggle }: {
         <span className="pending-row-name">{item.name}</span>
         {item.category && <span className="pending-row-cat muted">{categoryLabel(item.category)}</span>}
       </div>
-      <div className="pending-row-amount">{eur(item.amount)}</div>
+      {/* Real transaction amounts keep cents — eur() (0 decimals) is for KPIs. */}
+      <div className="pending-row-amount">{eur2(item.amount)}</div>
       <div className="pending-row-actions">
         <button type="button" className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => classify('fixed')}>
           {busy === 'fixed' ? '…' : t('pending.fixed')}

@@ -249,7 +249,7 @@
     "doneMatchedToPlan": " {{count}} associada(s) a itens fixos já existentes (sem duplicar).",
     "doneSkipped": " {{count}} linha(s) inválida(s) ignorada(s).",
     "doneAutoClassified": "✨ {{count}} classificada(s) automaticamente por regras aprendidas.",
-    "doneRemaining": "As restantes ficam em <1>Por classificar</1> — escolhe <3>Fixa</3> ou <5>Variável</5> e a app aprende para as próximas.",
+    "doneRemaining": "As novas linhas entram nos <1>Movimentos do mês</1> como variáveis — marca como <3>Fixa</3> na lista quando fizer sentido, e usa o alerta <5>por classificar</5> para lhes dar categoria.",
     "finish": "Concluir",
     "intro": "Seleciona o extrato do teu banco em <1>PDF</1>, Excel, <3>CSV</3> ou <5>OFX</5>. Cada linha é lida e classificada como receita (entrada) ou despesa (saída) — usamos o valor da <7>transação</7> (não o saldo) e podes rever tudo antes de importar.",
     "parsing": "A ler…",
@@ -296,7 +296,7 @@
     "searchPlaceholder": "Procurar outro banco…",
     "loadingBanks": "A carregar bancos…",
     "noResults": "Sem resultados.",
-    "afterAuth": "Depois de autorizares no site do banco, volta aqui e carrega em <1>⟳ Sincronizar transações</1>. As novas entradas caem em <3>Por classificar</3>, com as regras aprendidas aplicadas automaticamente.",
+    "afterAuth": "Depois de autorizares no site do banco, volta aqui e carrega em <1>⟳ Sincronizar transações</1>. As novas entradas entram diretamente nos <3>movimentos do mês</3>, com as regras aprendidas aplicadas — e a partir daí a sincronização é automática (diária).",
     "betaTitle": "Beta pessoal",
     "betaBody": "A ligação direta está em beta e, para já, só devolve movimentos das contas do titular da app. Para todos os outros, usa <1>Importar extrato</1> — funciona com qualquer banco.",
     "linkError": "Não foi possível concluir a ligação ao banco. Tenta ligar novamente."

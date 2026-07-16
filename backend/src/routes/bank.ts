@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
-import { processImportItems } from './budget'
+import { processImportItems, type ImportSummary } from './budget'
 import {
   isConfigured, getAspsps, startAuth, createSession, getSession,
   deleteSession, accountUids, getTransactions,
@@ -172,75 +172,113 @@ router.delete('/connections/:id', async (req, res) => {
   }
 })
 
-// ── POST /api/bank/sync ──────────────────────────────────────────
+// ── Sync core (shared by the manual button and the daily cron) ───
 // Pulls booked transactions from every linked session (last CONSENT_DAYS) and
-// feeds them to the shared import pipeline. Dedup makes re-syncs safe.
+// feeds them to the shared import pipeline. Dedup makes re-syncs safe, which
+// is what lets the cron run this unattended every day (PSD2 allows a few
+// unattended data calls per day; one is well within every bank's budget).
+export async function syncUserBankConnections(userId: string): Promise<{ linked: number; summary: ImportSummary | null }> {
+  const connections = await prisma.bankConnection.findMany({ where: { userId } })
+  const items: Array<Record<string, unknown>> = []
+  let linkedCount = 0
+  const dateFrom = new Date(Date.now() - CONSENT_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  for (const conn of connections) {
+    if (conn.status === 'created') continue // consent not completed yet
+    const session = await getSession(conn.requisitionId)
+    // `null` means the upstream call FAILED (network / 5xx) — indistinguishable
+    // here from a revoked consent, so leave the connection alone rather than
+    // forcing a needless re-consent over a transient blip. Only a session that
+    // actually reports a non-AUTHORIZED status downgrades it. (Same
+    // conservative rule as GET /status.)
+    if (!session) continue
+    if (session.status !== 'AUTHORIZED') {
+      if (conn.status !== 'expired') {
+        await prisma.bankConnection.update({ where: { id: conn.id }, data: { status: 'expired' } })
+      }
+      continue
+    }
+    linkedCount++
+    if (conn.status !== 'linked') {
+      await prisma.bankConnection.update({ where: { id: conn.id }, data: { status: 'linked' } })
+    }
+
+    for (const uid of accountUids(session)) {
+      for (const t of await getTransactions(uid, dateFrom)) {
+        const st = (t.transaction_status || t.status || '').toUpperCase()
+        if (st === 'PDNG' || st === 'PENDING') continue // booked only
+
+        const raw = Number(t.transaction_amount?.amount)
+        if (!Number.isFinite(raw) || raw === 0) continue
+        const mag = Math.abs(raw)
+        // Amount magnitude is positive; sign comes from the indicator. Fall
+        // back to the raw sign for ASPSPs that send it signed / omit the flag.
+        const signed = t.credit_debit_indicator === 'DBIT' ? -mag
+          : t.credit_debit_indicator === 'CRDT' ? mag : raw
+
+        const date = t.booking_date ?? null // "YYYY-MM-DD"
+        const ym = date ? date.slice(0, 7) : null
+        const day = date ? Number(date.slice(8, 10)) : null
+        const name = (t.creditor?.name || t.debtor?.name
+          || (t.remittance_information ?? []).join(' ') || 'Transação').slice(0, 80)
+
+        items.push({
+          kind: signed >= 0 ? 'income' : 'expense',
+          name,
+          amount: Math.abs(signed),
+          dayOfMonth: day,
+          startYm: ym, endYm: ym,
+          source: conn.institutionName,
+        })
+      }
+    }
+  }
+
+  if (linkedCount === 0) return { linked: 0, summary: null }
+  const summary = await processImportItems(userId, items)
+  return { linked: linkedCount, summary }
+}
+
+// Cron entry point: sync every user that has at least one usable connection.
+// Sequential on purpose — a serverless burst across many users is pointless
+// and bank-unfriendly; personal-scale user counts keep this well under the
+// function timeout.
+export async function syncAllBankConnections(): Promise<{ users: number; imported: number; skippedUsers: number }> {
+  if (!isConfigured()) return { users: 0, imported: 0, skippedUsers: 0 }
+  const conns = await prisma.bankConnection.findMany({
+    where: { status: { not: 'expired' } },
+    select: { userId: true },
+    distinct: ['userId'],
+  })
+  let users = 0
+  let imported = 0
+  let skippedUsers = 0
+  for (const { userId } of conns) {
+    try {
+      const r = await syncUserBankConnections(userId)
+      if (r.summary) {
+        users++
+        imported += r.summary.incomes + r.summary.expenses
+      }
+    } catch (err) {
+      skippedUsers++
+      console.error(`[bank] cron sync failed for user ${userId.slice(0, 8)}…:`, err)
+    }
+  }
+  return { users, imported, skippedUsers }
+}
+
+// ── POST /api/bank/sync ──────────────────────────────────────────
+// Manual "Sincronizar" button — same core as the daily cron sync.
 router.post('/sync', async (req, res) => {
   const userId = req.session.userId!
   if (!isConfigured()) { res.status(503).json({ error: 'Integração bancária não configurada' }); return }
 
   try {
-    const connections = await prisma.bankConnection.findMany({ where: { userId } })
-    const items: Array<Record<string, unknown>> = []
-    let linkedCount = 0
-    const dateFrom = new Date(Date.now() - CONSENT_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-
-    for (const conn of connections) {
-      if (conn.status === 'created') continue // consent not completed yet
-      const session = await getSession(conn.requisitionId)
-      // `null` means the upstream call FAILED (network / 5xx) — indistinguishable
-      // here from a revoked consent, so leave the connection alone rather than
-      // forcing a needless re-consent over a transient blip. Only a session that
-      // actually reports a non-AUTHORIZED status downgrades it. (Same
-      // conservative rule as GET /status.)
-      if (!session) continue
-      if (session.status !== 'AUTHORIZED') {
-        if (conn.status !== 'expired') {
-          await prisma.bankConnection.update({ where: { id: conn.id }, data: { status: 'expired' } })
-        }
-        continue
-      }
-      linkedCount++
-      if (conn.status !== 'linked') {
-        await prisma.bankConnection.update({ where: { id: conn.id }, data: { status: 'linked' } })
-      }
-
-      for (const uid of accountUids(session)) {
-        for (const t of await getTransactions(uid, dateFrom)) {
-          const st = (t.transaction_status || t.status || '').toUpperCase()
-          if (st === 'PDNG' || st === 'PENDING') continue // booked only
-
-          const raw = Number(t.transaction_amount?.amount)
-          if (!Number.isFinite(raw) || raw === 0) continue
-          const mag = Math.abs(raw)
-          // Amount magnitude is positive; sign comes from the indicator. Fall
-          // back to the raw sign for ASPSPs that send it signed / omit the flag.
-          const signed = t.credit_debit_indicator === 'DBIT' ? -mag
-            : t.credit_debit_indicator === 'CRDT' ? mag : raw
-
-          const date = t.booking_date ?? null // "YYYY-MM-DD"
-          const ym = date ? date.slice(0, 7) : null
-          const day = date ? Number(date.slice(8, 10)) : null
-          const name = (t.creditor?.name || t.debtor?.name
-            || (t.remittance_information ?? []).join(' ') || 'Transação').slice(0, 80)
-
-          items.push({
-            kind: signed >= 0 ? 'income' : 'expense',
-            name,
-            amount: Math.abs(signed),
-            dayOfMonth: day,
-            startYm: ym, endYm: ym,
-            source: conn.institutionName,
-          })
-        }
-      }
-    }
-
-    if (linkedCount === 0) {
+    const { linked, summary } = await syncUserBankConnections(userId)
+    if (linked === 0 || !summary) {
       res.status(400).json({ error: 'Nenhum banco ligado ainda. Autoriza primeiro no site do banco.' }); return
     }
-
-    const summary = await processImportItems(userId, items)
     res.json({ ok: true, summary })
   } catch (err) {
     console.error('POST /bank/sync failed:', err)

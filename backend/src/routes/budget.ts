@@ -142,10 +142,31 @@ async function summarize(userId: string, prest: Map<string, number>) {
   }
 }
 
+// Feature flag (2026-07-16): imported/synced lines no longer wait in the
+// fixed/variable triage box — they land immediately as classified VARIABLE
+// actuals (learned rules still auto-apply their type/category). The user
+// promotes a line to Fixa later through the lists (bulk "Tipo → Fixa" or
+// /classify), which is the rarer action. Flip to false to restore the triage
+// flow — the PendingClassifier UI is flag-hidden in Budget.tsx, not removed.
+export const IMPORTS_AUTO_CLASSIFY = true
+
 // ── GET /api/budget ──────────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
+    if (IMPORTS_AUTO_CLASSIFY) {
+      // Lazy sweep: release any legacy rows still waiting in the (now hidden)
+      // triage box, keeping their provisional type. No-op when there are none;
+      // logged when it isn't, so auto-released backlogs are auditable (their
+      // type was an import-time guess, never human-confirmed).
+      const [swInc, swExp] = await prisma.$transaction([
+        prisma.income.updateMany({ where: { userId, pending: true }, data: { pending: false } }),
+        prisma.expense.updateMany({ where: { userId, pending: true }, data: { pending: false } }),
+      ])
+      if (swInc.count + swExp.count > 0) {
+        console.info(`[budget] released ${swInc.count + swExp.count} legacy pending row(s) for user ${userId.slice(0, 8)}…`)
+      }
+    }
     const prest = await loanPrestacoes(userId)
     const [allIncomes, allExpensesRaw, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
       prisma.income.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),
@@ -396,16 +417,22 @@ export async function processImportItems(userId: string, items: unknown[]): Prom
       seen.add(sig)
     }
 
-    // If a learned rule matches this merchant, auto-classify (skip the box).
-    // Otherwise the line lands as `pending` for manual fixed/variable triage.
+    // If a learned rule matches this merchant, auto-classify. Otherwise:
+    // with IMPORTS_AUTO_CLASSIFY the line lands directly as a VARIABLE actual
+    // (one-off money that happened — promote to Fixa later via the lists);
+    // with the flag off it lands `pending` for the manual triage box.
     const rule = ruleByKey.get(mKey)
     const matched = !!rule && rule.kind === kind
     if (matched) autoClassified++
-    const pending = !matched
+    const pending = IMPORTS_AUTO_CLASSIFY ? false : !matched
     const cat = category ?? (matched ? rule!.category : null)
 
     if (kind === 'income') {
-      const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'variable' ? 'variable' : 'fixed')
+      const type = matched ? (rule!.type as 'fixed' | 'variable')
+        // Auto-classified one-off receipts default to variable (the legacy
+        // triage default was fixed because the box would decide right after).
+        : IMPORTS_AUTO_CLASSIFY ? (item.type === 'fixed' ? 'fixed' : 'variable')
+        : (item.type === 'variable' ? 'variable' : 'fixed')
       incomeRows.push({ userId, name, amount, type, category: cat, dayOfMonth, source, startYm, endYm, notes, active: true, pending })
     } else {
       const type = matched ? (rule!.type as 'fixed' | 'variable') : (item.type === 'fixed' ? 'fixed' : 'variable')

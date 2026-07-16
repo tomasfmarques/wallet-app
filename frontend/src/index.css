@@ -2548,6 +2548,13 @@ body {
   white-space: nowrap;
 }
 .donut-filter-amount { font-weight: 600; white-space: nowrap; }
+/* Inline re-categorize select in the drill-down rows */
+.donut-filter-cat {
+  flex-shrink: 0;
+  max-width: 150px;
+  font-size: 12px;
+  padding: 3px 6px;
+}
 .donut-filter-total {
   display: flex;
   justify-content: space-between;

@@ -249,7 +249,7 @@
     "doneMatchedToPlan": " {{count}} matched to existing fixed items (not duplicated).",
     "doneSkipped": " {{count}} invalid line(s) ignored.",
     "doneAutoClassified": "✨ {{count}} auto-classified by learned rules.",
-    "doneRemaining": "The rest land in <1>To classify</1> — choose <3>Fixed</3> or <5>Variable</5> and the app learns for next time.",
+    "doneRemaining": "New lines land in <1>this month's movements</1> as variable — mark them <3>Fixed</3> from the list when it makes sense, and use the <5>to classify</5> alert to give them a category.",
     "finish": "Done",
     "intro": "Select your bank statement as <1>PDF</1>, Excel, <3>CSV</3> or <5>OFX</5>. Each line is read and classified as income (in) or expense (out) — we use the <7>transaction</7> amount (not the balance) and you can review everything before importing.",
     "parsing": "Reading…",
@@ -296,7 +296,7 @@
     "searchPlaceholder": "Search another bank…",
     "loadingBanks": "Loading banks…",
     "noResults": "No results.",
-    "afterAuth": "After authorising on your bank's site, come back here and click <1>⟳ Sync transactions</1>. New entries land in <3>To classify</3>, with learned rules applied automatically.",
+    "afterAuth": "After authorising on your bank's site, come back and press <1>⟳ Sync transactions</1>. New entries go straight into <3>this month's movements</3> with your learned rules applied — and from then on syncing is automatic (daily).",
     "betaTitle": "Personal beta",
     "betaBody": "Direct bank sync is in beta and, for now, only returns movements from the app owner's own accounts. For anyone else, use <1>Import statement</1> — it works with any bank.",
     "linkError": "Couldn't complete the bank connection. Try connecting again."
