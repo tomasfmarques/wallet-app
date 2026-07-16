@@ -4262,3 +4262,15 @@ body {
   .capital-gains-card { box-shadow: none; border: none; }
   .capital-gains-card .btn, .capital-gains-card select, .capital-gains-card label { display: none; }
 }
+
+/* Bank connect — restricted-production ("beta pessoal") disclosure */
+.bank-beta-note {
+  background: var(--bg-warning-0);
+  border: 1px solid var(--border-warning);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  color: var(--text-warning-2);
+  line-height: 1.5;
+}

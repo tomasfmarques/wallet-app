@@ -730,3 +730,23 @@ the Budget/Portfolio/Loan pages already load (react-query cache).
     normalize to the same `merchantKey`, the two rule upserts collide and the
     later one wins. Same limitation as per-row `/classify`; acceptable (such
     collisions are rare and user-driven).
+
+## 2026-07-15 — Bank sync v2 provider: Enable Banking (decision)
+
+- **What:** the GoCardless replacement is decided — **Enable Banking** (FI).
+  Full research, comparison table, API mapping, build plan (WS-B1..B4) and the
+  owner activation runbook live in [`../bank-sync-spec.md`](../bank-sync-spec.md).
+- **Why:** the only self-serve **free** option left in the EU that an
+  individual can use in production: "Restricted Production" returns real data
+  for accounts the owner links in their Control Panel (terms/KYB checks are
+  explicitly skipped in this mode). PT coverage includes **Banco CTT +
+  ActivoBank (beta)** on top of the big six. ISO 27001, EU-based, per-request
+  RS256 JWT auth with a key only we hold, no data monetization. Firefly III
+  made the same call. Salt Edge stays the paper backup; Tink/TrueLayer/Plaid/
+  SIBS-direct ruled out (enterprise KYB or own-AISP-licence walls).
+- **Constraint that shapes the UI:** restricted mode serves ONLY owner-linked
+  accounts — other users authenticating get zero accounts back. Bank sync must
+  ship labelled **"beta pessoal"**; full production (any user) = a future
+  commercial contract, i.e. the Pro path.
+- **Don't:** revisit GoCardless (confirmed still closed to new signups, 2026);
+  build against SIBS API Market directly (needs our own AISP licence).

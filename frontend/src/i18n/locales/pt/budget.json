@@ -275,7 +275,7 @@
   "bank": {
     "title": "Ligar banco",
     "secureTitle": "Ligação segura e regulada.",
-    "secure1": "Usa <1>Open Banking (PSD2)</1>, a norma europeia de acesso bancário, via GoCardless — uma entidade autorizada e supervisionada.",
+    "secure1": "Usa <1>Open Banking (PSD2)</1>, a norma europeia de acesso bancário, via Enable Banking — um prestador de serviços de informação sobre contas autorizado e supervisionado pela autoridade financeira finlandesa (FIN-FSA).",
     "secure2": "Autenticas-te <1>no site oficial do teu banco</1> — o Wallet360 nunca vê nem guarda as tuas credenciais.",
     "secure3": "O acesso é <1>apenas de leitura</1>: ninguém consegue mover dinheiro.",
     "secure4": "O consentimento dura <1>90 dias</1> e podes revogá-lo a qualquer momento.",
@@ -296,7 +296,10 @@
     "searchPlaceholder": "Procurar outro banco…",
     "loadingBanks": "A carregar bancos…",
     "noResults": "Sem resultados.",
-    "afterAuth": "Depois de autorizares no site do banco, volta aqui e carrega em <1>⟳ Sincronizar transações</1>. As novas entradas caem em <3>Por classificar</3>, com as regras aprendidas aplicadas automaticamente."
+    "afterAuth": "Depois de autorizares no site do banco, volta aqui e carrega em <1>⟳ Sincronizar transações</1>. As novas entradas caem em <3>Por classificar</3>, com as regras aprendidas aplicadas automaticamente.",
+    "betaTitle": "Beta pessoal",
+    "betaBody": "A ligação direta está em beta e, para já, só devolve movimentos das contas do titular da app. Para todos os outros, usa <1>Importar extrato</1> — funciona com qualquer banco.",
+    "linkError": "Não foi possível concluir a ligação ao banco. Tenta ligar novamente."
   },
   "monthClose": {
     "title": "Fecho de {{month}}",

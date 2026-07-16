@@ -275,7 +275,7 @@
   "bank": {
     "title": "Connect bank",
     "secureTitle": "Secure, regulated connection.",
-    "secure1": "Uses <1>Open Banking (PSD2)</1>, the European bank-access standard, via GoCardless — an authorised, supervised institution.",
+    "secure1": "Uses <1>Open Banking (PSD2)</1>, the European standard for bank access, via Enable Banking — an account information service provider authorised and supervised by the Finnish financial authority (FIN-FSA).",
     "secure2": "You authenticate <1>on your bank's official site</1> — Wallet360 never sees or stores your credentials.",
     "secure3": "Access is <1>read-only</1>: no one can move money.",
     "secure4": "Consent lasts <1>90 days</1> and you can revoke it anytime.",
@@ -296,7 +296,10 @@
     "searchPlaceholder": "Search another bank…",
     "loadingBanks": "Loading banks…",
     "noResults": "No results.",
-    "afterAuth": "After authorising on your bank's site, come back here and click <1>⟳ Sync transactions</1>. New entries land in <3>To classify</3>, with learned rules applied automatically."
+    "afterAuth": "After authorising on your bank's site, come back here and click <1>⟳ Sync transactions</1>. New entries land in <3>To classify</3>, with learned rules applied automatically.",
+    "betaTitle": "Personal beta",
+    "betaBody": "Direct bank sync is in beta and, for now, only returns movements from the app owner's own accounts. For anyone else, use <1>Import statement</1> — it works with any bank.",
+    "linkError": "Couldn't complete the bank connection. Try connecting again."
   },
   "monthClose": {
     "title": "{{month}} wrap-up",

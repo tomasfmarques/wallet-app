@@ -1,5 +1,9 @@
 # Wallet360 → Google Play (TWA runbook)
 
+> **Full owner guide** (account creation, listing fields, the 12-testers/14-days
+> gate, Wallet360-specific policy answers): [`docs/play-store-guide.md`](../docs/play-store-guide.md).
+> This file remains the build-side runbook it references.
+
 How to ship the installable PWA to the Play Store as a **Trusted Web Activity
 (TWA)** — a thin Android wrapper over the live `https://wallet360.pt` PWA. One
 codebase; the Play listing just points at the site.

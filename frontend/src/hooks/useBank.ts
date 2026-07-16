@@ -51,6 +51,15 @@ export function useBankConnect() {
   )
 }
 
+// Exchange the ?code&state from the bank redirect for a linked session.
+export function useBankCallback() {
+  const qc = useQueryClient()
+  return useMutation<{ ok: true }, ApiError, { code: string; state: string }>(
+    (input) => api.post<{ ok: true }>('/api/bank/callback', input),
+    { onSuccess: () => { qc.invalidateQueries(BANK_KEY) } },
+  )
+}
+
 export function useBankSync() {
   const qc = useQueryClient()
   return useMutation<ImportResult, ApiError, void>(

@@ -13,9 +13,9 @@ interface Props {
   onClose: () => void
 }
 
-// Featured PT banks shown first (and as a static preview while the
-// GoCardless credentials aren't configured yet). Logos via Clearbit's public
-// logo CDN; when the API is configured we use GoCardless's own logo URLs.
+// Featured PT banks shown first (and as a static preview while the Enable
+// Banking credentials aren't configured yet). Logos via Clearbit's public
+// logo CDN; when the API is configured we use the ASPSP's own logo URLs.
 const FEATURED = [
   { match: /ctt/i, name: 'Banco CTT', logo: 'https://logo.clearbit.com/bancoctt.pt' },
   { match: /millennium|bcp/i, name: 'Millennium BCP', logo: 'https://logo.clearbit.com/millenniumbcp.pt' },
@@ -102,6 +102,15 @@ export function BankConnectModal({ open, onClose }: Props) {
             <li><Trans i18nKey="bank.secure4" ns="budget" components={{ 1: <strong /> }} /></li>
           </ul>
         </div>
+      </div>
+
+      {/* Restricted-production disclosure: Enable Banking's free tier only
+          returns accounts the app owner linked in their Control Panel, so for
+          anyone else the sync legitimately comes back empty. Say so up front
+          rather than letting them hit a silent no-op. */}
+      <div className="bank-beta-note">
+        <strong>{t('bank.betaTitle')}</strong>{' '}
+        <Trans i18nKey="bank.betaBody" ns="budget" components={{ 1: <strong /> }} />
       </div>
 
       {err && <div className="form-error" style={{ marginBottom: 10 }}>{err}</div>}

@@ -14,6 +14,7 @@ import { PendingClassifier } from '@/components/budget/PendingClassifier'
 import { VariableMonths } from '@/components/budget/VariableMonths'
 import { ImportStatementModal } from '@/components/budget/ImportStatementModal'
 import { BankConnectModal } from '@/components/budget/BankConnectModal'
+import { useBankCallback } from '@/hooks/useBank'
 import { MonthAnalysis } from '@/components/budget/MonthAnalysis'
 import { Modal } from '@/components/ui/Modal'
 import { StateBlock } from '@/components/ui/StateBlock'
@@ -56,6 +57,28 @@ export function Budget() {
     if ((location.state as { loanLinkedExpense?: boolean } | null)?.loanLinkedExpense) {
       window.history.replaceState({}, '')
     }
+  }, [])
+
+  // Bank-consent return leg: Enable Banking redirects to /budget?code=…&state=…
+  // Exchange it for a linked session, strip the params, then open the bank modal
+  // so "Sincronizar" is right there. Runs once (guarded on the URL having code).
+  const bankCallback = useBankCallback()
+  const [bankLinkError, setBankLinkError] = useState(false)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const state = params.get('state')
+    if (!code || !state) return
+    // Strip the sensitive params from the URL immediately (before the request
+    // resolves) so they never linger in history or a shared link.
+    window.history.replaceState({}, '', window.location.pathname)
+    bankCallback.mutate({ code, state }, {
+      // Only open the modal once the link actually succeeded — opening it on
+      // failure would show an empty "no banks connected" list with no hint why.
+      onSuccess: () => setBankOpen(true),
+      onError: () => setBankLinkError(true),
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // "Fecho do mês": auto-open once per month after an import (localStorage
   // seen-gate), or manually from the Análise tab. `awaitClose` waits for the
@@ -163,6 +186,18 @@ export function Budget() {
             onClick={handleCleanupEncoding}
           >
             {cleanupEncoding.isLoading ? t('mojibake.removing') : t('mojibake.remove', { count: mojibakeCount })}
+          </button>
+        </div>
+      )}
+
+      {bankLinkError && (
+        <div className="encoding-banner">
+          <span className="encoding-banner-text">{t('bank.linkError')}</span>
+          <button
+            type="button" className="btn btn-ghost btn-sm"
+            onClick={() => setBankLinkError(false)}
+          >
+            {t('actions.close', { ns: 'common' })}
           </button>
         </div>
       )}
