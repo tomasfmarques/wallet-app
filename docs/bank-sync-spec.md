@@ -13,12 +13,35 @@ _Replaces the dead GoCardless integration (see decision log in
 
 | Provider | Free tier | Self-serve | PT coverage | Personal use | Verdict |
 |---|---|---|---|---|---|
-| **Enable Banking** (FI) | ✅ **Restricted Production** — free, real bank data, limited to accounts YOU link | ✅ sign-up + app registration, no contract | ✅ CGD, BCP, Santander Totta, Novo Banco, BPI, Montepio, BBVA + **Banco CTT & ActivoBank (beta, since 2023-07)** | ✅ designed for it (terms/KYB checks skipped in restricted mode) | **WINNER** |
+| **Enable Banking** (FI) | ✅ **Restricted Production** — free, real bank data, limited to accounts YOU link | ✅ sign-up + app registration, no contract | ✅ 26 PT ASPSPs — CGD, Millennium BCP (×2 connectors), Santander Totta, novobanco, BPI, Montepio, ActivoBank, BBVA, Revolut, Wise, N26… **but NOT Banco CTT** (see §1a) | ✅ designed for it (terms/KYB checks skipped in restricted mode) | **WINNER** |
 | GoCardless BAD (ex-Nordigen) | — | — | — | — | ❌ **closed to new signups** (confirmed again 2026) |
 | Salt Edge | Sandbox/dev role only | Partial | ✅ broad | Production needs a partner contract + KYB | Backup |
 | Tink / TrueLayer / Yapily | Sandbox only | ❌ sales-led | ✅ | ❌ enterprise KYB | No |
 | Plaid | Sandbox; paid EU | Partial | ⚠️ thin PT coverage | ❌ | No |
 | SIBS API Market (direct) | Sandbox free | ✅ | ✅ (it IS the PT hub) | ❌ production requires **your own AISP licence** | No — non-starter for an individual |
+
+### ⚠️ 1a. CORRECTION (2026-07-16) — Banco CTT is NOT covered
+
+The original draft of this spec claimed Banco CTT was supported ("beta, since
+2023-07", from a changelog). **That was wrong.** Verified against the live
+Control Panel → ASPSP status page (the authoritative source), the 26 PT ASPSPs
+are: ATLANTICO Europa, Abanca, Activo Bank, BBVA, BPG, BPI, Banco Comercial
+Portugues, Bankinter, BiG, Caixa Central de Crédito Agrícola Mutuo, Caixa
+Económica Montepio Geral, Caixa Económica da Misericórdia de Angra do Heroísmo,
+Caixa Geral de Depósitos, Cofidis, Crédito Agrícola, Millennium BCP, N26,
+PayPal, Revolut, Santander Totta, SumUp, Unicre, Wise, bunq, novobanco,
+novobanco dos Açores. **Banco CTT is absent.**
+
+**Consequence:** the owner's Banco CTT account CANNOT be synced via Enable
+Banking — it stays on the **file import** path (.xlsx/CSV/PDF), which is why
+that importer matters. Bank sync only helps for the banks above (BCP is the
+owner's usable one).
+
+**Note:** BCP appears TWICE — `Millennium BCP` and `Banco Comercial Portugues`
+are separate connectors for the same bank. If one errors, try the other.
+
+**Don't** re-add Banco CTT to any list without re-checking the live ASPSP status
+page; changelogs are not authoritative.
 
 ### Why Enable Banking wins
 

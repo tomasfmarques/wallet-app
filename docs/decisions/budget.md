@@ -739,8 +739,11 @@ the Budget/Portfolio/Loan pages already load (react-query cache).
 - **Why:** the only self-serve **free** option left in the EU that an
   individual can use in production: "Restricted Production" returns real data
   for accounts the owner links in their Control Panel (terms/KYB checks are
-  explicitly skipped in this mode). PT coverage includes **Banco CTT +
-  ActivoBank (beta)** on top of the big six. ISO 27001, EU-based, per-request
+  explicitly skipped in this mode). PT coverage = 26 ASPSPs (CGD, BCP
+  ×2 connectors, Santander Totta, novobanco, BPI, Montepio, ActivoBank, Revolut,
+  Wise, N26…) but **NOT Banco CTT** — verified on the live ASPSP status page
+  2026-07-16; an earlier claim that CTT was covered was WRONG. CTT stays on the
+  file-import path. ISO 27001, EU-based, per-request
   RS256 JWT auth with a key only we hold, no data monetization. Firefly III
   made the same call. Salt Edge stays the paper backup; Tink/TrueLayer/Plaid/
   SIBS-direct ruled out (enterprise KYB or own-AISP-licence walls).
