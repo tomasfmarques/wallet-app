@@ -18,6 +18,8 @@ export interface SignupInput {
   password: string
   name: string
   remember?: boolean
+  // Language for the verification email — there's no saved preference yet.
+  lang?: 'pt' | 'en'
 }
 
 export interface LoginInput {

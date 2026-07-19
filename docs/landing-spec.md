@@ -377,3 +377,50 @@ Expect the review to take days–weeks; revenue at this traffic will start tiny.
   signup; tiny, no schema change — add a `source` column? NO: reuse existing
   free-text mechanism or defer; decide at WS-L1 review).
 - Zero regressions in the app (auth flow, PWA install, push, SW updates).
+
+---
+
+## 2026-07-16 — A3 decided: static `<head>` only, not full prerender
+
+**Status: SHIPPED (the head slice). Full SSR prerender is dropped, not deferred.**
+
+- **What shipped:** `frontend/scripts/prerender-meta.mjs`, run from
+  `npm run build -w frontend` after `vite build`. It copies the built
+  `index.html` into `dist/<route>/index.html` for the 6 marketing routes with a
+  real static `<head>` baked in: `<title>`, description, canonical, `og:*`
+  (incl. **og:image** and og:url — neither existed before), and
+  `twitter:card=summary_large_image`. pt only, per A3.
+- **Why this and not A3's `renderToString`:** the body is left as an empty
+  `#root`. Nothing is server-rendered, so there is no server/client markup that
+  can disagree — the class of failure that makes prerender risky (a hydration
+  mismatch on the live funnel = blank landing page) is structurally absent.
+  The SPA boots exactly as before and `usePageMeta` re-applies the same values.
+- **What full prerender would have cost:** 11 modules on the marketing path
+  touch `window`/`navigator`/`localStorage`, including `useTheme` and the i18n
+  language detector — both mounted *above* every route in `App.tsx` — plus
+  swapping `BrowserRouter`→`StaticRouter` and `createRoot`→`hydrateRoot`. That
+  is an app-root refactor, verifiable only against a local prod build, shipping
+  straight to prod on push. Weighed against Google already rendering JS, the
+  remaining upside was link previews — which this slice delivers outright.
+- **The real gap it closed:** `usePageMeta` sets meta from a React *effect*, so
+  the tags only exist once JS runs. Google copes; the scrapers behind link
+  previews (WhatsApp, LinkedIn, Facebook, Slack, iMessage) do not — they read
+  raw HTML. Every marketing link therefore previewed identically and imageless,
+  whichever simulator was shared. There was no `og:image` in `index.html` at all.
+- **⚠️ Explicit `vercel.json` rewrites, one per route, above the catch-all.**
+  Directory-index resolution looked sufficient but is server-dependent: on
+  `vite preview`, `/simuladores/irs-mais-valias` falls through to the SPA shell
+  while the trailing-slash form serves the route file — so the no-slash form
+  people actually share would have silently gained nothing. Keep `ROUTES` in the
+  script and those rewrites in sync. A rewrite without a file would 404, but
+  can't survive a deploy: the script throws on any problem → `npm run build`
+  fails → `vercel-build` fails → no deploy.
+- **og:image is WebP** (reusing the existing marketing photos — hero.webp is
+  1600×900, tools are 800×520). X, WhatsApp, Slack and Discord render WebP;
+  **LinkedIn historically does not**, so a LinkedIn share may still show no
+  image. If that matters, generate a JPEG/PNG card — no image is the same as
+  today, so this is upside-only either way.
+- **Verified:** built; 6 route files emitted; exactly one `<title>`/description/
+  `og:title` each (no duplicates); `curl` of a route file returns the correct
+  per-route tags with no JS; the SPA still boots from a route file and renders
+  the right page with zero console errors; landing still renders signed-out.

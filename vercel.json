@@ -18,6 +18,11 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/simuladores", "destination": "/simuladores/index.html" },
+    { "source": "/simuladores/irs-mais-valias", "destination": "/simuladores/irs-mais-valias/index.html" },
+    { "source": "/simuladores/credito-habitacao", "destination": "/simuladores/credito-habitacao/index.html" },
+    { "source": "/simuladores/amortizar-ou-investir", "destination": "/simuladores/amortizar-ou-investir/index.html" },
+    { "source": "/simuladores/revisao-euribor", "destination": "/simuladores/revisao-euribor/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

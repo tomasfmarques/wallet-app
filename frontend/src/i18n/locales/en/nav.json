@@ -29,5 +29,10 @@
   },
   "demoBanner": "Demo mode — data is temporary.",
   "demoSignup": "Create account",
-  "demoExit": "Exit"
+  "demoExit": "Exit",
+  "verifyBanner": "Confirm your email to switch on the monthly summary and Couple Mode.",
+  "verifyBannerResend": "Resend email",
+  "verifyBannerSending": "Sending…",
+  "verifyBannerSent": "Email sent — check your inbox.",
+  "verifyBannerDismiss": "Not now"
 }

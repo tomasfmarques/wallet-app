@@ -23,6 +23,10 @@ model User {
   googleId     String?  @unique @map("google_id")
   // bcrypt hash of the 6-digit app-lock PIN. Null = no PIN set (app-lock off).
   pinHash      String?  @map("pin_hash")
+  // Proof the address is owned. Null = unverified. Google sign-in sets it
+  // implicitly (Google asserts email_verified); password signup sets it when
+  // the emailed link is opened. Soft gate — see routes/auth.ts verify-email.
+  emailVerifiedAt DateTime? @map("email_verified_at")
   // Throwaway demo account (seeded sandbox). GC'd ~24h after createdAt.
   isDemo       Boolean  @default(false) @map("is_demo")
   name         String
@@ -37,6 +41,7 @@ model User {
   bankConnections   BankConnection[]
   brokerConnections BrokerConnection[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   webauthnCredentials WebAuthnCredential[]
   importedTxns      ImportedTxn[]
   pushSubscriptions PushSubscription[]
@@ -185,6 +190,22 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_reset_tokens")
+}
+
+// Signup email-ownership proof. Mirrors PasswordResetToken (hashed token, one
+// active per user, single-use) but with a longer window — a verification mail
+// often gets opened the next day. EXCLUDED from export/import: a security
+// artifact, not portable user data (same rule as password reset tokens).
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
 }
 
 // Learned merchant → classification rule. When the user classifies a "Por

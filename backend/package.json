@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "db:drain-pending": "node scripts/drain-legacy-pending.js",
     "db:generate:prod": "prisma generate --schema=prisma/schema.prod.prisma",
     "db:push:prod": "prisma db push --schema=prisma/schema.prod.prisma --accept-data-loss || (echo 'db push failed (Neon may be waking) — retrying in 12s...' && sleep 12 && prisma db push --schema=prisma/schema.prod.prisma --accept-data-loss)",
     "deploy:prep": "npm run db:generate:prod && npm run db:push:prod"

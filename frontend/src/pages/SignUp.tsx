@@ -10,7 +10,7 @@ interface LocationState {
 }
 
 export function SignUp() {
-  const { t } = useTranslation('auth')
+  const { t, i18n } = useTranslation('auth')
   const { isAuthenticated, isLoading } = useAuth()
   const signup = useSignup()
   const navigate = useNavigate()
@@ -49,6 +49,9 @@ export function SignUp() {
         name: name.trim(),
         email: email.trim(),
         password,
+        // The verification mail goes out before there's a saved language
+        // preference, so tell the server what the browser is reading in.
+        lang: i18n.resolvedLanguage === 'en' ? 'en' : 'pt',
       })
       navigate(redirectTo, { replace: true })
     } catch (err) {

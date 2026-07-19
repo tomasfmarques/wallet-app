@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MarketingLayout } from '@/components/marketing/MarketingLayout'
@@ -19,6 +19,21 @@ import { buildGainsReport, type GainTxn } from '@engines/capitalGains'
 
 const FREE_ROW_LIMIT = 5
 const MAX_BLURRED_PREVIEW = 3
+
+// App.tsx remounts the whole routed tree when the language flips (so locale
+// formatting refreshes), which used to wipe a report the visitor was halfway
+// through reading — they'd have to re-drop every CSV. Surviving that means
+// holding the parsed rows outside the component tree.
+//
+// Module scope, deliberately NOT sessionStorage: this page promises "o ficheiro
+// nunca sai do teu browser", and memory keeps that promise most literally —
+// nothing is ever written anywhere, and it all dies with the tab. The upside is
+// the report also survives a wander over to another simulator and back.
+let uploadCache: {
+  fileNames: string[]
+  rawTxns: T212Transaction[]
+  year: number | null
+} = { fileNames: [], rawTxns: [], year: null }
 
 function toGainTxns(rows: T212Transaction[]): GainTxn[] {
   return rows.map((t) => ({
@@ -47,10 +62,16 @@ export function IrsMaisValias() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [fileNames, setFileNames] = useState<string[]>([])
-  const [rawTxns, setRawTxns] = useState<T212Transaction[]>([])
-  const [year, setYear] = useState<number | null>(null)
+  // Seeded from (and mirrored back to) the module cache so switching language
+  // mid-report doesn't throw the upload away — see uploadCache.
+  const [fileNames, setFileNames] = useState<string[]>(() => uploadCache.fileNames)
+  const [rawTxns, setRawTxns] = useState<T212Transaction[]>(() => uploadCache.rawTxns)
+  const [year, setYear] = useState<number | null>(() => uploadCache.year)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    uploadCache = { fileNames, rawTxns, year }
+  }, [fileNames, rawTxns, year])
 
   // Every calculation below runs on data that stays in this tab's memory —
   // nothing about the uploaded file is ever sent over the network.

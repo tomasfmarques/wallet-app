@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library'
 import { prisma } from '../lib/prisma'
 import { normalizeEmail } from '../lib/normalizeEmail'
 import { findUserByEmail } from '../lib/userLookup'
+import { isEmailVerified } from '../lib/emailVerification'
 
 const router = Router()
 
@@ -10,14 +11,17 @@ const router = Router()
 const clientId = process.env.GOOGLE_CLIENT_ID
 const oauth = clientId ? new OAuth2Client(clientId) : null
 
+// Mirrors routes/auth.ts serializeUser — the response is written straight into
+// the frontend's `me` cache, so emailVerified has to travel with it.
 function serializeUser(user: {
-  id: string; email: string; name: string; createdAt: Date
+  id: string; email: string; name: string; createdAt: Date; emailVerifiedAt: Date | null
 }) {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     createdAt: user.createdAt.toISOString(),
+    emailVerified: isEmailVerified(user),
   }
 }
 
@@ -67,6 +71,20 @@ router.post('/', async (req, res) => {
       // and a DUPLICATE Google-only user created for the same person.
       const byEmail = await findUserByEmail(payload.email)
       if (byEmail) {
+        // Only merge a Google identity into an account that has already PROVEN
+        // it owns this address (S3/F7). Google's token proves the person
+        // signing in owns the mailbox — it says nothing about who created the
+        // account sitting on that address. Without this check, squatting
+        // victim@gmail.com with a password signup means inheriting the
+        // victim's data the moment they use Google, with the squatter's
+        // password still on the account. Accounts predating verification are
+        // grandfathered (see lib/emailVerification).
+        if (!isEmailVerified(byEmail)) {
+          res.status(409).json({
+            error: 'Já existe uma conta com este email por confirmar. Abre o link de confirmação que enviámos para a tua caixa de correio e tenta novamente.',
+          })
+          return
+        }
         try {
           user = await prisma.user.update({
             where: { id: byEmail.id },
@@ -89,8 +107,22 @@ router.post('/', async (req, res) => {
           email,
           googleId,
           name,
+          // Google asserting email_verified IS the ownership proof — there's
+          // nothing for our own verification mail to add.
+          emailVerifiedAt: emailVerified ? new Date() : null,
           // passwordHash stays null — they can sign in with Google only
         },
+      })
+    }
+
+    // Heal accounts that predate verification (or were created from an
+    // unverified Google email that has since been confirmed): once Google
+    // asserts the address, record the proof instead of leaning on the
+    // grandfather cutoff forever.
+    if (emailVerified && user.emailVerifiedAt === null) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerifiedAt: new Date() },
       })
     }
 

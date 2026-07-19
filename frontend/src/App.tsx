@@ -15,6 +15,7 @@ import SignIn from '@/pages/SignIn'
 import SignUp from '@/pages/SignUp'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
+import VerifyEmail from '@/pages/VerifyEmail'
 import Overview from '@/pages/Overview'
 import Loan from '@/pages/Loan'
 import Portfolio from '@/pages/Portfolio'
@@ -81,6 +82,7 @@ function AppRoutes() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verificar-email" element={<VerifyEmail />} />
 
       {/* Public legal pages (no auth) — linked from sign-in, sign-up, settings */}
       <Route path="/privacidade" element={<PrivacyPolicy />} />

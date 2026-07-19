@@ -154,19 +154,10 @@ export const IMPORTS_AUTO_CLASSIFY = true
 router.get('/', async (req, res) => {
   try {
     const userId = req.session.userId!
-    if (IMPORTS_AUTO_CLASSIFY) {
-      // Lazy sweep: release any legacy rows still waiting in the (now hidden)
-      // triage box, keeping their provisional type. No-op when there are none;
-      // logged when it isn't, so auto-released backlogs are auditable (their
-      // type was an import-time guess, never human-confirmed).
-      const [swInc, swExp] = await prisma.$transaction([
-        prisma.income.updateMany({ where: { userId, pending: true }, data: { pending: false } }),
-        prisma.expense.updateMany({ where: { userId, pending: true }, data: { pending: false } }),
-      ])
-      if (swInc.count + swExp.count > 0) {
-        console.info(`[budget] released ${swInc.count + swExp.count} legacy pending row(s) for user ${userId.slice(0, 8)}…`)
-      }
-    }
+    // NOTE: legacy `pending: true` rows (from before IMPORTS_AUTO_CLASSIFY) used
+    // to be swept here on every request — a transaction + two writes per GET,
+    // forever, for a finite backlog. That drain now runs once, from
+    // scripts/drain-legacy-pending.js (also wired into `vercel-build`).
     const prest = await loanPrestacoes(userId)
     const [allIncomes, allExpensesRaw, pendingIncomes, pendingExpenses, kpis] = await Promise.all([
       prisma.income.findMany({ where: { userId, pending: false }, orderBy: [{ active: 'desc' }, { name: 'asc' }] }),

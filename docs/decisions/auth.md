@@ -265,6 +265,11 @@ Banking-style app-lock layered over the session. **Re-lock = launch only.**
 
 ## 2026-06-24 — Deferred: email verification on signup (until ~launch)
 
+> **SUPERSEDED 2026-07-16 — built.** See "Email verification on signup (S3/F7)"
+> at the end of this file. The scope below drifted in two ways worth knowing:
+> the flag is a nullable `emailVerifiedAt` timestamp (not a Boolean), and the
+> route is `POST /api/auth/verify-email` (not `GET`).
+
 - **Status: PENDING / deferred on purpose.** Not built. Decision: hold it until
   shortly before opening the app to the public — it adds signup friction with no
   benefit while the user base is just the owner + demo.
@@ -340,3 +345,67 @@ switched on the active i18n language (`asAppLanguage(i18n.resolvedLanguage)`).
   three-way sync burden).
 - The "last updated" dates deliberately stayed 27 June 2026 — the translation
   changed no legal content.
+
+## 2026-07-16 — Email verification on signup (S3/F7)
+
+Closes the last deferred Phase-1 item (supersedes the 2026-06-24 deferral above).
+
+- **The gate is SOFT — login is never blocked.** An unverified account uses the
+  app normally on its own data. Only three things are withheld, each because an
+  unowned address is what makes them dangerous:
+  1. **the monthly digest** (`lib/digest.ts`) — mailing addresses nobody has
+     proven they own is how a Resend sender reputation dies;
+  2. **Google auto-link** (`routes/authGoogle.ts`) — see below, this is the
+     real F7 vector;
+  3. **household invite + join** (`routes/household.ts`) — the only routes that
+     show your money to another person. Creating a *solo* household is still
+     allowed; nothing is shared until someone joins.
+  Locking a real user out of their own finances because an email went to spam
+  would cost far more than it buys.
+- **The Google auto-link refusal is the actual security fix.** Previously any
+  account matching a Google-verified email got the `googleId` merged into it.
+  So: squat `victim@gmail.com` with a password signup, wait for the victim to
+  "Sign in with Google", and they land in *your* account — which still has your
+  password on it. Google's token proves the person signing in owns the mailbox;
+  it says nothing about who created the account already sitting on that address.
+  Now the existing account must itself be verified or the link is refused (409).
+- **Legacy accounts are grandfathered by a CODE cutoff, not a data backfill**
+  (`VERIFICATION_LAUNCH` in `lib/emailVerification.ts`). Prod deploys with
+  `db push` and has no migration runner to carry a data fix (CLAUDE.md rule 2),
+  so a backfill would be a manual Neon step — and if it were ever missed, every
+  existing user would silently lose their digest. `isEmailVerified()` is the one
+  place that decides, and every read goes through it.
+  - **⚠️ The cutoff must never be in the future.** "Created before the cutoff"
+    is what grandfathers an account, so a future date hands every NEW signup a
+    free pass until it elapses. This bit during development: with the constant a
+    day ahead, a freshly-created account came back `emailVerified: true`.
+- **`emailVerifiedAt` (nullable timestamp), not a Boolean** — when someone
+  proved an address is worth having, and it keeps null as the single "unproven"
+  state instead of a Boolean plus a separate date.
+- **Google sign-in sets it implicitly**, and heals accounts on the way: once
+  Google asserts `email_verified`, a null `emailVerifiedAt` is filled in, so
+  grandfathered users become genuinely verified on their next sign-in rather
+  than leaning on the cutoff forever.
+- **`serializeUser` had to grow the field** (`auth.ts` + `authGoogle.ts`). The
+  login/signup responses are written straight into the frontend's `me` cache and
+  are *thinner* than `GET /api/me`. An absent `emailVerified` reads as
+  unverified, so without this every returning user got nagged until a refetch.
+  Anything the app reads off `user` must travel on those responses too — the
+  same trap is still latent for `hasPassword`/`isDemo`.
+- **Verification is `POST`, session-free, single-use.** POST (not the GET in the
+  original sketch) so mail-scanner prefetching can't silently burn the token.
+  Session-free because the link is usually opened by the phone's mail app in a
+  different browser than the one that signed up — the token is the proof, not
+  the session. Issuing a new token invalidates the previous unused one.
+- **24h TTL** (vs 1h for password reset): a verification mail routinely gets
+  opened the next morning, and the token proves ownership rather than granting a
+  live session, so a longer window is cheap.
+- **Resend is rate-limited 3/hour** per account (`kvStore`, `verify:<userId>`).
+  It's session-gated so there's no enumeration angle, but it *is* a "make our
+  server mail this address" button and shouldn't be usable to flood an inbox.
+- **Banner dismissal is sessionStorage, not localStorage** — an unverified
+  address is a standing problem, so the nudge returns next launch rather than
+  being silenced permanently in one click.
+- **Demo accounts:** `demo+…@demo.wallet360.pt` is unreachable, so they are
+  never verified (honest) and the banner hides on `isDemo` instead. They're
+  already excluded from the digest and are blocked from household sharing.

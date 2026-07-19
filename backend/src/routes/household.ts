@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma'
 import { computeKpis } from '../lib/loanEngine'
 import { loanPrestacoes, syncedAmount } from '../lib/loanSync'
 import { stripFormulaPrefix } from '../lib/sanitize'
+import { isEmailVerified } from '../lib/emailVerification'
 
 // ── Modo Casal (household v1) ────────────────────────────────────
 // Two members max, one household per user, AGGREGATE-level sharing only.
@@ -30,6 +31,18 @@ async function ownMembership(userId: string) {
     where: { userId },
     include: { household: { include: { members: { include: { user: { select: { name: true } } } } } } },
   })
+}
+
+// Joining a household is the one action that shows your money to someone else,
+// so both sides must have proven who they are first (S3/F7). Demo sandboxes
+// have an unreachable address and no business pairing with a real account.
+// Returns an error string, or null when the user may proceed.
+async function householdBlockReason(userId: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return 'Sessão inválida'
+  if (user.isDemo) return 'As contas demo não podem criar um agregado.'
+  if (!isEmailVerified(user)) return 'Confirma o teu email antes de partilhares o agregado.'
+  return null
 }
 
 function serializeHousehold(m: NonNullable<Awaited<ReturnType<typeof ownMembership>>>) {
@@ -77,6 +90,8 @@ router.post('/', async (req, res) => {
 router.post('/invites', async (req, res) => {
   try {
     const userId = req.session.userId!
+    const blocked = await householdBlockReason(userId)
+    if (blocked) { res.status(403).json({ error: blocked }); return }
     const m = await ownMembership(userId)
     if (!m) { res.status(400).json({ error: 'Cria primeiro o agregado' }); return }
     if (m.household.members.length >= MAX_MEMBERS) {
@@ -114,6 +129,8 @@ router.post('/join', async (req, res) => {
   }
   try {
     const userId = req.session.userId!
+    const blocked = await householdBlockReason(userId)
+    if (blocked) { res.status(403).json({ error: blocked }); return }
     if (await prisma.householdMember.findUnique({ where: { userId } })) {
       res.status(409).json({ error: 'Já pertences a um agregado' }); return
     }

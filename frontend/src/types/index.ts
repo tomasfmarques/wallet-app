@@ -8,6 +8,7 @@ export interface User {
   hasPassword: boolean
   hasPin: boolean         // a 6-digit app-lock PIN is set
   hasBiometrics: boolean  // ≥1 WebAuthn credential registered on the account
+  emailVerified: boolean  // proved the address (or predates verification)
   isDemo: boolean         // throwaway demo/sandbox account
 }
 

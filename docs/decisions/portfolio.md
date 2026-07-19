@@ -605,3 +605,35 @@ function-bundling risk for nothing. Consequences:
   the portfolio-endpoint limit).
 - **Don't:** reintroduce a per-sync `/equity/account/info` call; it's the
   strictest limit T212 has and it silently caps sync frequency at ~2/min.
+
+## 2026-07-16 — Ticker-search currency: gaps found by sweep, verified against Yahoo
+
+The open thread said to "extend the maps as gaps surface". Rather than wait for
+gaps to surface one report at a time, 50 international search terms were run
+through `/api/quotes/search`, every "—" badge grouped by venue, and each
+candidate confirmed against **Yahoo's own `chart.meta.currency`** — not from
+memory. **51 of 317 results had no currency; 11 venues were fixed, taking it to
+25.** (`SUFFIX_CCY` + `EXCHANGE_CCY` in `lib/yahooFinance.ts`.)
+
+- **Added (each Yahoo-confirmed, single-currency venues):** BA/BUE→ARS,
+  WA/WSE→PLN, KL/KLS→MYR, SR/SAU→SAR, XA/CXA→AUD, BK/SET→THB, JK/JKT→IDR,
+  SN/SGO→CLP, AE/DFM→AED, QA/DOH→QAR, IS/IST→TRY.
+- **⚠️ Kuwait (KW/KUW) deliberately left unmapped — the most valuable find.**
+  Yahoo quotes it in **"KWF" (fils), a 1/1000 subunit**, exactly the GBp trap
+  already documented. Mapping KW→KWD from memory — the obvious move — would have
+  made every Kuwaiti price **1000× too large**. Correct support needs a
+  `normalizeSubunit` case in `fx.ts`, and KWD isn't Frankfurter-convertible
+  anyway, so there is nothing to gain and a lot to break. This is why the sweep
+  verified every venue against Yahoo instead of trusting the obvious answer.
+- **Still null, now with proof rather than suspicion:** XC/CXE + XD/DXE (Cboe
+  Europe), TI/TLO (Turquoise), IL/IOB. These genuinely list in several
+  currencies — `NOVOBC.XD` quotes **DKK** while `ASMLA.XC` quotes **EUR**, and
+  `0O77.IL` quotes DKK. A "—" badge is the correct answer here; a guess would be
+  wrong. Z/ZRH stays null because Yahoo itself returns no currency for it.
+- **ARS/SAR/CLP/AED/QAR aren't Frankfurter-convertible, and adding them is still
+  right.** The badge names the listing currency correctly; the "(€)" fields stay
+  empty exactly as the existing FX-fail rule intends (never fill a EUR-labelled
+  field with a non-EUR number). Before: wrong-looking "—" *and* empty fields.
+  After: an accurate badge *and* empty fields — strictly more information.
+- PLN/MYR/AUD/THB/IDR/TRY *are* convertible, so those venues get badge + EUR
+  auto-fill both working.

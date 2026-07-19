@@ -2,12 +2,14 @@ import { Router } from 'express'
 import { randomBytes, createHash } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma'
-import { sendPasswordResetEmail } from '../lib/email'
+import { sendPasswordResetEmail, sendEmailVerificationEmail, appOrigin } from '../lib/email'
 import { seedDemoAccount } from '../lib/demoSeed'
 import { hit, peek, clear } from '../lib/kvStore'
 import { normalizeEmail } from '../lib/normalizeEmail'
 import { findUserByEmail } from '../lib/userLookup'
 import { destroyOtherSessions } from '../lib/sessions'
+import { asLang, type Lang } from '../lib/notifyCopy'
+import { hashToken, issueVerificationToken, isEmailVerified, verificationLink } from '../lib/emailVerification'
 
 const router = Router()
 
@@ -63,13 +65,25 @@ function validateName(name: unknown): string | null {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
-function serializeUser(user: { id: string; email: string; name: string; createdAt: Date }) {
+// The login/signup responses are written straight into the frontend's `me`
+// cache, so anything the app reads off `user` before the next GET /api/me has
+// to be here too — emailVerified drives the verify banner, and an absent field
+// reads as "unverified" and would nag every returning user.
+function serializeUser(user: {
+  id: string; email: string; name: string; createdAt: Date; emailVerifiedAt: Date | null
+}) {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     createdAt: user.createdAt.toISOString(),
+    emailVerified: isEmailVerified(user),
   }
+}
+
+async function sendVerification(userId: string, email: string, lang: Lang): Promise<void> {
+  const token = await issueVerificationToken(userId)
+  await sendEmailVerificationEmail(email, verificationLink(appOrigin(), token), lang)
 }
 
 // ── POST /api/auth/signup ─────────────────────────────────────────
@@ -104,6 +118,12 @@ router.post('/signup', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12)
     const user = await prisma.user.create({
       data: { email: emailNorm, passwordHash, name: name.trim() },
+    })
+
+    // Send the ownership-proof mail, but never let a mail failure fail the
+    // signup — the account is already usable and the banner offers a resend.
+    void sendVerification(user.id, user.email, asLang(req.body?.lang)).catch((err) => {
+      console.error('Verification email failed for new signup:', err)
     })
 
     req.session.regenerate((err) => {
@@ -352,7 +372,10 @@ router.post('/demo', async (req, res) => {
         user: {
           id: user.id, email: user.email, name: user.name,
           createdAt: user.createdAt.toISOString(),
-          hasPassword: false, hasPin: false, hasBiometrics: false, isDemo: true,
+          hasPassword: false, hasPin: false, hasBiometrics: false,
+          // A demo address never proves anything, and GET /api/me computes the
+          // same false — the banner hides on isDemo, not on this.
+          emailVerified: false, isDemo: true,
         },
       })
     })
@@ -461,6 +484,69 @@ router.post('/reset-password', async (req, res) => {
     res.json({ ok: true })
   } catch (err) {
     console.error('POST /api/auth/reset-password failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── POST /api/auth/verify-email ──────────────────────────────────
+// Opened from the signup mail. Session-free on purpose: the link often lands
+// in a different browser (phone mail app) than the one that signed up, and the
+// token itself is the proof — requiring a session would strand those users.
+router.post('/verify-email', async (req, res) => {
+  const { token } = req.body ?? {}
+  if (typeof token !== 'string' || token.length < 32) {
+    res.status(400).json({ error: 'Token inválido' }); return
+  }
+
+  try {
+    const record = await prisma.emailVerificationToken.findUnique({
+      where: { tokenHash: hashToken(token) },
+    })
+    if (!record || record.used || record.expiresAt < new Date()) {
+      res.status(400).json({ error: 'O link de confirmação é inválido ou expirou.' }); return
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } }),
+      prisma.emailVerificationToken.update({ where: { id: record.id }, data: { used: true } }),
+    ])
+
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('POST /api/auth/verify-email failed:', err)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// ── POST /api/auth/resend-verification ───────────────────────────
+// Session-gated (it's the in-app banner's button), so there's no enumeration
+// angle — but it IS a "make our server send mail to an address" button, so it
+// gets its own lockout to stop it being used to hammer an inbox.
+const RESEND_MAX = 3
+const RESEND_WINDOW_MS = 60 * 60 * 1000
+
+router.post('/resend-verification', async (req, res) => {
+  if (!req.session?.userId) { res.status(401).json({ error: 'Não autenticado' }); return }
+  const userId = req.session.userId
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) { res.status(401).json({ error: 'Sessão inválida' }); return }
+    // Demo addresses (demo+…@demo.wallet360.pt) don't receive mail.
+    if (user.isDemo) { res.status(403).json({ error: 'As contas demo não têm email para confirmar.' }); return }
+    // Already proven (or grandfathered) — nothing to send.
+    if (isEmailVerified(user)) { res.json({ ok: true, alreadyVerified: true }); return }
+
+    const key = `verify:${userId}`
+    if ((await peek(`lock:${key}`)) >= RESEND_MAX) {
+      res.status(429).json({ error: 'Já enviámos vários emails. Tenta novamente daqui a uma hora.' }); return
+    }
+    await hit(`lock:${key}`, RESEND_WINDOW_MS)
+
+    await sendVerification(user.id, user.email, asLang(req.body?.lang))
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('POST /api/auth/resend-verification failed:', err)
     res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })

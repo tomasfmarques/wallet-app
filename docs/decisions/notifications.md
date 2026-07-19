@@ -181,3 +181,36 @@ env + external dashboards, no repo change.
   `forgot-password` (Google-only account → no send). Use
   `GET /api/cron/daily?force=digest` with the `CRON_SECRET` bearer, then check
   Resend → Emails (SMTP sends appear there). Confirmed **Delivered** 2026-07-09.
+
+## 2026-07-16 — Digest wedge line (closes the WS4 deferral)
+
+- **Why it was deferred, and what changed:** WS4 shipped the digest without the
+  "amortizar vs investir" nudge because the compare engine lived *inline in the
+  `POST /api/simulate/compare` handler* — and a cron-driven email can't POST to
+  itself. So the engine moved to **`backend/src/lib/compareEngine.ts`**
+  (`runCompare`), and `routes/simulate.ts` is now a thin HTTP wrapper that keeps
+  only what HTTP owns: validation, ownership checks, status codes.
+- **The extraction is behaviour-preserving, and that was verified, not assumed.**
+  The pre-refactor route was temporarily re-mounted alongside the new one and
+  both were driven with identical inputs across 7 cases covering every branch —
+  lump/monthly/yearly × prazo/prestacao × portfolio/manual, the ±1σ risk band,
+  a zero-return edge, and the omitted-`ym` default. All 7 returned **byte-identical
+  JSON**. The scaffolding was then removed.
+- **The digest mirrors the dashboard card, deliberately.** Same primary loan
+  (largest remaining capital), same defaults, same engine. `defaultCompareParams`
+  in `compareEngine.ts` is the backend twin of `frontend/src/lib/compareDefaults.ts`
+  — **keep the two in step.** If they drift, the email and the card answer the
+  same question with different numbers, which is worse than no email at all.
+  Verified: a demo account's digest reported a **€13,847** net gain, matching the
+  figure its dashboard card showed for the same loan.
+- **Shown only when the user has BOTH a live loan and investments** — with
+  neither side there's no trade-off to weigh, just noise. **Fail-silent:** a
+  wedge that throws is logged and dropped; it must never cost someone their
+  whole digest.
+- **Three verdict strings, not one with a sign flip** (`digestWedge{Investir,
+  Amortizar,Equivalente}` in `notifyCopy.ts`, pt+en). The sentence has to read
+  naturally in both directions, and "equivalente" is a genuinely different
+  message rather than a near-zero difference.
+- The loan name is `escapeHtml`-ed in the HTML lane — loan names can come from
+  bank-statement imports (semi-external input). The plain-text lane stays raw
+  (no HTML context), matching the rest of the digest.

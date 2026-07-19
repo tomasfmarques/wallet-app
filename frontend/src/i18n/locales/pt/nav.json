@@ -29,5 +29,10 @@
   },
   "demoBanner": "Modo demonstração — os dados são temporários.",
   "demoSignup": "Criar conta",
-  "demoExit": "Sair"
+  "demoExit": "Sair",
+  "verifyBanner": "Confirma o teu email para ativares o resumo mensal e o Modo Casal.",
+  "verifyBannerResend": "Reenviar email",
+  "verifyBannerSending": "A enviar…",
+  "verifyBannerSent": "Email enviado — vê a tua caixa de correio.",
+  "verifyBannerDismiss": "Agora não"
 }

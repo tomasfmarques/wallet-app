@@ -86,7 +86,13 @@
   --surface-3: #232F41;
   --text: #E7ECF3;
   --muted: #9BA8B9;
-  --muted-l: #6C7A8C;
+  /* Was #6C7A8C — only 3.75:1 on --surface and 3.09:1 on --surface-3, below the
+     4.5:1 WCAG AA needs for normal text, and this token styles real 11.5–12.5px
+     copy (.field-hint, .slider-bounds, .auth-divider), not just icons. #8C99AA
+     is the smallest step that clears AA on every dark surface (worst 4.67:1)
+     while staying visibly fainter than --muted, so the three-tier text
+     hierarchy survives. */
+  --muted-l: #8C99AA;
   --accent: #3E8AF0;
   --accent-d: #2F74D8;
   --accent-l: #15263C;
@@ -1571,7 +1577,18 @@ body {
    (filled_black) button, and its cross-origin content can't be styled. Clip the
    container to the button's content box (320x40 = the width we pass to
    renderButton) and shift the slightly-larger iframe so its ~10px/2px white
-   padding band overflows and is cropped out. Verified on the live domain. */
+   padding band overflows and is cropped out. Verified on the live domain.
+
+   Re-measured 2026-07-16 on live wallet360.pt, dark, in a browser with NO Google
+   session: GSI rendered the button as same-document DOM (.nsm7Bb-HzV7m-LgbsSe,
+   320x40, bg rgb(32,33,36)) with the only iframe at 0x0 offscreen — so the
+   offsets below applied to nothing and there was no white frame to crop.
+   That does NOT mean this is dead code: GSI serves the iframe-hosted
+   *personalized* button to visitors who ARE signed into Google, which is the
+   case that produced the frame. Confirming it needs a Google-signed-in Chrome,
+   so the rule stays as-is — it costs nothing when the iframe is absent. If the
+   button ever looks cropped or shifted for signed-in users, re-measure the
+   iframe's rect against the 320x40 box HERE and adjust; don't guess. */
 :root[data-theme="dark"] .gsi-button {
   display: block;
   width: 320px;
@@ -4100,7 +4117,8 @@ body {
   color: var(--muted);
   margin-top: 6px;
 }
-.demo-banner {
+.demo-banner,
+.verify-banner {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4112,6 +4130,7 @@ body {
   font-size: 13px;
   font-weight: 500;
 }
+.demo-banner-exit:disabled { opacity: .6; cursor: default; }
 .demo-banner-text { display: inline-flex; align-items: center; gap: 6px; }
 .demo-banner-actions { display: inline-flex; align-items: center; gap: 12px; }
 .demo-banner-link { color: var(--text-warning); font-weight: 600; text-decoration: underline; }

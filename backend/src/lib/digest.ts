@@ -5,6 +5,8 @@ import { merchantKey } from './merchantKey'
 import { projectRevision } from './euribor'
 import { asLang, type Lang } from './notifyCopy'
 import { sendMonthlyDigestEmail } from './email'
+import { isEmailVerified } from './emailVerification'
+import { runCompare, defaultCompareParams } from './compareEngine'
 
 // ── Monthly email digest (WS4) ───────────────────────────────────
 // Zero user config: every non-demo user with data gets last month's summary
@@ -12,8 +14,9 @@ import { sendMonthlyDigestEmail } from './email'
 // link). Runs from /api/cron/daily on day 1. Content mirrors the app's own
 // semantics: the REAL month lane follows frontend budgetReal.ts (actuals +
 // folded recurring fixed plan rows, variable = actuals only), loan-linked
-// amounts use the live prestação (lib/loanSync), wedge line deferred (the
-// compare engine lives inline in routes/simulate.ts — v2 if wanted).
+// amounts use the live prestação (lib/loanSync), and the wedge line runs the
+// same lib/compareEngine as the /comparar page and the dashboard card (the
+// engine was extracted out of routes/simulate.ts for exactly this).
 
 export interface DigestData {
   monthLabel: string          // localized "junho de 2026"
@@ -30,6 +33,16 @@ export interface DigestData {
     name: string; outstanding: number; pctPaid: number; nextPayment: number
     revision: { ym: string; projectedPayment: number; deltaMonthly: number } | null
   }>
+  // The "amortizar vs investir" nudge — mirrors the dashboard's WedgeInsight
+  // card: same primary loan, same defaults, same engine. Null unless the user
+  // has BOTH a live loan and investments (otherwise there's no trade-off).
+  wedge: {
+    loanName: string
+    amount: number
+    interestSaved: number
+    netGainAfterTax: number
+    verdict: 'amortizar' | 'investir' | 'equivalente'
+  } | null
 }
 
 function prevYm(): string {
@@ -108,6 +121,11 @@ export async function buildDigestData(userId: string, ym: string, lang: Lang): P
 
   // ── Loans (+ upcoming revision when within 2 months) ──
   const loanBlocks: DigestData['loans'] = []
+  // Tracked by object identity while we already have each loan in hand. Loan
+  // names are NOT unique per user (two "Casa" rows are perfectly legal), so
+  // re-finding the primary loan by name afterwards could pick the wrong one and
+  // quote the wedge for a different mortgage.
+  let primary: { loan: (typeof loans)[number]; nextPayment: number; loanKpiCapital: number } | null = null
   for (const loan of loans) {
     try {
       const kpis = computeKpis({
@@ -135,14 +153,49 @@ export async function buildDigestData(userId: string, ym: string, lang: Lang): P
         nextPayment: kpis.proximaPrestacao,
         revision,
       })
+      // Most significant loan = largest remaining capital (same rule as the
+      // dashboard's WedgeInsight card).
+      if (!primary || kpis.capitalAtual > primary.loanKpiCapital) {
+        primary = { loan, nextPayment: kpis.proximaPrestacao, loanKpiCapital: kpis.capitalAtual }
+      }
     } catch { /* skip uncomputable loan */ }
+  }
+
+  // ── Wedge: amortizar vs investir (WS4 follow-up) ──
+  // Same shape as the dashboard card: the most significant loan (largest
+  // remaining capital), simulated with the shared defaults. Fail-silent — a
+  // wedge that can't be computed must never cost the user their whole digest.
+  let wedge: DigestData['wedge'] = null
+  if (primary && assets.length > 0) {
+    try {
+      const { loan } = primary
+      const compareAssets = assets.map((a) => ({ value: a.value, expectedReturn: a.expectedReturn }))
+      const params = defaultCompareParams(primary.nextPayment, compareAssets)
+      const result = runCompare({
+        capital: loan.capital, prazoMeses: loan.prazoMeses, tanFixa: loan.tanFixa,
+        mesesFixos: loan.mesesFixos, spread: loan.spread, euribor: loan.euribor,
+        dataInicio: loan.dataInicio,
+        amortizacoes: loan.amortizations.map((a) => ({ ym: a.ym, valor: a.valor, modo: a.modo as 'prazo' | 'prestacao' })),
+      }, params, compareAssets)
+      if (result) {
+        wedge = {
+          loanName: loan.name,
+          amount: params.valor,
+          interestSaved: result.amortizar.interestSaved,
+          netGainAfterTax: result.investir.netGainAfterTax,
+          verdict: result.recommendation,
+        }
+      }
+    } catch (err) {
+      console.error('[digest] wedge failed:', err instanceof Error ? err.message : err)
+    }
   }
 
   const [y, m] = ym.split('-').map(Number)
   const monthLabel = new Intl.DateTimeFormat(lang === 'en' ? 'en-IE' : 'pt-PT', { month: 'long', year: 'numeric' })
     .format(new Date(Date.UTC(y, m - 1, 1)))
 
-  return { monthLabel, budget, portfolio, loans: loanBlocks }
+  return { monthLabel, budget, portfolio, loans: loanBlocks, wedge }
 }
 
 // ── The day-1 send loop (called from /api/cron/daily) ────────────
@@ -156,7 +209,7 @@ export async function sendMonthlyDigests(): Promise<{ sent: number; skipped: num
   for (let skip = 0; ; skip += PAGE) {
     const users = await prisma.user.findMany({
       where: { isDemo: false },
-      select: { id: true, email: true },
+      select: { id: true, email: true, emailVerifiedAt: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
       take: PAGE, skip,
     })
@@ -164,6 +217,10 @@ export async function sendMonthlyDigests(): Promise<{ sent: number; skipped: num
 
     for (const user of users) {
       try {
+        // Never mail an address nobody has proven they own — that's how a
+        // sender reputation dies (S3/F7). Accounts predating verification are
+        // grandfathered, so this can't silently mute existing users.
+        if (!isEmailVerified(user)) { skipped++; continue }
         const [prefsRow, settings] = await Promise.all([
           prisma.notificationPreference.findUnique({ where: { userId: user.id } }),
           prisma.portfolioSettings.findUnique({ where: { userId: user.id } }),

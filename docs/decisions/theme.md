@@ -59,3 +59,39 @@
   bundle (hard-refresh, or reopen/reinstall the PWA). This repeatedly masqueraded as
   "the fix didn't work" while debugging. To force it: unregister the SW +
   `caches.delete(...)`, then reload.
+
+## 2026-07-16 — Dark palette: measured, not eyeballed (+ GSI offsets re-measured)
+
+The open thread said "the dark palette shades are a considered first pass —
+specific tokens may want tuning". "Tuning" by eye is guessing, so instead every
+foreground/background token pair the UI actually renders was scored for WCAG
+contrast. **The dark palette came out healthy — one real failure, now fixed.**
+
+- **`--muted-l` was failing AA in dark: #6C7A8C scored 3.75:1 on `--surface`
+  and 3.09:1 on `--surface-3`, against the 4.5:1 that normal text needs.** It
+  isn't decorative — it styles real 11.5–12.5px copy (`.field-hint`,
+  `.slider-bounds`, `.auth-divider`, `.hold-chart-hint`). Changed to **#8C99AA**:
+  the smallest step clearing AA on every dark surface (worst 4.67:1) while
+  staying visibly fainter than `--muted` (#9BA8B9), so the text/muted/muted-l
+  hierarchy survives. Anything lighter collapses the two tiers together.
+- Everything else in dark passes. The only sub-4.5 pairs left are `--accent` on
+  its own tints (3.42–4.44), which style links/controls — UI components, where
+  the AA threshold is 3.0.
+- **Light mode was audited too but deliberately NOT touched.** It shows several
+  sub-AA pairs, but most are artefacts of pairing tokens that never meet
+  (`--text` on `--ink` is the navy navbar, which uses light text). `--muted-l`
+  on white (2.72:1) does look like a genuine light-mode failure — but light is
+  **byte-for-byte the pre-theme palette by design**, so changing it is a
+  separate, deliberate call, not a drive-by. Left as a known finding.
+
+**GSI clip offsets — re-measured, verdict: leave alone.** Measured on live
+wallet360.pt in dark with no Google session: GSI rendered the button as
+same-document DOM (`.nsm7Bb-HzV7m-LgbsSe`, 320x40, bg rgb(32,33,36)), the only
+iframe being 0x0 offscreen — so the `-10px/-2px` offsets applied to nothing and
+there was no white frame. That is NOT evidence the hack is dead: GSI serves the
+iframe-hosted *personalized* button to visitors who ARE signed into Google, which
+is the case that caused the frame. Reproducing it needs a Google-signed-in
+Chrome, which the automated browser isn't — so the rule stays (it costs nothing
+when the iframe is absent) and `index.css` now records exactly this, so the next
+reader doesn't re-derive it. Removing it on the strength of a session-less
+measurement would have regressed real users' dark mode.

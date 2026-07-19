@@ -21,7 +21,7 @@ function buildTransporter() {
   })
 }
 
-function appOrigin(): string {
+export function appOrigin(): string {
   return process.env.APP_ORIGIN
     ?? (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)[0]
     ?? 'http://localhost:5173'
@@ -77,6 +77,51 @@ export async function sendPasswordResetEmail(
     console.log('\n── Password reset link (no SMTP configured) ──')
     console.log(resetLink)
     console.log('─────────────────────────────────────────────\n')
+    return
+  }
+
+  await transporter.sendMail({ from, to, subject, text, html })
+}
+
+// ── Signup email verification (S3/F7) ────────────────────────────
+// Bilingual from the start (the reset mail predates notifyCopy and stays pt).
+// At signup there's no PortfolioSettings row yet, so the caller passes the
+// language the browser was using.
+export async function sendEmailVerificationEmail(
+  to: string,
+  verifyLink: string,
+  lang: Lang,
+): Promise<void> {
+  const t = (key: string) => notifyText(lang, key)
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@wallet360.pt'
+  const transporter = buildTransporter()
+
+  const subject = t('verifySubject')
+  const text = `${t('verifyTitle')}\n\n${t('verifyIntro')}\n\n${verifyLink}\n\n${t('verifyIgnore')}\n\nWallet360`
+  const html = `
+<!DOCTYPE html>
+<html lang="${lang}">
+<head><meta charset="utf-8"></head>
+<body style="font-family:system-ui,sans-serif;background:#FAF9F7;margin:0;padding:32px">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+    <h1 style="font-size:20px;color:#0D2740;margin:0 0 8px">${t('verifyTitle')}</h1>
+    <p style="color:#475569;margin:0 0 24px">${t('verifyIntro')}</p>
+    <a href="${verifyLink}"
+       style="display:inline-block;background:#2F74D8;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:15px">
+      ${t('verifyCta')}
+    </a>
+    <p style="color:#94a3b8;font-size:12px;margin:24px 0 0">${t('verifyIgnore')}</p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
+    <p style="color:#94a3b8;font-size:11px;margin:0">Wallet360</p>
+  </div>
+</body>
+</html>`
+
+  if (!transporter) {
+    // Dev fallback — print the link so signup is testable without SMTP.
+    console.log('\n── Email verification link (no SMTP configured) ──')
+    console.log(verifyLink)
+    console.log('─────────────────────────────────────────────────\n')
     return
   }
 
@@ -172,6 +217,26 @@ export async function sendMonthlyDigestEmail(
     textParts.push(...data.loans.map((l) => t('digestLoanLine', {
       name: l.name, outstanding: eur(l.outstanding), pct: pct(l.pctPaid), payment: eur2(l.nextPayment),
     })))
+  }
+
+  // The wedge nudge — the one line in here that asks the reader to DO something
+  // rather than just reporting. Deep-links to the full simulator.
+  if (data.wedge) {
+    const w = data.wedge
+    const key = w.verdict === 'investir' ? 'digestWedgeInvestir'
+      : w.verdict === 'amortizar' ? 'digestWedgeAmortizar'
+      : 'digestWedgeEquivalente'
+    const line = t(key, {
+      amount: eur(w.amount), name: escapeHtml(w.loanName),
+      gain: eur(w.netGainAfterTax), saved: eur(w.interestSaved),
+    })
+    parts.push(section(t('digestWedgeTitle'),
+      `<p style="margin:4px 0;font-size:14px;color:${INK}">${line}</p>
+       <p style="margin:6px 0 0"><a href="${origin}/comparar" style="color:#2F74D8;font-size:13px;font-weight:600;text-decoration:none">${t('digestOpenApp')} →</a></p>`))
+    textParts.push(`${t('digestWedgeTitle')} ${t(key, {
+      amount: eur(w.amount), name: w.loanName,
+      gain: eur(w.netGainAfterTax), saved: eur(w.interestSaved),
+    })}`)
   }
 
   const html = `

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { createHash } from 'crypto'
 import { requireAuth } from '../middleware/requireAuth'
 import { prisma } from '../lib/prisma'
+import { isEmailVerified } from '../lib/emailVerification'
 
 const router = Router()
 
@@ -34,6 +35,7 @@ router.get('/', requireAuth, async (req, res) => {
         hasPassword: !!user.passwordHash,
         hasPin: !!user.pinHash,
         hasBiometrics: biometricCount > 0,
+        emailVerified: isEmailVerified(user),
         isDemo: user.isDemo,
       },
     })

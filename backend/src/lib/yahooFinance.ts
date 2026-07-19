@@ -278,6 +278,31 @@ const SUFFIX_CCY: Record<string, string> = {
   SS: 'CNY', SZ: 'CNY',
   TW: 'TWD', TWO: 'TWD',
   SI: 'SGD',
+  // Added 2026-07-16 from a real gap sweep: searched 50 international terms
+  // through /api/quotes/search and grouped every "—" badge by venue. Each of
+  // these was then confirmed against Yahoo's own chart meta.currency rather than
+  // from memory — see docs/decisions/portfolio.md.
+  BA: 'ARS',   // Buenos Aires (CEDEARs: TSLA.BA, BHP.BA)
+  WA: 'PLN',   // Warsaw
+  KL: 'MYR',   // Bursa Malaysia
+  SR: 'SAR',   // Tadawul (Saudi)
+  XA: 'AUD',   // Cboe Australia — single-country, unlike Cboe Europe below
+  BK: 'THB',   // Thailand (SET)
+  JK: 'IDR',   // Jakarta
+  SN: 'CLP',   // Santiago
+  AE: 'AED',   // Dubai (DFM)
+  QA: 'QAR',   // Qatar
+  IS: 'TRY',   // Borsa Istanbul
+  // ⚠️ Deliberately NOT mapped, each verified rather than assumed:
+  // • KW (Kuwait) — Yahoo quotes it in "KWF" (fils), a 1/1000 SUBUNIT, the same
+  //   trap as GBp. Mapping it to KWD would make every price 1000x too big.
+  //   It would need a normalizeSubunit case in fx.ts, and KWD isn't
+  //   FX-convertible anyway — so there is nothing to gain and a lot to break.
+  // • XC/CXE, XD/DXE (Cboe Europe), TI/TLO (Turquoise), IL/IOB — pan-European
+  //   venues that genuinely list in several currencies. Proven, not guessed:
+  //   NOVOBC.XD quotes DKK while ASMLA.XC quotes EUR; 0O77.IL quotes DKK.
+  //   A "—" badge is correct here; a guess would be wrong.
+  // • Z/ZRH — Yahoo itself returns no currency for these.
 }
 
 // Currency by Yahoo exchange code — fallback, mainly for US tickers (no suffix).
@@ -303,6 +328,10 @@ const EXCHANGE_CCY: Record<string, string> = {
   SHH: 'CNY', SHZ: 'CNY',
   TAI: 'TWD',
   SES: 'SGD',
+  // Exchange-code twins of the suffixes added above (the resolver prefers the
+  // suffix and falls back to these). Same 2026-07-16 sweep.
+  BUE: 'ARS', WSE: 'PLN', KLS: 'MYR', SAU: 'SAR', CXA: 'AUD', SET: 'THB',
+  JKT: 'IDR', SGO: 'CLP', DFM: 'AED', DOH: 'QAR', IST: 'TRY',
 }
 
 /**

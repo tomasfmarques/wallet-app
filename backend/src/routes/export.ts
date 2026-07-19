@@ -11,6 +11,10 @@ import { prisma } from '../lib/prisma'
 // NOTE: Household/HouseholdMember/HouseholdInvite are NOT exported — cross-user
 // data cannot be restored into a single-user backup (membership is re-created
 // by inviting again).
+// NOTE: PasswordResetToken/EmailVerificationToken are NOT exported — single-use
+// security artifacts scoped to a live flow, not portable user data. Restoring a
+// verification token from a backup would be meaningless at best. Same rule as
+// WebAuthnCredential/BrokerConnection.
 
 const router = Router()
 router.use(requireAuth)

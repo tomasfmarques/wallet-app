@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { useLanguageSync } from '@/hooks/useLanguage'
 import { BottomNav } from './BottomNav'
+import { EmailVerifyBanner } from './EmailVerifyBanner'
 import { BrandMark } from '@/components/ui/BrandMark'
 import { Icon } from '@/components/ui/Icon'
 
@@ -49,6 +50,7 @@ export function Layout() {
           </span>
         </div>
       )}
+      <EmailVerifyBanner />
       <header className="navbar">
         <div className="navbar-inner">
           <div className="navbar-left">
